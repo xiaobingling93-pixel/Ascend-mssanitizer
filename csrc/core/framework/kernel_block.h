@@ -1,0 +1,55 @@
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
+
+#pragma once
+
+#include <cstdint>
+#include <memory>
+
+#include "record_defs.h"
+
+namespace Sanitizer {
+
+class KernelBlock {
+public:
+    static std::unique_ptr<KernelBlock> CreateKernelBlock(uint8_t const *memInfo, uint32_t blockIdx);
+    void ParseSimtRecord(std::vector<KernelRecord> &kernelRecords);
+    void PrintCacheSizeLog(uint64_t totalSize);
+    bool NextSimd(KernelRecord &kernelRecord);
+
+    uint64_t GetTotalBlockDim();
+
+private:
+    bool ParseSimdRecord(uint8_t const *record, KernelRecord &kernelRecord);
+    thread_local static uint64_t serialNo;
+
+    RecordGlobalHead recordGlobalHead_ {};
+    RecordBlockHead simdRecordHead_ {};
+    SimtRecordBlockHead const *simtRecordHead_ {};
+    uint8_t const *simdRecords_ {};
+    uint8_t const *simtRecords_ {};
+    uint64_t simdOffset_ {};
+    uint64_t simtOffset_ {};
+    uint64_t recordIdx_ {};
+    thread_local static uint8_t vecSubBlockDim_;       // mix算子vec核使用的子核数目，只记录在了vec 0核的头部
+    thread_local static uint64_t totalBlockDim_;       // 记录的总blockDim数，只记录在了0核的头部
+    uint64_t extendCacheSize_{};                       // 溢出的cacheSize
+    uint64_t extendRecordCount_{};                     // 溢出的记录数量
+    uint32_t blockIdx_{};
+};
+
+} // namespace Sanitizer

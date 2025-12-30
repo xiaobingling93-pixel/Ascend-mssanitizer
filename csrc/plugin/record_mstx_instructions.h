@@ -1,0 +1,139 @@
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
+#ifndef PLUGIN_RECORD_MSTX_INSTRUCTIONS_H
+#define PLUGIN_RECORD_MSTX_INSTRUCTIONS_H
+
+#include "kernel_pub_func.h"
+#include "utils.h"
+#include "recorder.h"
+
+namespace Sanitizer {
+
+__aicore__ inline void AssignCrossRecord(MstxRecord &rhs, const MstxCrossRecord &lhs)
+{
+    auto &record = rhs.interface.mstxCrossRecord;
+    record.addr = lhs.addr;
+    record.flagId = lhs.flagId;
+    record.pipe = lhs.pipe;
+    record.isMore = lhs.isMore;
+    record.isMerge = lhs.isMerge;
+}
+
+__aicore__ inline void AssignHcclRecord(MstxRecord &rhs, const MstxHcclRecord &lhs)
+{
+    auto &record = rhs.interface.mstxHcclRecord;
+    record.src = lhs.src;
+    record.dst = lhs.dst;
+    record.srcCount = lhs.srcCount;
+    record.dstCount = lhs.dstCount;
+    record.srcStride = lhs.srcStride;
+    record.dstStride = lhs.dstStride;
+    record.srcRepeatStride = lhs.srcRepeatStride;
+    record.dstRepeatStride = lhs.dstRepeatStride;
+    record.srcDataTypeSize = lhs.srcDataTypeSize;
+    record.dstDataTypeSize = lhs.dstDataTypeSize;
+    record.repeat = lhs.repeat;
+    record.rankDim = lhs.rankDim;
+    record.flagId = lhs.flagId;
+}
+
+__aicore__ inline void RecordMstxCrossRecord(Recorder &recorder, MstxRecord &mstxRecord,
+                                             uint32_t bufferLens, void *buffer)
+{
+    if (bufferLens == sizeof(MstxCrossRecord) && buffer != nullptr) {
+        MstxCrossRecord mstxCrossRecord = *reinterpret_cast<MstxCrossRecord*>(buffer);
+        AssignCrossRecord(mstxRecord, mstxCrossRecord);
+    } else {
+        mstxRecord.error = true;
+    }
+    recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+}
+
+__aicore__ inline void RecordMstxHcclRecord(Recorder &recorder, MstxRecord &mstxRecord,
+                                            uint32_t bufferLens, void *buffer)
+{
+    if (bufferLens == sizeof(MstxHcclRecord) && buffer != nullptr) {
+        // 将4个定长接口的buffer数据按照MstxHcclRecord结构体进行解析
+        MstxHcclRecord mstxHcclRecord = *reinterpret_cast<MstxHcclRecord*>(buffer);
+        AssignHcclRecord(mstxRecord, mstxHcclRecord);
+    } else {
+        mstxRecord.error = true;
+    }
+    recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+}
+
+__aicore__ inline void RecordMstxHcclVRecord(Recorder &recorder, MstxRecord &mstxRecord,
+                                             uint32_t bufferLens, void *buffer)
+{
+    if (bufferLens == sizeof(MstxHcclRecordV) && buffer != nullptr) {
+        // 变长数组需要转换为多个MstxHcclCoreRecord
+        MstxHcclRecordV mstxHcclRecordV = *reinterpret_cast<MstxHcclRecordV*>(buffer);
+        for (int32_t i = 0; i < mstxHcclRecordV.rankDim; ++i) {
+            auto &record = mstxRecord.interface.mstxHcclCoreRecord;
+            record.src = mstxHcclRecordV.src + mstxHcclRecordV.srcStride[i] * mstxHcclRecordV.srcDataTypeSize;
+            record.dst = mstxHcclRecordV.dst + mstxHcclRecordV.dstStride[i] * mstxHcclRecordV.dstDataTypeSize;
+            record.srclenBurst = mstxHcclRecordV.srcCount[i] * mstxHcclRecordV.srcDataTypeSize;
+            record.dstlenBurst = mstxHcclRecordV.dstCount[i] * mstxHcclRecordV.dstDataTypeSize;
+            record.repeat = mstxHcclRecordV.repeat;
+            recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+        }
+    } else {
+        mstxRecord.error = true;
+        recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+    }
+}
+
+__aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, uint32_t bufferLens, void *buffer)
+{
+    if (InvalidMemInfoOrOnlySynccheck(memInfo)) { return;}
+
+    uint64_t blockIdx = GetBlockIdx();
+    Recorder recorder(memInfo, blockIdx);
+    if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_FUSE_SCOPE_START)) {
+        recorder.SetMstxFuseScope(true);
+        return;
+    } else if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_FUSE_SCOPE_END)) {
+        recorder.SetMstxFuseScope(false);
+        return;
+    }
+
+    auto mstxRecord  = MstxRecord{};
+    mstxRecord.location.fileNo = fileNo;
+    mstxRecord.location.lineNo = lineNo;
+    mstxRecord.location.pc = static_cast<uint64_t>(pc);
+    mstxRecord.interfaceType = static_cast<InterfaceType>(interfaceId);
+    mstxRecord.location.blockId = blockIdx;
+    mstxRecord.bufferLens = bufferLens;
+
+    if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_SET_CROSS_SYNC) ||
+        interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_WAIT_CROSS_SYNC)) {
+        /// 该情况下为同步指令，只有开启竞争检测时，才会记录；
+        if (!DoRaceCheck(memInfo)) { return; }
+        RecordMstxCrossRecord(recorder, mstxRecord, bufferLens, buffer);
+    } else if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_HCCL)) {
+        RecordMstxHcclRecord(recorder, mstxRecord, bufferLens, buffer);
+    } else if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_HCCLV)) {
+        RecordMstxHcclVRecord(recorder, mstxRecord, bufferLens, buffer);
+    } else {
+        mstxRecord.error = true;
+        recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+    }
+}
+
+}  // namespace Sanitizer
+
+#endif  // PLUGIN_RECORD_MSTX_INSTRUCTIONS_H

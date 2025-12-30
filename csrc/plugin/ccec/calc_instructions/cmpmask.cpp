@@ -1,0 +1,35 @@
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
+
+#include "plugin/kernel_pub_func.h"
+#include "plugin/utils.h"
+#include "plugin/record_ctrl_instructions.h"
+
+using namespace Sanitizer;
+
+// #808
+SANITIZER_REPORT(get_cmpmask, __ubuf__ void *dst)
+{
+    RecordCmpMask(EXTRA_PARAMS, dst, AccessType::WRITE, 16);
+}
+
+// #2096
+SANITIZER_REPORT(set_cmpmask, __ubuf__ void *src)
+{
+    // 先保存要读取的 ubuf 地址到 register 中，到 vsel 指令执行时再实际应用
+    RecordRegister(EXTRA_PARAMS, &Register::cmpMaskAddr, reinterpret_cast<uint64_t>(src));
+}

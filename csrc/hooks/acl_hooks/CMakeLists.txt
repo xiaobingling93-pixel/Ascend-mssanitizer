@@ -1,0 +1,22 @@
+add_library(ascend_acl_hook SHARED acl_hooks.cpp)
+
+target_sources(ascend_acl_hook PRIVATE
+  ${FRAMEWORK_INC_DIR}/communication.cpp
+  ${FRAMEWORK_INC_DIR}/utility/domain_socket.cpp
+  ${FRAMEWORK_INC_DIR}/utility/result.cpp
+  ${FRAMEWORK_INC_DIR}/utility/ustring.cpp
+  ${FRAMEWORK_INC_DIR}/utility/log.cpp
+  ${FRAMEWORK_INC_DIR}/utility/file_system.cpp
+  ${FRAMEWORK_INC_DIR}/utility/path.cpp
+  ${HOOK_INC_DIR}/basic_hooks.cpp
+  ${HOOK_INC_DIR}/hook_report.cpp
+  ${HOOK_INC_DIR}/hooks_verify.cpp
+)
+target_include_directories(ascend_acl_hook PUBLIC
+  ${FRAMEWORK_INC_DIR}
+  ${SECUREC_INC_DIR}
+  ${HOOK_INC_DIR}
+  ${SANITIZER_THIRDPARTY_INCLUDE}
+)
+target_link_libraries(ascend_acl_hook c_sec ascend_hal dl pthread)
+target_link_options(ascend_acl_hook PRIVATE "-Wl,-z,defs")
