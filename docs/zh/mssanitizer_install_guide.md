@@ -6,11 +6,9 @@ MindStudio Sanitizer（算子异常检测，msSanitizer）是一种基于昇腾A
 # 安装前准备
 ## 更新依赖子仓代码
 
-为了确保代码能够下载成功，需提前在环境中配置git仓库的用户名和秘密信息，方式如下：
-配置git存储用户密码，并通过git submodule来下载.gitmodules中的子仓，在下载过程中可能会提示需要输入用户名和密码，输入后git会记住授权信息，后续就不会再需要输入用户名和密码了：
+为了避免依赖下载过程中反复输入密码，可通过如下命令配置git保存用户密码：
 ```
 git config --global credential.helper store
-git submodule update --init --recursive --depth=1
 ```
 
 ## 项目构建
@@ -18,31 +16,51 @@ git submodule update --init --recursive --depth=1
 开始构建之前，需要确保已安装编译器bisheng，并且其可执行文件所在路径在环境变量$PATH中，这里要求bisheng的版本信息应该是2025-11-25T20:00:35+08:00 clang version 15.0.5 (clang-5c68a1cb1231 flang-5c68a1cb1231)或更新的版本；
 如果cann算子工具包，可在工具包安装路径下执行source set_env.sh，这里注意的是需要安装8.5.0或更高的cann版本。
 
-可以通过如下命令构建run包：
-```
-mkdir build
-cd build
-cmake ../cmake && make -j8  # 如果只做编译，不打run包，这里需要执行的是cmake ..  && make -j8 install 
-```
-也可以通过一键式脚本来执行：
-```
-python build.py
-注：如果本地更改了依赖子仓中的代码，不想构建过程中执行子仓更新动作，可以执行python build.py local
-```
+- 命令行方式
+    通过以下脚本下载项目构建依赖的子仓库，并更新依赖到最新代码：
+    ```
+    python download_dependencies.py
+    ```
+
+    然后通过如下命令构建run包：
+    ```
+    mkdir build
+    cd build
+    cmake ../cmake && make -j8  # 如果只做编译，不打run包，这里需要执行的是cmake ..  && make -j8 install 
+    ```
+
+- 一键式脚本方式
+    调用一键式脚本完成依赖仓下载和构建流程：
+    ```
+    python build.py
+    ```
+
+    > [!NOTE] 说明
+    > 如果本地更改了依赖子仓中的代码，不想构建过程中执行更新动作，可以执行 `python build.py local`
 
 ## UT测试
-```
-mkdir build_ut
-cd build_ut
-cmake .. –DBUILD_TEST=on
-make -j8 mssanitizer_test
-./test/ut/mssanitizer_test
-```
-也可以通过一键式脚本来执行：
-```
-python build.py test
-```
 
+- 命令行方式
+    通过以下脚本下载UT构建依赖的子仓库，并更新依赖到最新代码：
+
+    ```
+    python download_dependencies.py test
+    ```
+
+    然后通过如下命令构建并执行UT测试：
+    ```
+    mkdir build_ut
+    cd build_ut
+    cmake .. –DBUILD_TEST=on
+    make -j8 mssanitizer_test
+    ./test/ut/mssanitizer_test
+    ```
+
+- 一键式脚本方式
+    也可以调用一键式脚本完成UT构建依赖仓下载和UT测试流程：
+    ```
+    python build.py test
+    ```
 
 # 安装步骤
 ## run包安装与卸载
