@@ -164,7 +164,14 @@ __aicore__ inline void Memcheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t *m
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
     shadowMemory_.Init((uint64_t)(memInfoSimd + globalHead_->simtInfo.shadowMemoryOffset),
         globalHead_->simtInfo.shadowMemoryByteSize);
+    auto &blockInfo = simdBlockHead_->blockInfo;
+    uint16_t threadXDim{}, threadYDim{}, threadZDim{};
+    GetThreadDim(threadXDim, threadYDim, threadZDim);
+    blockInfo.threadXDim = threadXDim;
+    blockInfo.threadYDim = threadYDim;
+    blockInfo.threadZDim = threadZDim;
 #endif
+    simdBlockHead_->blockInfo.blockId = GetBlockIdx();
 }
 
 template<RecordType recordType, typename Record>

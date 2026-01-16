@@ -173,6 +173,7 @@ void AddressSanitizer::ConvertSanEventToMemOpRecords(const SanEvent &event,
     auto& memInfo = event.eventInfo.memInfo;
 
     MemOpRecord record;
+    record.ignoreIllegalCheck = memInfo.ignoreIllegalCheck;
     SetBasicMemInfo(record, event);
     // 原内存检测解析时是按repeattimes遍历读->写->读->写；
     // 而解析成SanEvent再解析成MemOpRecords后会变成 读读读...->写写写....此处逻辑发生变动

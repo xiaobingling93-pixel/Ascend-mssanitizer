@@ -143,13 +143,6 @@ struct TableLayout {
 
 template <typename ByteStatus_t>
 class MultiLayerTable {
-    // gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
-    static constexpr uint64_t GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
-    // 片上内存建模地址范围0 ~ 0xF FFFF FFFF (36 bits)
-    static constexpr uint64_t LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
-    // 用于标记GM上定义的数据来源于host
-    static constexpr uint64_t ONE_SM_STAND_FOR_BYTE = 65536U; // 64KB
-
     enum class AddrStatus : uint64_t {
         LOCKED_BY_OTHER_THREADS = 1U,
         UNALLOCATABLE = UINT64_MAX, // 内存异常，无法再分配
@@ -159,19 +152,19 @@ public:
     __aicore__ inline MultiLayerTable(): heapAllocator_()
     {
         l0Tbl_.listPtr = 0U;
-        l0Tbl_.mask = GLOBAL_MEM_MASK;
-        l0Tbl_.blockSize = LOCAL_MEM_MASK;
-        l0Tbl_.blockNum = (GLOBAL_MEM_MASK + l0Tbl_.blockSize - 1U) / l0Tbl_.blockSize;
+        l0Tbl_.mask = ONLINE_GLOBAL_MEM_MASK;
+        l0Tbl_.blockSize = ONLINE_LOCAL_MEM_MASK;
+        l0Tbl_.blockNum = (ONLINE_GLOBAL_MEM_MASK + l0Tbl_.blockSize - 1U) / l0Tbl_.blockSize;
 
         l1Tbl_.listPtr = 0U;
-        l1Tbl_.mask = LOCAL_MEM_MASK;
-        l1Tbl_.blockSize = ONE_SM_STAND_FOR_BYTE;
-        l1Tbl_.blockNum = (LOCAL_MEM_MASK + l1Tbl_.blockSize - 1U) / l1Tbl_.blockSize;
+        l1Tbl_.mask = ONLINE_LOCAL_MEM_MASK;
+        l1Tbl_.blockSize = ONLINE_ONE_SM_STAND_FOR_BYTE;
+        l1Tbl_.blockNum = (ONLINE_LOCAL_MEM_MASK + l1Tbl_.blockSize - 1U) / l1Tbl_.blockSize;
 
         l2Tbl_.listPtr = 0U;
-        l2Tbl_.mask = ONE_SM_STAND_FOR_BYTE - 1U;
+        l2Tbl_.mask = ONLINE_ONE_SM_STAND_FOR_BYTE - 1U;
         l2Tbl_.blockSize = 1;
-        l2Tbl_.blockNum = ONE_SM_STAND_FOR_BYTE;
+        l2Tbl_.blockNum = ONLINE_ONE_SM_STAND_FOR_BYTE;
     }
 
     __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size)

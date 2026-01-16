@@ -4647,4 +4647,25 @@ TEST_F(TestRecordParse, parse_fix_L0C_to_UB_record_with_NZ2DN_conversion_and_exp
     ASSERT_EQ(events[4].eventInfo.memInfo, memOpInfo);
 }
 
+TEST_F(TestRecordParse, parse_shadow_memory_record_and_expect_success)
+{
+    std::vector<SanEvent> events;
+    KernelRecord record{};
+    record.recordType = RecordType::SHADOW_MEMORY;
+    ShadowMemoryRecord smRecord{};
+    smRecord.addr = 0x100;
+    smRecord.size = 10;
+    record.payload.shadowMemoryRecord = smRecord;
+
+    SanitizerRecord sanitizerRecord{};
+    sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
+    sanitizerRecord.payload.kernelRecord = record;
+
+    RecordParse::Parse(sanitizerRecord, events);
+    ASSERT_EQ(events.size(), 1);
+    ASSERT_EQ(events[0].eventInfo.memInfo.addr, smRecord.addr);
+    ASSERT_EQ(events[0].eventInfo.memInfo.blockNum, 1);
+    ASSERT_EQ(events[0].eventInfo.memInfo.blockSize, smRecord.size);
+}
+
 }
