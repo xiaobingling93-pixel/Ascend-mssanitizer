@@ -1,4 +1,19 @@
-// Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
 #ifndef SHADOW_MEMORY_ONLINE_H
 #define SHADOW_MEMORY_ONLINE_H
 
@@ -11,12 +26,11 @@ namespace Sanitizer {
 
 class ShadowMemoryHeapAllocator {
 public:
-    __aicore__ inline ShadowMemoryHeapAllocator(): heapHeadPtr_(nullptr), isReady_(false) {}
+    __aicore__ __attribute__((always_inline)) ShadowMemoryHeapAllocator(): heapHeadPtr_(nullptr), isReady_(false) {}
 
     __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size)
     {
-        (void)size;
-        if (heapAddr == 0U) {
+        if (heapAddr == 0U || (size == 0U)) {
             return false;
         }
         // ShadowMemoryHeapHead 已在host完成赋值，此处只需创建head指针
@@ -26,9 +40,26 @@ public:
             return false;
         }
 
-        maxAddr_ = heapHeadPtr_->startAddr + heapHeadPtr_->size;
         isReady_ = true;
         return true;
+    }
+
+    __aicore__ inline uint64_t AllocHeap(uint64_t allocSize)
+    {
+        if (!isReady_) {
+            return 0U;
+        }
+
+        uint64_t rest = heapHeadPtr_->size - (heapHeadPtr_->current - heapHeadPtr_->startAddr);
+        if (rest < allocSize) {
+            // 不够分配，返回0地址
+            return 0U;
+        }
+
+        uint64_t addr = heapHeadPtr_->current;
+        heapHeadPtr_->current += allocSize;
+
+        return addr;
     }
 
     __aicore__ inline uint64_t AllocHeapForOneThread(uint64_t allocSize)
@@ -47,6 +78,12 @@ public:
         return newHeap;
     }
 
+    __aicore__ inline uint64_t FreeHeap(uint64_t size)
+    {
+        // 暂不支持释放内存
+        return 0U;
+    }
+
     __aicore__ inline uint64_t GetHeapStartAddr()
     {
         if (!isReady_) {
@@ -55,50 +92,38 @@ public:
         return heapHeadPtr_->startAddr;
     }
 
+    __aicore__ inline bool IsHeapFreshNew()
+    {
+        return heapHeadPtr_->startAddr == heapHeadPtr_->current;
+    }
+
 private:
-    __aicore__ inline uint64_t AllocHeap(uint64_t allocSize)
-    {
-        // 需在外部处理多线程竞争
-        if (!isReady_) {
-            return 0U;
-        }
-
-        uint64_t rest = heapHeadPtr_->size - (heapHeadPtr_->current - heapHeadPtr_->startAddr);
-        if (rest < allocSize) {
-            // 不够分配，返回0地址
-            return 0U;
-        }
-
-        uint64_t addr = heapHeadPtr_->current;
-        heapHeadPtr_->current += allocSize;
-
-        return addr;
-    }
-
-    __aicore__ inline uint64_t FreeHeap(uint64_t size)
-    {
-        // 暂不支持释放内存
-        return 0U;
-    }
-
     __gm__ ShadowMemoryHeapHead *heapHeadPtr_;
     bool isReady_;
-    uint64_t maxAddr_;
 };
 
+template <typename ByteStatus_t>
 class MemoryByteStatusParser {
 public:
-    __aicore__ static inline uint32_t Construct(uint16_t status, uint16_t threadId)
+    __aicore__ static inline ByteStatus_t Construct(uint16_t status, uint16_t threadId, uint64_t pc)
     {
-        return static_cast<uint32_t>((status & 0x1U) << 11U) | static_cast<uint32_t>(threadId & 0x7FFU);
+        /*
+            [63:16]: pc
+            [11]: status
+            [10:0]: threadId
+        */
+        static_assert(sizeof(ByteStatus_t) >= sizeof(uint64_t),
+            "memory byte status model requires not less than 8 bytes length for every single byte");
+        return static_cast<ByteStatus_t>(pc << 16U) | static_cast<ByteStatus_t>((status & 0x1U) << 11U) |
+            static_cast<ByteStatus_t>(threadId & 0x7FFU);
     }
 
-    __aicore__ static inline uint16_t ExtractStatus(uint32_t val)
+    __aicore__ static inline uint16_t ExtractStatus(ByteStatus_t val)
     {
         return static_cast<uint16_t>((val >> 11U) & 0x1U);
     }
 
-    __aicore__ static inline uint16_t ExtractThreadId(uint32_t val)
+    __aicore__ static inline uint16_t ExtractThreadId(ByteStatus_t val)
     {
         return static_cast<uint16_t>(val & 0x7FFU);
     }
@@ -107,6 +132,16 @@ private:
     __aicore__ inline MemoryByteStatusParser() {}
 };
 
+struct TableLayout {
+    uint64_t listPtr;
+    uint64_t mask;
+    uint64_t blockNum;
+    uint64_t blockSize; // block 表达的内存范围大小
+
+    __aicore__ inline TableLayout(): listPtr(0U), mask(0U), blockNum(0U), blockSize(0U) {}
+};
+
+template <typename ByteStatus_t>
 class MultiLayerTable {
     // gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
     static constexpr uint64_t GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
@@ -120,17 +155,8 @@ class MultiLayerTable {
         UNALLOCATABLE = UINT64_MAX, // 内存异常，无法再分配
     };
 
-    struct TableLayout {
-        uint64_t listPtr;
-        uint64_t mask;
-        uint64_t blockNum;
-        uint64_t blockSize; // block 表达的内存范围大小
-
-        __aicore__ inline TableLayout(): listPtr(0U), mask(0U), blockNum(0U), blockSize(0U) {}
-    };
-
 public:
-    __aicore__ inline MultiLayerTable(): heapAllocator_(nullptr), isReady_(false)
+    __aicore__ inline MultiLayerTable(): heapAllocator_()
     {
         l0Tbl_.listPtr = 0U;
         l0Tbl_.mask = GLOBAL_MEM_MASK;
@@ -148,28 +174,26 @@ public:
         l2Tbl_.blockNum = ONE_SM_STAND_FOR_BYTE;
     }
 
-    __aicore__ inline void Init(ShadowMemoryHeapAllocator *allocator)
+    __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size)
     {
-        if (allocator == nullptr) {
-            return;
+        if (!heapAllocator_.Init(heapAddr, size)) {
+            return false;
         }
-        // L0层数组无需手动初始化，内存已在host侧初始化为0
-        heapAllocator_ = allocator;
-        l0Tbl_.listPtr = allocator->GetHeapStartAddr();
 
-        // 分配L0层
-        heapAllocator_->AllocHeapForOneThread(l0Tbl_.blockNum * sizeof(uint64_t));
+        // 判断是否需要申请L0，全局仅需申请一次
+        if (heapAllocator_.IsHeapFreshNew()) {
+            heapAllocator_.AllocHeapForOneThread(l0Tbl_.blockNum * sizeof(uint64_t));
+        }
 
-        isReady_ = true;
+        // L0层起始地址，始终与heap起始地址一致
+        l0Tbl_.listPtr = heapAllocator_.GetHeapStartAddr();
+
+        return true;
     }
 
     __aicore__ inline uint64_t LookUp(const uint64_t addr,
         uint64_t &l1StartAddr, uint64_t &l2StartAddr, uint64_t &l2MemStatusAddr)
     {
-        if (!isReady_) {
-            return 0U;
-        }
-
         l1StartAddr = LookUpInL0(addr);
         if (l1StartAddr == 0U) {
             return 0U;
@@ -199,7 +223,7 @@ private:
         uint64_t l1StartAddr = AtomicCAS(l0Ptr, 0U, static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS));
         if (l1StartAddr == 0) {
             // 获取到锁的线程
-            uint64_t newHeap = heapAllocator_->AllocHeapForOneThread(l1Tbl_.blockNum * sizeof(uint64_t));
+            uint64_t newHeap = heapAllocator_.AllocHeapForOneThread(l1Tbl_.blockNum * sizeof(uint64_t));
             // 赋值并解锁
             if (newHeap == 0U) {
                 *l0Ptr = static_cast<uint64_t>(AddrStatus::UNALLOCATABLE);
@@ -242,7 +266,7 @@ private:
         uint64_t l2StartAddr = AtomicCAS(l1Ptr, 0U, static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS));
         if (l2StartAddr == 0) {
             // 获取到锁的线程
-            uint64_t newHeap = heapAllocator_->AllocHeapForOneThread(l1Tbl_.blockSize * sizeof(uint32_t));
+            uint64_t newHeap = heapAllocator_.AllocHeapForOneThread(l1Tbl_.blockSize * sizeof(uint32_t));
             // 赋值并解锁
             if (newHeap == 0U) {
                 *l1Ptr = static_cast<uint64_t>(AddrStatus::UNALLOCATABLE);
@@ -271,18 +295,16 @@ private:
     __aicore__ inline uint64_t LookUpInL2(uint64_t l2StartAddr, uint64_t addr)
     {
         l2Tbl_.listPtr = l2StartAddr;
-        __gm__ uint32_t *l2StartPtr = reinterpret_cast<__gm__ uint32_t *>(l2StartAddr);
+        __gm__ ByteStatus_t *l2StartPtr = reinterpret_cast<__gm__ ByteStatus_t *>(l2StartAddr);
         uint64_t l2Idx = (addr & l2Tbl_.mask) / l2Tbl_.blockSize;
         return reinterpret_cast<uint64_t>(l2StartPtr + l2Idx);
     }
 
-    ShadowMemoryHeapAllocator *heapAllocator_{nullptr};
+    ShadowMemoryHeapAllocator heapAllocator_;
 
     TableLayout l0Tbl_; // 仅一组，长度固定
     TableLayout l1Tbl_; // 每一个PM对应一组
     TableLayout l2Tbl_; // 单字节模型
-
-    bool isReady_{false};
 };
 
 // simplified shadow memory running in SIMT VF only
@@ -291,12 +313,13 @@ class ShadowMemoryOnline {
         NOT_WRITTEN = 0U,
         WRITTEN = 1U,
     };
+    using ByteStatus_t = uint64_t;
 public:
     struct AuxInfo {
         /*** 线程间踩踏使用 ***/
         SimtThreadLocation conflictedThreadLoc; // 记录被当前线程所踩踏的线程坐标
-        uint64_t l1StartAddr;
-        uint64_t l2StartAddr;
+        uint64_t l1StartAddr; // L1StartAddr
+        uint64_t l2StartAddr; // L2StartAddr
         uint64_t l2MemStatusAddr; // 字节状态位地址
 
         __aicore__ inline AuxInfo(): l1StartAddr(0U), l2StartAddr(0U), l2MemStatusAddr(0U)
@@ -306,16 +329,13 @@ public:
             conflictedThreadLoc.idZ = 0;
         }
     };
-    __aicore__ inline ShadowMemoryOnline() : heapAllocator_{}, tables_{},
-        isReady_{false} {}
+    __aicore__ inline ShadowMemoryOnline() : tables_{}, isReady_{false} {}
 
     __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size)
     {
-        // cache size中shadow memory ratio的内存由heap统一管理
-        if (!heapAllocator_.Init(heapAddr, size)) {
+        if (!tables_.Init(heapAddr, size)) {
             return false;
         }
-        tables_.Init(&(this->heapAllocator_));
         isReady_ = true;
         return true;
     }
@@ -347,32 +367,31 @@ public:
                 auxInfo.l2StartAddr, auxInfo.l2MemStatusAddr);
 
             uint16_t threadId = GetThreadId();
-            uint32_t oldValue = ExchangeMemStatus(memStatusAddr,
-                static_cast<uint16_t>(MemoryByteStatus::WRITTEN), threadId);
-            if ((MemoryByteStatusParser::ExtractStatus(oldValue) ==
+            ByteStatus_t oldValue = ExchangeMemStatus(memStatusAddr,
+                static_cast<uint16_t>(MemoryByteStatus::WRITTEN), threadId, addrInfo.location.pc);
+            if ((MemoryByteStatusParser<ByteStatus_t>::ExtractStatus(oldValue) ==
                 static_cast<uint16_t>(MemoryByteStatus::WRITTEN)) &&
-                (MemoryByteStatusParser::ExtractThreadId(oldValue) != threadId)) {
+                (MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue) != threadId)) {
                 DecomposeThreadId(threadId, auxInfo.conflictedThreadLoc.idX,
                     auxInfo.conflictedThreadLoc.idY, auxInfo.conflictedThreadLoc.idZ);
                 nBadBytesForOverlap++;
             }
-
+            
             SyncThreads(); // warp间同步
         }
 
         return nBadBytesForOverlap;
     }
 
-    __aicore__ inline uint32_t ExchangeMemStatus(uint64_t addr, uint16_t isWritten,
-        uint16_t threadId)
+    __aicore__ inline ByteStatus_t ExchangeMemStatus(uint64_t addr, uint16_t isWritten,
+        uint16_t threadId, uint64_t pc)
     {
-        uint32_t newValue = MemoryByteStatusParser::Construct(isWritten, threadId);
-        return AtomicExch(reinterpret_cast<__gm__ uint32_t *>(addr), newValue);
+        ByteStatus_t newValue = MemoryByteStatusParser<ByteStatus_t>::Construct(isWritten, threadId, pc);
+        return AtomicExch(reinterpret_cast<__gm__ uint64_t *>(addr), newValue);
     }
 
 private:
-    ShadowMemoryHeapAllocator heapAllocator_;
-    MultiLayerTable tables_;
+    MultiLayerTable<ByteStatus_t> tables_;
     bool isReady_;
 };
 

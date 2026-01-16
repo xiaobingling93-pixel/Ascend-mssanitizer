@@ -40,9 +40,11 @@ namespace Sanitizer {
 class Memcheck {
 public:
     __aicore__ __attribute__((always_inline)) Memcheck() : memInfo_{nullptr}, memInfoSimt_{nullptr}, memInfoSimd_{nullptr},
-        globalHead_{nullptr}, simtBlockHead_{nullptr}, simdBlockHead_{nullptr}, sortedLen_{}, blockIdx_{}
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
-        , shadowMemory_()
+        globalHead_{nullptr}, simtBlockHead_{nullptr}, simdBlockHead_{nullptr}, sortedLen_{}, blockIdx_{},
+        shadowMemory_()
+#else
+        globalHead_{nullptr}, simtBlockHead_{nullptr}, simdBlockHead_{nullptr}, sortedLen_{}, blockIdx_{}
 #endif
         {}
 

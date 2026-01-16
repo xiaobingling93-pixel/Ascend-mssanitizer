@@ -188,7 +188,7 @@ __aicore__ inline uint64_t AtomicCAS(__gm__ uint64_t *gmAddr, uint64_t compare, 
     return compare;
 }
 
-__aicore__ inline uint32_t AtomicExch(__gm__ uint32_t *gmAddr, uint32_t val)
+__aicore__ inline uint64_t AtomicExch(__gm__ uint64_t *gmAddr, uint64_t val)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(SIMT_MODE)

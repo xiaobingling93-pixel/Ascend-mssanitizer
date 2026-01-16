@@ -105,7 +105,20 @@ TEST(SimtLoadStoreInstructions, dump_simt_red_with_initcheck_expect_get_success)
     head.supportSimt = true;
     head.simtInfo.offset = 1024;
     head.simtInfo.threadByteSize = 1024 * 10;
+    head.simtInfo.shadowMemoryOffset = 1024 * 1024 * 8;
+    head.simtInfo.shadowMemoryByteSize = 1024 * 1024 * 8;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    ShadowMemoryHeapHead smHeapHead;
+    smHeapHead.startAddr = reinterpret_cast<uint64_t>(memInfo.data()) + sizeof(RecordGlobalHead) +
+        head.simtInfo.shadowMemoryOffset + sizeof(ShadowMemoryHeapHead);
+    smHeapHead.size = head.simtInfo.shadowMemoryByteSize > sizeof(ShadowMemoryHeapHead) ?
+        head.simtInfo.shadowMemoryByteSize - sizeof(ShadowMemoryHeapHead) : 0U;
+    smHeapHead.current = smHeapHead.startAddr;
+    smHeapHead.lock = 0U;
+    std::copy_n(reinterpret_cast<uint8_t const*>(&smHeapHead), sizeof(ShadowMemoryHeapHead),
+        memInfo.data() + sizeof(RecordGlobalHead) + head.simtInfo.shadowMemoryByteSize);
+
     __sanitizer_report_red_g_u32(memInfo.data(), 0x1000, 0, 0x10000);
     __sanitizer_report_red_g_s32(memInfo.data(), 0x1000, 0, 0x10000);
     __sanitizer_report_red_g_fp16(memInfo.data(), 0x1000, 0, 0x10000);
@@ -132,7 +145,20 @@ TEST(SimtLoadStoreInstructions, dump_simt_atom_with_initcheck_expect_get_success
     head.supportSimt = true;
     head.simtInfo.offset = 1024;
     head.simtInfo.threadByteSize = 1024 * 10;
+    head.simtInfo.shadowMemoryOffset = 1024 * 1024 * 8;
+    head.simtInfo.shadowMemoryByteSize = 1024 * 1024 * 8;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    ShadowMemoryHeapHead smHeapHead;
+    smHeapHead.startAddr = reinterpret_cast<uint64_t>(memInfo.data()) + sizeof(RecordGlobalHead) +
+        head.simtInfo.shadowMemoryOffset + sizeof(ShadowMemoryHeapHead);
+    smHeapHead.size = head.simtInfo.shadowMemoryByteSize > sizeof(ShadowMemoryHeapHead) ?
+        head.simtInfo.shadowMemoryByteSize - sizeof(ShadowMemoryHeapHead) : 0U;
+    smHeapHead.current = smHeapHead.startAddr;
+    smHeapHead.lock = 0U;
+    std::copy_n(reinterpret_cast<uint8_t const*>(&smHeapHead), sizeof(ShadowMemoryHeapHead),
+        memInfo.data() + sizeof(RecordGlobalHead) + head.simtInfo.shadowMemoryByteSize);
+
     __sanitizer_report_atom_max_s_s32(memInfo.data(), 0x1000, 0, 0x10000);
     __sanitizer_report_atom_min_s_s32(memInfo.data(), 0x1000, 0, 0x10000);
     __sanitizer_report_atom_add_s_s32(memInfo.data(), 0x1000, 0, 0x10000);
