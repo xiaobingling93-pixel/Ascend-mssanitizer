@@ -120,6 +120,7 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::MOV_UB_TO_UB,                "MOV_UB_TO_UB"},
     {RecordType::MOV_CBUF_TO_BT,              "MOV_CBUF_TO_BT"},
     {RecordType::MOV_CBUF_TO_FB,              "MOV_CBUF_TO_FB"},
+    {RecordType::SHADOW_MEMORY,               "SHADOW_MEMORY"},
 };
 
 std::ostream &operator<<(std::ostream &os, RecordType recordType)
@@ -1365,7 +1366,8 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::MOV_UB_TO_L1,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1UbRecord; }},
     {RecordType::MOV_UB_TO_UB,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1UbRecord; }},
     {RecordType::MOV_CBUF_TO_BT,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1BtRecord; }},
-    {RecordType::MOV_CBUF_TO_FB,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1FbRecord; }}
+    {RecordType::MOV_CBUF_TO_FB,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1FbRecord; }},
+    {RecordType::SHADOW_MEMORY,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.shadowMemoryRecord; }}
 };
 
 std::ostream &operator<<(std::ostream &os, KernelRecord const &record)
@@ -1532,6 +1534,15 @@ std::ostream &operator<<(std::ostream &os, MovL1FbRecord const &record)
               << ");" << "nburst:" << record.nBurst
               << ";" << "lenburst:" << record.lenBurst
               << ";" << "dstmemblock:" << static_cast<uint32_t>(record.dstMemBlock);
+}
+
+std::ostream &operator<<(std::ostream &os, ShadowMemoryRecord const &record)
+{
+    return os << record.location << ", " << record.threadLoc
+              << ";" << "space:" << record.space
+              << ";" << "addr:0x" << std::hex << record.addr << std::dec
+              << ";" << "size:" << record.size
+              << ";" << "type:" << record.opType;
 }
 
 }  // namespace Sanitizer

@@ -30,6 +30,7 @@ public:
     void ParseSimtRecord(std::vector<KernelRecord> &kernelRecords);
     void PrintCacheSizeLog(uint64_t totalSize);
     bool NextSimd(KernelRecord &kernelRecord);
+    void ParseShadowMemoryRecord(std::vector<KernelRecord> &kernelRecords);
 
     uint64_t GetTotalBlockDim();
 
@@ -40,6 +41,7 @@ private:
     RecordGlobalHead recordGlobalHead_ {};
     RecordBlockHead simdRecordHead_ {};
     SimtRecordBlockHead const *simtRecordHead_ {};
+    ShadowMemoryRecordHead const *shadowMemoryHead_ {};
     uint8_t const *simdRecords_ {};
     uint8_t const *simtRecords_ {};
     uint64_t simdOffset_ {};

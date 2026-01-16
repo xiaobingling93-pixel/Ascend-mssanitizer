@@ -217,6 +217,12 @@ void HandleKernelBlock(
             sanitizerRecord.payload.kernelRecord = record;
             checker.Do(sanitizerRecord);
         }
+        std::vector<KernelRecord> smRecords;
+        kernelBlock->ParseShadowMemoryRecord(smRecords);
+        for (const auto &record : smRecords) {
+            sanitizerRecord.payload.kernelRecord = record;
+            checker.Do(sanitizerRecord);
+        }
     }
 
     // report block finish

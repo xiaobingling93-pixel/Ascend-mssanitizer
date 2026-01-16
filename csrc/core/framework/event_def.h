@@ -81,6 +81,7 @@ struct MemOpInfo {
     uint32_t repeatStride;
     // 对齐大小，由内存检测引入
     uint16_t alignSize;
+    bool ignoreIllegalCheck;
 };
 
 struct SyncOpInfo {

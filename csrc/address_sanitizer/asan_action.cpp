@@ -147,7 +147,7 @@ ErrorMsgList AsanLoad::doAction(ShadowMemory& shadowMemory, BoundsCheck &boundsC
                                 bool ignoreShadowMemory)
 {
     ErrorMsgList errorMsgs;
-    if (config.memCheck) {
+    if (config.memCheck && !record_.ignoreIllegalCheck) {
         ErrorMsg msg = boundsCheck.Check(record_.dstSpace, record_.dstAddr, record_.memSize);
         if (msg.isError) {
             msg.SetType(MemErrorType::ILLEGAL_ADDR_READ, record_.dstSpace, msg.auxData.badAddr.addr);
@@ -173,7 +173,7 @@ ErrorMsgList AsanStore::doAction(ShadowMemory& shadowMemory, BoundsCheck &bounds
                                  bool ignoreShadowMemory)
 {
     ErrorMsgList errorMsgs;
-    if (config.memCheck) {
+    if (config.memCheck && !record_.ignoreIllegalCheck) {
         ErrorMsg msg = boundsCheck.Check(record_.dstSpace, record_.dstAddr, record_.memSize);
         if (msg.isError) {
             msg.SetType(MemErrorType::ILLEGAL_ADDR_WRITE, record_.dstSpace, msg.auxData.badAddr.addr);

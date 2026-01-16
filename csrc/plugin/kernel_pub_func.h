@@ -132,7 +132,7 @@ __aicore__ inline uint16_t GetThreadId()
     return 0;
 }
 
-/// 把threadId按三位展开为(x,y,z)
+/// 把threadId按三维展开为(x,y,z)
 __aicore__ inline void DecomposeThreadId(uint16_t threadId, uint16_t &x, uint16_t &y, uint16_t &z)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1

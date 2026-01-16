@@ -3471,6 +3471,24 @@ static void ParseVbs32A5(const KernelRecord &record, std::vector<SanEvent> &even
     events.emplace_back(event);
 }
 
+static void ParseRecordShadowMemory(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto& smRecord = record.payload.shadowMemoryRecord;
+    SanEvent event{};
+    auto& memInfo = event.eventInfo.memInfo;
+    SetLocationInfo(event, smRecord, record.blockType, record.serialNo);
+    event.type = EventType::MEM_EVENT;
+    event.pipe = PipeType::PIPE_S;
+    memInfo.memType = FormatConverter::AddrSpaceToMemType(smRecord.space);
+    memInfo.opType = smRecord.opType == MemOpType::LOAD ? AccessType::READ : AccessType::WRITE;
+    memInfo.repeatTimes = 1;
+    memInfo.blockNum = 1;
+    memInfo.addr = smRecord.addr;
+    memInfo.blockSize = smRecord.size;
+    memInfo.ignoreIllegalCheck = true;
+    events.emplace_back(event);
+}
+
 using ParseFunc = std::function<void (const KernelRecord &record, std::vector<SanEvent> &events)>;
 const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::LOAD, ParseScalarOpRecord},
@@ -3558,6 +3576,7 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::MOV_UB_TO_UB, ParseRecordMovUb2Ub},
     {RecordType::MOV_CBUF_TO_BT, ParseRecordMovCbuf2Bt},
     {RecordType::MOV_CBUF_TO_FB, ParseRecordMovCbuf2Fb},
+    {RecordType::SHADOW_MEMORY, ParseRecordShadowMemory},
 };
 
 void RecordParse::DfsSrcGraph(PipeType targetPipe, std::unordered_set<PipeType> &visited)

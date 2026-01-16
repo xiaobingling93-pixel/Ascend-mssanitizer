@@ -54,6 +54,18 @@ inline bool ParseRecordByType(uint8_t const *ptr, Record &record, uint64_t &reco
     return true;
 }
 
+inline void ParseShadowMemoryType(ShadowMemoryRecord const *smRecord, KernelRecord &kernelRecord,
+    std::vector<KernelRecord> &kernelRecords, uint64_t recordCount)
+{
+    for (size_t i = 0; i < recordCount; ++i) {
+        kernelRecord.serialNo = RuntimeContext::Instance().serialNo_;
+        kernelRecord.payload.shadowMemoryRecord = smRecord[i];
+        CalRecordPc(kernelRecord.payload.shadowMemoryRecord);
+        kernelRecords.push_back(kernelRecord);
+        ++RuntimeContext::Instance().serialNo_;
+    }
+}
+
 inline bool ParseMemErrorType(uint8_t const *ptr, KernelErrorRecord &errorRecord, uint64_t &recordSize)
 {
     errorRecord = *static_cast<KernelErrorRecord const *>(static_cast<void const *>(ptr));
@@ -367,6 +379,11 @@ bool ParseRecord(RecordType recordType, uint8_t const *record, KernelRecord &ker
     }
 }
 
+inline uint64_t GetAllThreadSize(RecordGlobalHead const &globalHead)
+{
+    return (globalHead.simtInfo.threadByteSize + sizeof(SimtRecordBlockHead)) * SIMT_THREAD_MAX_SIZE;
+}
+
 } // namespace [Dummy]
 
 namespace Sanitizer {
@@ -402,6 +419,8 @@ std::unique_ptr<KernelBlock> KernelBlock::CreateKernelBlock(uint8_t const *memIn
     kernelBlock->simdRecords_ = memInfo + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
     kernelBlock->simtRecordHead_ = reinterpret_cast<SimtRecordBlockHead const*>(
         kernelBlock->simdRecords_ + simdRecordHead->writeOffset);
+    kernelBlock->shadowMemoryHead_ = reinterpret_cast<ShadowMemoryRecordHead const*>(
+        kernelBlock->simdRecords_ + simdRecordHead->writeOffset + GetAllThreadSize(*recordGlobalHead));
     kernelBlock->blockIdx_ = blockIdx;
     if (blockIdx == 0) {
         KernelBlock::totalBlockDim_ = recordGlobalHead->kernelInfo.totalBlockDim;
@@ -490,6 +509,24 @@ void KernelBlock::ParseSimtRecord(std::vector<KernelRecord> &kernelRecords)
         uint64_t totalSize = extendCacheSize_ + recordGlobalHead_.checkParms.cacheSize;
         PrintCacheSizeLog(totalSize);
     }
+}
+
+void KernelBlock::ParseShadowMemoryRecord(std::vector<KernelRecord> &kernelRecords)
+{
+    if (shadowMemoryHead_->recordCount == 0) {
+        return;
+    }
+
+    auto recordType = static_cast<const RecordType>(shadowMemoryHead_->type);
+    if (recordType != RecordType::SHADOW_MEMORY) {
+        return;
+    }
+
+    KernelRecord kernelRecord{};
+    kernelRecord.blockType = this->simdRecordHead_.blockInfo.blockType;
+    kernelRecord.recordType = recordType;
+    auto smRecord = reinterpret_cast<ShadowMemoryRecord const*>(shadowMemoryHead_ + 1);
+    ParseShadowMemoryType(smRecord, kernelRecord, kernelRecords, shadowMemoryHead_->recordCount);
 }
 
 void KernelBlock::PrintCacheSizeLog(uint64_t totalSize)

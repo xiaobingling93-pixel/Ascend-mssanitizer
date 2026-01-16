@@ -100,6 +100,13 @@ constexpr uint64_t SHADOW_MEM_MIN_BYTE_SIZE = 12 * 1024 * 1024;
 // 非法的地址信息
 constexpr uint64_t ILLEGAL_ADDR = 0xFFFFFFFFFFFFFFFFULL;
 
+// gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
+constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
+// 片上内存建模地址范围0 ~ 0xF FFFF FFFF (36 bits)
+constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
+// 用于标记GM上定义的数据来源于host
+constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+
 enum class RecordType : uint32_t {
     LOAD = 0,
     STORE,
@@ -202,6 +209,7 @@ enum class RecordType : uint32_t {
     SIMT_ST,
     SIMT_ATOM,
     SIMT_RED,
+    SHADOW_MEMORY = 40010,
     SIMT_END = 50000,
 
    /// online检测对应的错误类型
@@ -538,6 +546,10 @@ struct KernelInfo {
 
 /// 该结构体主要包含当前block包含的信息，保存在每个核的头部
 struct BlockInfo {
+    uint16_t blockId{};
+    uint16_t threadXDim{};
+    uint16_t threadYDim{};
+    uint16_t threadZDim{};
     BlockType blockType{};                            // 当前block的类型，代表当前核记录的信息属于VEC还是CUBE
     uint8_t vecSubBlockDim{};                         // 当前算子一个blockDim使用的vec核心数，保存在每个核的头部
 };
@@ -1657,6 +1669,20 @@ struct SimtAtomRecord {
     SimtAtomMode option;
 };
 
+struct ShadowMemoryRecordHead {
+    uint32_t type = static_cast<uint32_t>(RecordType::SHADOW_MEMORY);
+    uint64_t recordCount;
+};
+
+struct ShadowMemoryRecord {
+    uint64_t addr;
+    uint64_t size;
+    Location location;
+    SimtThreadLocation threadLoc;
+    AddressSpace space;
+    MemOpType opType;
+};
+
 enum class KernelErrorType : uint8_t {
     ILLEGAL_ADDR_WRITE = 0U,
     ILLEGAL_ADDR_READ,
@@ -1756,6 +1782,7 @@ struct KernelRecord {
         MovL1FbRecord movL1FbRecord;
         Vbs32Record vbs32Record;
         Vms4v2RecordA5 vms4V2RecordA5;
+        ShadowMemoryRecord shadowMemoryRecord;
     } payload;
 };
 
@@ -1822,13 +1849,15 @@ struct MemOpRecord {
     MemOpSide side;
     uint64_t paramsNo;
     uint64_t rootAddr; // 当前host侧的内存记录对应归属地址，用于关联mstx heap和region
+    bool ignoreIllegalCheck;
 
     MemOpRecord() = default;
 
     explicit MemOpRecord(const HostMemRecord &record)
         : serialNo{0}, type{record.type}, coreId{}, moduleId{}, srcAddr{record.srcAddr}, dstAddr{record.dstAddr},
         srcSpace{}, dstSpace{}, memSize(record.memSize), lineNo{}, fileName{}, blockType{}, pc{},
-        infoSrc{record.infoSrc}, infoDesc{record.infoDesc}, side{}, paramsNo{record.paramsNo}, rootAddr{record.rootAddr}
+        infoSrc{record.infoSrc}, infoDesc{record.infoDesc}, side{}, paramsNo{record.paramsNo},
+        rootAddr{record.rootAddr}, ignoreIllegalCheck{}
     {}
 };
 
