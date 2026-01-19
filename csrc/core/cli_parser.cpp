@@ -457,6 +457,9 @@ std::string GetFuncInjectionRevision()
     }
 
     Path injectionPath = exePath.Parent().Parent() / Path("lib64/libmssanitizer_injection.so");
+    if (!injectionPath.PathCanonicalize().Exists()) {
+        return revision;
+    }
     void *handle = dlopen(injectionPath.PathCanonicalize().ToString().c_str(), RTLD_NOW | RTLD_GLOBAL);
     if (handle == nullptr) {
         return revision;
