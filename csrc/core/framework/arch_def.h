@@ -58,21 +58,51 @@ enum class MemType : uint8_t {
 
 enum class DeviceType : uint32_t {
     ASCEND_910_PREMIUM_A = 0U,
+
+    ASCEND_910B_START,
     ASCEND_910B1,
     ASCEND_910B2,
     ASCEND_910B3,
     ASCEND_910B4,
+    ASCEND_910B_END,
+
     ASCEND_310P,
-    ASCEND_910_950z, // start of 910_95 enum, all 910_95 chip type enum should be in range below
+
+    ASCEND_910_95_START = 10,
+    ASCEND_910_950z,
+    ASCEND_910_950x,
+    ASCEND_910_950y,
+    ASCEND_910_9571,
+    ASCEND_910_9572,
+    ASCEND_910_9573,
+    ASCEND_910_9574,
+    ASCEND_910_9575,
+    ASCEND_910_9576,
+    ASCEND_910_9577 = 20,
+    ASCEND_910_9578,
     ASCEND_910_9579,
     ASCEND_910_957b,
+    ASCEND_910_957c,
     ASCEND_910_957d,
     ASCEND_910_9581,
+    ASCEND_910_9582,
+    ASCEND_910_9583,
+    ASCEND_910_9584,
+    ASCEND_910_9585 = 30,
+    ASCEND_910_9586,
+    ASCEND_910_9587,
+    ASCEND_910_9588,
     ASCEND_910_9589,
     ASCEND_910_958a,
     ASCEND_910_958b,
-    ASCEND_910_9599, // end of 910_95 enum
-    INVALID = 0xFF,
+    ASCEND_910_9591,
+    ASCEND_910_9592,
+    ASCEND_910_9595,
+    ASCEND_910_9596 = 40,
+    ASCEND_910_9599,
+    ASCEND_910_95_END,
+
+    INVALID = 0xFFFFFFFFU,
 };
 
 enum class KernelType : uint8_t {

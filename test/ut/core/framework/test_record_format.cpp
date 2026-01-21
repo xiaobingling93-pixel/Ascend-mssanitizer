@@ -71,7 +71,7 @@ TEST(RecordFormat, format_device_info_summary_expect_return_correct_result)
     std::stringstream ss;
     ss << deviceInfoSummary;
     auto const &format = ss.str();
-    ASSERT_EQ(format, std::string("[summary] device:1"));
+    ASSERT_EQ(format, std::string("[summary] device:2"));
 }
 
 TEST(RecordFormat, format_location_expect_return_correct_result)
