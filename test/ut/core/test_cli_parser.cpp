@@ -743,7 +743,7 @@ TEST(CliParser, pass_long_kernel_name_expect_error)
     ASSERT_NE(capture.find("--kernel-name param is invalid."), std::string::npos);
 }
 
-TEST(CliParser, no_set_call_full_stack_parameter_expect_get_call_full_stack_false)
+TEST(CliParser, no_set_full_backtrace_parameter_expect_get_full_backtrace_false)
 {
     std::vector<const char*> argv = {
         "asan"
@@ -754,11 +754,11 @@ TEST(CliParser, no_set_call_full_stack_parameter_expect_get_call_full_stack_fals
     ASSERT_FALSE(cmd.config.isPrintFullStack);
 }
  
-TEST(CliParser, set_call_full_stack_parameter_expect_get_call_full_stack_true)
+TEST(CliParser, set_full_backtrace_parameter_expect_get_full_backtrace_true)
 {
     std::vector<const char*> argv = {
         "asan",
-        "--full-call-stack"
+        "--full-backtrace=yes"
     };
  
     CliParser cliParser;

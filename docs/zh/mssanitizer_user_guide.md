@@ -339,113 +339,18 @@ mssanitizer <options> -- <user_program> <user_options>
 
 **表 1**  通用参数说明
 
-<a id="zh-cn_topic_0000001691887174_table716213104506"></a>
-<table><thead align="left"><tr id="zh-cn_topic_0000001691887174_row416221055015"><th class="cellrowborder" valign="top" width="16.29162916291629%" id="mcps1.2.5.1.1"><p id="zh-cn_topic_0000001691887174_p673142318355"><a id="zh-cn_topic_0000001691887174_p673142318355"></a><a id="zh-cn_topic_0000001691887174_p673142318355"></a>参数名称</p>
-</th>
-<th class="cellrowborder" valign="top" width="28.192819281928188%" id="mcps1.2.5.1.2"><p id="zh-cn_topic_0000001691887174_p973116234351"><a id="zh-cn_topic_0000001691887174_p973116234351"></a><a id="zh-cn_topic_0000001691887174_p973116234351"></a>参数描述</p>
-</th>
-<th class="cellrowborder" valign="top" width="45.21452145214521%" id="mcps1.2.5.1.3"><p id="zh-cn_topic_0000001691887174_p45281638123017"><a id="zh-cn_topic_0000001691887174_p45281638123017"></a><a id="zh-cn_topic_0000001691887174_p45281638123017"></a>参数取值</p>
-</th>
-<th class="cellrowborder" valign="top" width="10.3010301030103%" id="mcps1.2.5.1.4"><p id="zh-cn_topic_0000001691887174_p273132310358"><a id="zh-cn_topic_0000001691887174_p273132310358"></a><a id="zh-cn_topic_0000001691887174_p273132310358"></a>是否必选</p>
-</th>
-</tr>
-</thead>
-<tbody><tr id="zh-cn_topic_0000001691887174_row716251013503"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p95354431721"><a id="zh-cn_topic_0000001691887174_p95354431721"></a><a id="zh-cn_topic_0000001691887174_p95354431721"></a>-v，--version</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p0534184313219"><a id="zh-cn_topic_0000001691887174_p0534184313219"></a><a id="zh-cn_topic_0000001691887174_p0534184313219"></a>查询msSanitizer工具版本。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="zh-cn_topic_0000001691887174_p135291638143012"><a id="zh-cn_topic_0000001691887174_p135291638143012"></a><a id="zh-cn_topic_0000001691887174_p135291638143012"></a>-</p>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p195347431229"><a id="zh-cn_topic_0000001691887174_p195347431229"></a><a id="zh-cn_topic_0000001691887174_p195347431229"></a>否</p>
-</td>
-</tr>
-<tr id="zh-cn_topic_0000001691887174_row1414712217501"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p1533143327"><a id="zh-cn_topic_0000001691887174_p1533143327"></a><a id="zh-cn_topic_0000001691887174_p1533143327"></a>-t，--tool</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p1153210431020"><a id="zh-cn_topic_0000001691887174_p1153210431020"></a><a id="zh-cn_topic_0000001691887174_p1153210431020"></a>指定异常检测的子工具。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><a id="zh-cn_topic_0000001691887174_ul1731023513299"></a><a id="zh-cn_topic_0000001691887174_ul1731023513299"></a><ul id="zh-cn_topic_0000001691887174_ul1731023513299"><li>memcheck：内存检测（默认）</li><li>racecheck：竞争检测</li><li>initcheck：未初始化检测</li><li>synccheck：同步检测</li></ul>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p14531164317212"><a id="zh-cn_topic_0000001691887174_p14531164317212"></a><a id="zh-cn_topic_0000001691887174_p14531164317212"></a>否</p>
-</td>
-</tr>
-<tr id="zh-cn_topic_0000001691887174_row1836111103527"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p5531843020"><a id="zh-cn_topic_0000001691887174_p5531843020"></a><a id="zh-cn_topic_0000001691887174_p5531843020"></a>--log-file</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p145304430218"><a id="zh-cn_topic_0000001691887174_p145304430218"></a><a id="zh-cn_topic_0000001691887174_p145304430218"></a>指定检测报告输出到文件。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="zh-cn_topic_0000001691887174_p1152915387303"><a id="zh-cn_topic_0000001691887174_p1152915387303"></a><a id="zh-cn_topic_0000001691887174_p1152915387303"></a><em id="zh-cn_topic_0000001691887174_i3714238385"><a id="zh-cn_topic_0000001691887174_i3714238385"></a><a id="zh-cn_topic_0000001691887174_i3714238385"></a>{file_name}</em>，如配置为test_log。</p>
-<div class="note" id="note8224113301418"><a id="note8224113301418"></a><a id="note8224113301418"></a><span class="notetitle"> 说明： </span><div class="notebody"><a id="ul1696101642916"></a><a id="ul1696101642916"></a><ul id="ul1696101642916"><li>仅支持数字、大小写字母和- . / _四种符号。</li><li>为避免日志泄漏风险，建议限制该文件权限，确保只有授权人员才能访问该文件。</li><li>工具会以覆盖的方式将报告输出到test_log文件。若test_log文件中已有内容，这些内容将会被清空。因此，建议指定一个空文件用于输出报告。</li></ul>
-</div></div>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p8530164319218"><a id="zh-cn_topic_0000001691887174_p8530164319218"></a><a id="zh-cn_topic_0000001691887174_p8530164319218"></a>否</p>
-</td>
-</tr>
-<tr id="zh-cn_topic_0000001691887174_row198351923195014"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p1352911431927"><a id="zh-cn_topic_0000001691887174_p1352911431927"></a><a id="zh-cn_topic_0000001691887174_p1352911431927"></a>--log-level</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p205291843727"><a id="zh-cn_topic_0000001691887174_p205291843727"></a><a id="zh-cn_topic_0000001691887174_p205291843727"></a>指定检测报告输出等级。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><a id="zh-cn_topic_0000001691887174_ul984794133116"></a><a id="zh-cn_topic_0000001691887174_ul984794133116"></a><ul id="zh-cn_topic_0000001691887174_ul984794133116"><li>info：输出info/warn/error级别的运行信息。</li><li>warn：输出warn/error级别的运行信息（默认）。</li><li>error：输出error级别的运行信息。</li></ul>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p15528184311216"><a id="zh-cn_topic_0000001691887174_p15528184311216"></a><a id="zh-cn_topic_0000001691887174_p15528184311216"></a>否</p>
-</td>
-</tr>
-<tr id="zh-cn_topic_0000001691887174_row108059385438"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p1280663810438"><a id="zh-cn_topic_0000001691887174_p1280663810438"></a><a id="zh-cn_topic_0000001691887174_p1280663810438"></a>--max-debuglog-size</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p780633874315"><a id="zh-cn_topic_0000001691887174_p780633874315"></a><a id="zh-cn_topic_0000001691887174_p780633874315"></a>指定检测工具调试输出日志中单个文件大小的上限。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="zh-cn_topic_0000001691887174_p118672241444"><a id="zh-cn_topic_0000001691887174_p118672241444"></a><a id="zh-cn_topic_0000001691887174_p118672241444"></a>可设定范围为1~10240之间的整数，单位为MB。</p>
-<p id="zh-cn_topic_0000001691887174_p4806193812437"><a id="zh-cn_topic_0000001691887174_p4806193812437"></a><a id="zh-cn_topic_0000001691887174_p4806193812437"></a>默认值为1024。</p>
-<div class="note" id="zh-cn_topic_0000001691887174_note13493162131412"><a id="zh-cn_topic_0000001691887174_note13493162131412"></a><a id="zh-cn_topic_0000001691887174_note13493162131412"></a><span class="notetitle"> 说明： </span><div class="notebody"><p id="zh-cn_topic_0000001691887174_p6492921140"><a id="zh-cn_topic_0000001691887174_p6492921140"></a><a id="zh-cn_topic_0000001691887174_p6492921140"></a>--max-debuglog-size=100就表示单个调试日志的大小上限为100MB。</p>
-</div></div>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p280613824316"><a id="zh-cn_topic_0000001691887174_p280613824316"></a><a id="zh-cn_topic_0000001691887174_p280613824316"></a>否</p>
-</td>
-</tr>
-<tr id="row1214017494402"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="p1614064934020"><a id="p1614064934020"></a><a id="p1614064934020"></a>--block-id</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="p1140124914408"><a id="p1140124914408"></a><a id="p1140124914408"></a>是否启用单block检测功能。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="p18850198175119"><a id="p18850198175119"></a><a id="p18850198175119"></a>可设定范围为0~200之间的整数。</p>
-<p id="p128818281300"><a id="p128818281300"></a><a id="p128818281300"></a>启用前</p>
-<a id="ul769232812212"></a><a id="ul769232812212"></a><ul id="ul769232812212"><li>内存检测、未初始化检测和同步检测：默认检测所有block。</li><li>竞争检测：核间默认检测所有block，核内默认检测block 0的流水内及流水间的竞争。</li></ul>
-<p id="p1342449143014"><a id="p1342449143014"></a><a id="p1342449143014"></a>启用后</p>
-<a id="ul71232710311"></a><a id="ul71232710311"></a><ul id="ul71232710311"><li>内存检测、未初始化检测和同步检测：检测指定block。</li><li>竞争检测：核间不进行检测，检测指定block的流水内及流水间的竞争。</li></ul>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="p6141124934010"><a id="p6141124934010"></a><a id="p6141124934010"></a>否</p>
-</td>
-</tr>
-<tr id="row1269152614213"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="p4269126164214"><a id="p4269126164214"></a><a id="p4269126164214"></a>--cache-size</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="p126972615425"><a id="p126972615425"></a><a id="p126972615425"></a>表示单block的GM内存大小。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="p982825154816"><a id="p982825154816"></a><a id="p982825154816"></a>单block可设定范围为1~8192之间的整数，单位为MB。</p>
-<p id="p489055444517"><a id="p489055444517"></a><a id="p489055444517"></a>单block默认值为100MB，表示单block可申请100MB的内存大小。</p>
-<div class="note" id="note515513013497"><a id="note515513013497"></a><a id="note515513013497"></a><span class="notetitle"> 说明： </span><div class="notebody"><a id="ul5228342112819"></a><a id="ul5228342112819"></a><ul id="ul5228342112819"><li>启用单block检测时，--cache-size的最大值为8192MB。不启用单block检测时，--cache-size可设置的最大值为(24*1024 / block数量) 。</li><li>当--cache-size值不满足需求时，异常检测工具将会打印信息提示用户重新设置--cache-size值，具体请参见《</a><a herf="./faq">MindStudio Sanitizier常见问题</a>》中的msSanitizer工具提示--cache-size异常。</li></ul>
-</div></div>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="p3931136104516"><a id="p3931136104516"></a><a id="p3931136104516"></a>否</p>
-</td>
-</tr>
-<tr id="row7583545143415"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="p10636154010241"><a id="p10636154010241"></a><a id="p10636154010241"></a>--kernel-name</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="p18490162020510"><a id="p18490162020510"></a><a id="p18490162020510"></a>指定要检测的算子名称。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="p964634513613"><a id="p964634513613"></a><a id="p964634513613"></a>支持使用算子名中的部分字符串来进行模糊匹配。如果不指定，则系统默认会对整个程序执行期间所调度的所有算子进行检测。</p>
-<p id="p49083813355"><a id="p49083813355"></a><a id="p49083813355"></a>例如，需要同时检测名为"abcd"和"bcd"的算子时，可以通过配置--kernel-name="bc"来实现这一需求，系统会自动识别并检测所有包含"bc"字符串的算子。</p>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="p1589911153513"><a id="p1589911153513"></a><a id="p1589911153513"></a>否</p>
-</td>
-</tr>
-<tr id="zh-cn_topic_0000001691887174_row12142122533919"><td class="cellrowborder" valign="top" width="16.29162916291629%" headers="mcps1.2.5.1.1 "><p id="zh-cn_topic_0000001691887174_p151431525113919"><a id="zh-cn_topic_0000001691887174_p151431525113919"></a><a id="zh-cn_topic_0000001691887174_p151431525113919"></a>-h，--help</p>
-</td>
-<td class="cellrowborder" valign="top" width="28.192819281928188%" headers="mcps1.2.5.1.2 "><p id="zh-cn_topic_0000001691887174_p61431925113913"><a id="zh-cn_topic_0000001691887174_p61431925113913"></a><a id="zh-cn_topic_0000001691887174_p61431925113913"></a>输出帮助信息。</p>
-</td>
-<td class="cellrowborder" valign="top" width="45.21452145214521%" headers="mcps1.2.5.1.3 "><p id="zh-cn_topic_0000001691887174_p1652915387302"><a id="zh-cn_topic_0000001691887174_p1652915387302"></a><a id="zh-cn_topic_0000001691887174_p1652915387302"></a>-</p>
-</td>
-<td class="cellrowborder" valign="top" width="10.3010301030103%" headers="mcps1.2.5.1.4 "><p id="zh-cn_topic_0000001691887174_p2143192515390"><a id="zh-cn_topic_0000001691887174_p2143192515390"></a><a id="zh-cn_topic_0000001691887174_p2143192515390"></a>否</p>
-</td>
-</tr>
-</tbody>
-</table>
+| 参数名称 | 参数描述 | 参数取值 | 是否必选 |
+| -- | -- | -- | -- |
+| -v，--version | 查询msSanitizer工具版本。| - | 否 |
+| -t，--tool | 指定异常检测的子工具。| <ul><li>memcheck：内存检测（默认）</li><li>racecheck：竞争检测</li><li>initcheck：未初始化检测</li><li>synccheck：同步检测</li></ul> | 否 |
+| --log-file | 指定检测报告输出到文件。| {file_name}，如配置为test_log。<br>说明：<ul><li>仅支持数字、大小写字母和- . / _四种符号。</li><li>为避免日志泄漏风险，建议限制该文件权限，确保只有授权人员才能访问该文件。</li><li>工具会以覆盖的方式将报告输出到test_log文件。若test_log文件中已有内容，这些内容将会被清空。因此，建议指定一个空文件用于输出报告。</li></ul> | 否 |
+| --log-level | 指定检测报告输出等级。| <ul><li>info：输出info/warn/error级别的运行信息。</li><li>warn：输出warn/error级别的运行信息（默认）。</li><li>error：输出error级别的运行信息。</li></ul> | 否 |
+| --max-debuglog-size | 指定检测工具调试输出日志中单个文件大小的上限。| 可设定范围为1~10240之间的整数，单位为MB。<br>默认值为1024。<br>说明：<br>--max-debuglog-size=100就表示单个调试日志的大小上限为100MB。| 否 |
+| --block-id | 是否启用单block检测功能。| 可设定范围为0~200之间的整数。<br>启用前<br><ul><li>内存检测、未初始化检测和同步检测：默认检测所有block。</li><li>竞争检测：核间默认检测所有block，核内默认检测block 0的流水内及流水间的竞争。</li></ul>启用后<br><ul><li>内存检测、未初始化检测和同步检测：检测指定block。</li><li>竞争检测：核间不进行检测，检测指定block的流水内及流水间的竞争。</li></ul> | 否 |
+| --cache-size | 表示单block的GM内存大小。| 单block可设定范围为1~8192之间的整数，单位为MB。<br>单block默认值为100MB，表示单block可申请100MB的内存大小。<br>说明：<br><ul><li>启用单block检测时，--cache-size的最大值为8192MB。不启用单block检测时，--cache-size可设置的最大值为(24*1024 / block数量) 。</li><li>当--cache-size值不满足需求时，异常检测工具将会打印信息提示用户重新设置--cache-size值，具体请参见《MindStudio Sanitizier常见问题》中的msSanitizer工具提示--cache-size异常。</li></ul> | 否 |
+| --kernel-name | 指定要检测的算子名称。| 支持使用算子名中的部分字符串来进行模糊匹配。如果不指定，则系统默认会对整个程序执行期间所调度的所有算子进行检测。<br>例如，需要同时检测名为"abcd"和"bcd"的算子时，可以通过配置--kernel-name="bc"来实现这一需求，系统会自动识别并检测所有包含"bc"字符串的算子。| 否 |
+| --full-backtrace | 显示 AscendC API 内的调用栈回溯 | <ul><li>yes</li><li>no（默认）</li></ul> | 否 |
+| -h，--help | 输出帮助信息。| - | 否 |
 
 **表 2**  内存检测参数说明
 

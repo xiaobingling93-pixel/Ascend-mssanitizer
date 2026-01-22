@@ -50,7 +50,7 @@ enum class OptVal : int32_t {
     MAX_DEBUGLOG_SIZE,
     BLOCK_ID,
     CACHE_SIZE,
-    FULL_CALL_STACK,
+    FULL_BACKTRACE,
     KERNEL_NAME,
 };
 
@@ -70,7 +70,7 @@ std::vector<option> GetLongOptArray()
         {"block-id", required_argument, nullptr, static_cast<int32_t>(OptVal::BLOCK_ID)},
         {"cache-size", required_argument, nullptr, static_cast<int32_t>(OptVal::CACHE_SIZE)},
         {"kernel-name", required_argument, nullptr, static_cast<int32_t>(OptVal::KERNEL_NAME)},
-        {"full-call-stack", no_argument, nullptr, static_cast<int32_t>(OptVal::FULL_CALL_STACK)},
+        {"full-backtrace", required_argument, nullptr, static_cast<int32_t>(OptVal::FULL_BACKTRACE)},
         {nullptr, 0, nullptr, 0},
     };
     return longOpts;
@@ -300,9 +300,17 @@ void ParseVersion(const std::string &param, UserCommand &userCommand)
     userCommand.printVersionInfo = true;
 }
 
-void ParseFullCallStack(const std::string &param, UserCommand &userCommand)
+void ParseFullBacktrace(const std::string &param, UserCommand &userCommand)
 {
-    userCommand.config.isPrintFullStack = true;
+    if (param == "yes") {
+        userCommand.config.isPrintFullStack = true;
+        SAN_BUFF_INFO_LOG("Set full-backtrace on");
+    } else if (param == "no") {
+        userCommand.config.isPrintFullStack = false;
+    } else {
+        std::cout << "[mssanitizer] ERROR: --full-backtrace param is invalid" << std::endl;
+        userCommand.printHelpInfo = true;
+    }
 }
 
 void ParseLeakCheckMode(const std::string &param, UserCommand &userCommand)
@@ -389,7 +397,7 @@ std::unordered_map<int32_t, ParseHandler>& GetCommandHandlers()
         {static_cast<int32_t>(OptVal::BLOCK_ID), ParseBlockId},
         {static_cast<int32_t>(OptVal::CACHE_SIZE), ParseCacheSize},
         {static_cast<int32_t>(OptVal::KERNEL_NAME), ParseKernelName},
-        {static_cast<int32_t>(OptVal::FULL_CALL_STACK), ParseFullCallStack}
+        {static_cast<int32_t>(OptVal::FULL_BACKTRACE), ParseFullBacktrace}
     };
 
     return handlers;
@@ -425,7 +433,7 @@ void ShowHelpInfo()
         "    -h --help            show this message" << std::endl <<
         "    -v --version         show version" << std::endl <<
         "    -t --tool=<name>     use the asan tool named <name> [memcheck|racecheck|initcheck|synccheck]" << std::endl <<
-        "    --full-call-stack    print the full call stack including Ascend C internal calls."  << std::endl <<
+        "    --full-backtrace     print the full backtrace including Ascend C internal calls."  << std::endl <<
         "    --log-file=<file>    log messages to <file>" << std::endl <<
         "    --log-level=<level>  set log level to <level> [warn]" << std::endl <<
         "    --max-debuglog-size=<size>" << std::endl <<
