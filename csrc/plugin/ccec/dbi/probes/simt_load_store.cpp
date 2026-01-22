@@ -229,6 +229,12 @@ SANITIZER_REPORT(simt_ldk_u8, uint64_t addr, int64_t offset)
                                                                            addr, offset);
 }
 
+SANITIZER_REPORT(simt_ldk_s8, uint64_t addr, int64_t offset)
+{
+    SimtRecordLoadStoreEvent<RecordType::SIMT_LDK, DetailedDataType::S8>(EXTRA_PARAMS, AddressSpace::PRIVATE,
+                                                                           addr, offset);
+}
+
 SANITIZER_REPORT(simt_ldk_u16, uint64_t addr, int64_t offset)
 {
     SimtRecordLoadStoreEvent<RecordType::SIMT_LDK, DetailedDataType::U16>(EXTRA_PARAMS, AddressSpace::PRIVATE,
@@ -244,6 +250,12 @@ SANITIZER_REPORT(simt_ldk_s16, uint64_t addr, int64_t offset)
 SANITIZER_REPORT(simt_ldk_b32, uint64_t addr, int64_t offset)
 {
     SimtRecordLoadStoreEvent<RecordType::SIMT_LDK, DetailedDataType::B32>(EXTRA_PARAMS, AddressSpace::PRIVATE,
+                                                                           addr, offset);
+}
+
+SANITIZER_REPORT(simt_stk_b8, uint64_t addr, int64_t offset)
+{
+    SimtRecordLoadStoreEvent<RecordType::SIMT_STK, DetailedDataType::B8>(EXTRA_PARAMS, AddressSpace::PRIVATE,
                                                                            addr, offset);
 }
 
@@ -642,6 +654,13 @@ SANITIZER_REPORT(simt_ldk_u8, uint64_t addr, int64_t offset)
     (void)offset;
 }
 
+
+SANITIZER_REPORT(simt_ldk_s8, uint64_t addr, int64_t offset)
+{
+    (void)addr;
+    (void)offset;
+}
+
 SANITIZER_REPORT(simt_ldk_u16, uint64_t addr, int64_t offset)
 {
     (void)addr;
@@ -655,6 +674,12 @@ SANITIZER_REPORT(simt_ldk_s16, uint64_t addr, int64_t offset)
 }
 
 SANITIZER_REPORT(simt_ldk_b32, uint64_t addr, int64_t offset)
+{
+    (void)addr;
+    (void)offset;
+}
+
+SANITIZER_REPORT(simt_stk_b8, uint64_t addr, int64_t offset)
 {
     (void)addr;
     (void)offset;

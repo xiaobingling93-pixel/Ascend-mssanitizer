@@ -38,6 +38,7 @@ function(compile_cce_object CCE_AICORE_ARCH SANITIZER_STUB_OBJECT SANITIZER_STUB
             "-xcce -std=c++17 -O2 --cce-aicore-only --cce-aicore-arch=${CCE_AICORE_ARCH} \
             -mllvm -cce-aicore-record-overflow=false \
             -mllvm -cce-aicore-record-stack-size=false \
+            -mllvm -cce-aicore-merge-function=false \
             -mllvm -cce-aicore-addr-transform -fPIC -pthread -DBUILD_DYNAMIC_PROBE"
       )
   endif()

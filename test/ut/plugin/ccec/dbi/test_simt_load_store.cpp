@@ -24,8 +24,6 @@
 #define BUILD_DYNAMIC_PROBE
 #define __NPU_ARCH__ 3101
 #include "plugin/ccec/dbi/probes/simt_load_store.cpp"
-#include "plugin/ccec/dbi/probes/simt_ldk_compiler_optimization.cpp"
-#include "plugin/ccec/dbi/probes/simt_stk_compiler_optimization.cpp"
 
 using namespace Sanitizer;
 

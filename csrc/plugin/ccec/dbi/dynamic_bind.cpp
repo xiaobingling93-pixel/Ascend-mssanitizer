@@ -226,9 +226,11 @@ std::vector<BindStub> bindStubs{
     {InstrType::SIMT_STS_B64, "__sanitizer_report_simt_sts_b64", {1, 2}},
     {InstrType::SIMT_STS_B128, "__sanitizer_report_simt_sts_b128", {1, 2}},
     {InstrType::SIMT_LDK_U8, "__sanitizer_report_simt_ldk_u8", {1, 2}},
+    {InstrType::SIMT_LDK_S8, "__sanitizer_report_simt_ldk_s8", {1, 2}},
     {InstrType::SIMT_LDK_U16, "__sanitizer_report_simt_ldk_u16", {1, 2}},
     {InstrType::SIMT_LDK_S16, "__sanitizer_report_simt_ldk_s16", {1, 2}},
     {InstrType::SIMT_LDK_B32, "__sanitizer_report_simt_ldk_b32", {1, 2}},
+    {InstrType::SIMT_STK_B8, "__sanitizer_report_simt_stk_b8", {1, 2}},
     {InstrType::SIMT_STK_B16, "__sanitizer_report_simt_stk_b16", {1, 2}},
     {InstrType::SIMT_STK_B32, "__sanitizer_report_simt_stk_b32", {1, 2}},
     {InstrType::SIMT_LD_U8, "__sanitizer_report_simt_ld_u8", {1, 2}},
@@ -276,14 +278,6 @@ std::vector<BindStub> bindStubs{
     {InstrType::RED_S_FP32, "__sanitizer_report_red_s_fp32", {0}},
     {InstrType::RED_S_BF16, "__sanitizer_report_red_s_bf16", {0}},
     /// simt_load_store.cpp end
-
-    /// simt_ldk_compiler_optimization.cpp start
-    {InstrType::SIMT_LDK_U8, "__sanitizer_report_simt_ldk_s8", {1, 2}},
-    /// simt_ldk_compiler_optimization.cpp end
-
-    /// simt_stk_compiler_optimization.cpp start
-    {InstrType::SIMT_STK_B8, "__sanitizer_report_simt_stk_b8", {1, 2}},
-    /// simt_stk_compiler_optimization.cpp end
 
     /// vector_instructions.cpp start
     {InstrType::MOVEVA, "__sanitizer_report_moveva", {0, 1, 2, 3}},
