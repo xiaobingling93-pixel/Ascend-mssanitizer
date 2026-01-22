@@ -329,7 +329,8 @@ __aicore__ inline bool Memcheck::UbReadWriteCheck(AddrInfo const &addrInfo, uint
 
     uint64_t addr = addrInfo.addr;
     uint64_t size = addrInfo.size;
-    uint32_t ubSize = globalHead_->deviceInfo.ubSize;
+    constexpr uint32_t systemUbSize = 8 * 1024U;
+    uint32_t ubSize = globalHead_->simtInfo.ubDynamicSize + systemUbSize;
     if (addr >= ubSize) {
         illegalSize = size;
     } else if (addr + size > ubSize) {

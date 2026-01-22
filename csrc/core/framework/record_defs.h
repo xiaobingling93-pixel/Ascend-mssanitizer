@@ -531,11 +531,6 @@ struct Register {
     uint64_t sprPaddingB;
 };
 
-/// 设备信息
-struct DeviceInfo {
-    uint32_t ubSize;
-};
-
 /// 该结构体主要包含当前kernel包含的信息
 struct KernelInfo {
     uint64_t totalBlockDim{};                         // 工具根据业务逻辑计算得到的blockDim
@@ -581,6 +576,7 @@ struct SimtInfo {
     uint64_t threadByteSize{};                        // 每个thread最多存储多少个字节
     uint64_t shadowMemoryOffset{};                    // shadow memory 起始偏移地址
     uint64_t shadowMemoryByteSize{};                  // shadow memory 最多使用多少字节
+    uint32_t ubDynamicSize{};
 };
 
 struct SimtRecordBlockHeadImpl {
@@ -598,7 +594,6 @@ struct RecordGlobalHeadImpl {
     CheckParmsInfo checkParms{};
     KernelInfo kernelInfo{};
     SimtInfo simtInfo{};
-    DeviceInfo deviceInfo{};
     bool supportSimt{false};                // 当前芯片类型是否支持simt
 };
 

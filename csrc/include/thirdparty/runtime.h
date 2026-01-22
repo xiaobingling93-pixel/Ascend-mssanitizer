@@ -199,7 +199,12 @@ typedef struct tagRtTaskCfgInfo {
     uint8_t qos;
     uint8_t partId;
     uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
-    uint8_t res[1]; // res
+    bool d2dCrossFlag;
+    uint32_t blockDimOffset;
+    uint8_t dumpflag;
+    uint8_t neverTimeout;
+    uint8_t res[2]; // res
+    uint32_t localMemorySize;
 } rtTaskCfgInfo_t;
 
 typedef struct DrvMemHandle {

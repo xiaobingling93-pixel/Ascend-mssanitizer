@@ -84,7 +84,7 @@ TEST(Memcheck, check_normal_simt_record_expect_success)
     uint64_t cacheSize = 10 * MB_TO_BYTES;
     std::vector<uint8_t> memInfo(cacheSize * blockDim, 0);
     RecordGlobalHead head{};
-    head.deviceInfo.ubSize = 253952UL;
+    head.simtInfo.ubDynamicSize = 253952UL;
     RecordBlockHead blockHead{};
     std::vector<HostMemoryInfo> hostmems;
     hostmems.push_back({0x100, 100});
