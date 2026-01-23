@@ -171,7 +171,9 @@ void AddressSanitizer::ConvertSanEventToMemOpRecords(const SanEvent &event,
         return;
     }
     auto& memInfo = event.eventInfo.memInfo;
-
+    if (memInfo.repeatTimes == 0) {
+        return;
+    }
     MemOpRecord record;
     record.ignoreIllegalCheck = memInfo.ignoreIllegalCheck;
     SetBasicMemInfo(record, event);
