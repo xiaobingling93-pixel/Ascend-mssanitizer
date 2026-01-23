@@ -56,6 +56,11 @@ inline bool HasSubBlocks(DeviceType deviceType)
     return false;
 }
 
+inline bool IsAscend95(DeviceType deviceType)
+{
+    return deviceType > DeviceType::ASCEND_910_95_START && deviceType < DeviceType::ASCEND_910_95_END;
+}
+
 /// 芯片内存信息，通过 ${ASCEND_HOME_PATH}/compiler/data/platform_config 路径获取
 const std::unordered_map<DeviceType, ChipInfo> CHIP_INFO_MAP = {
     {DeviceType::ASCEND_910_PREMIUM_A, {32U, 64 * KB_TO_BYTES, 64 * KB_TO_BYTES, 256 * KB_TO_BYTES, 1024 * KB_TO_BYTES,

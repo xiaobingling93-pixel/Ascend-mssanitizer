@@ -75,21 +75,27 @@ inline void Checker::WaitAfterConsumed(uint8_t consumeId)
 
 inline bool Checker::IsNeedFilterDbi(const SanitizerRecord &record, uint8_t toolIdx)
 {
-    /// host侧内存记录全部默认处理
+    // host侧内存记录全部默认处理
     if (record.version == RecordVersion::MEMORY_RECORD) {
         return false;
     }
 
-    /// 静态插桩默认处理
+    // 静态插桩默认处理
     if (!isKernelWithDBI_) {
         return false;
     }
 
-    /// 动态插桩不处理racecheck和synccheck
+    if (IsAscend95(this->deviceType_)) {
+        // 已全部改为动态插桩，都要处理
+        return false;
+    }
+
     if ((toolIdx == static_cast<uint8_t>(Sanitizer::ToolType::RACECHECK) && config_.raceCheck) ||
         (toolIdx == static_cast<uint8_t>(Sanitizer::ToolType::SYNCCHECK) && config_.syncCheck)) {
+        // A2/A3：动态插桩不处理racecheck和synccheck
         return true;
     }
+
     return false;
 }
 

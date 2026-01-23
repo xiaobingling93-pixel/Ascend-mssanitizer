@@ -66,6 +66,12 @@ ReturnType SinglePipeRaceAlgImpl::ProcessEvent(const SanEvent& event)
         case EventType::SYNC_EVENT:
             return ProcessSyncEvent(event);
         case EventType::MEM_EVENT:
+            if(IsAscend95(this->deviceType_)) {
+                // 硬件已经解决竞争问题，因此PIPE_V跳过处理
+                if (event.pipe == PipeType::PIPE_V) {
+                    return ReturnType::PROCESS_OK;
+                }
+            }
             return ProcessMemEvent(event);
         default:
             break;

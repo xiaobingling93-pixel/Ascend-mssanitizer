@@ -325,6 +325,8 @@ std::vector<BindStub> bindStubs{
     {InstrType::MAD_MX_E5M2_E5M2, "__sanitizer_report_mad_mx_e5m2_e5m2", {0, 1, 2, 3}},
     /// cube_instructions.cpp end
 
+    {InstrType::PIPE_BARRIER, "__sanitizer_report_pipe_barrier", {0}},
+
 };
 
 void MSBitAtInit()
