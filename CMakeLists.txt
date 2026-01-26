@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.13) # to support add_link_options
 project(sanitizers VERSION 1.0.0)
 set(CMAKE_SKIP_RPATH TRUE)
 
+# 启用编译命令导出，用于IDE代码导航（跳转到定义）
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 get_filename_component(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
 get_filename_component(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty ABSOLUTE)
 get_filename_component(JSON_INC ${THIRD_PARTY_DIR}/json/include/ ABSOLUTE)
