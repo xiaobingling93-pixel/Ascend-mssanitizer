@@ -99,6 +99,8 @@ bool IsEqual(PipeBarrierRecord const &lhs, PipeBarrierRecord const &rhs);
 bool IsEqual(LoadStoreRecord const &lhs, LoadStoreRecord const &rhs);
 bool IsEqual(FftsSyncRecord const &lhs, FftsSyncRecord const &rhs);
 bool IsEqual(WaitFlagDevRecord const &lhs, WaitFlagDevRecord const &rhs);
+bool IsEqual(WaitFlagDevPipeRecord const &lhs, WaitFlagDevPipeRecord const &rhs);
+bool IsEqual(IntraBlockSyncRecord const& lhs, IntraBlockSyncRecord const& rhs);
 bool IsEqual(VecRegPropCoordOpRecord const &lhs, VecRegPropCoordOpRecord const &rhs);
 bool IsEqual(SoftSyncRecord const& lhs, SoftSyncRecord const& rhs);
 bool IsEqual(MstxCrossRecord const& lhs, MstxCrossRecord const& rhs);

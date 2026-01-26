@@ -193,6 +193,12 @@ enum class RecordType : uint32_t {
     IB_SET_STUB,
     IB_WAIT_STUB,
     SYNC_ALL_STUB = 20010,
+    WAIT_FLAG_DEV_PIPE,
+    WAIT_FLAG_DEVI_PIPE,
+    SET_INTRA_BLOCK,
+    WAIT_INTRA_BLOCK,
+    SET_INTRA_BLOCKI,
+    WAIT_INTRA_BLOCKI,
     MSTX_STUB,
     SCATTERVNCHWCONV,
     SCATTERVNCHWCONV_A5,
@@ -1152,6 +1158,18 @@ struct WaitFlagDevRecord {
     uint8_t flagID;
 };
 
+struct WaitFlagDevPipeRecord {
+    Location location;
+    uint8_t flagID;
+    PipeType pipe;
+};
+
+struct IntraBlockSyncRecord {
+    Location location;
+    PipeType pipe;
+    uint64_t syncID;
+};
+
 enum class AddrCalMode {
     INC = 0,
     DEC = 1,
@@ -1761,6 +1779,8 @@ struct KernelRecord {
         FftsSyncRecord fftsSyncRecord;
         MstxRecord mstxRecord;
         WaitFlagDevRecord waitFlagDevRecord;
+        WaitFlagDevPipeRecord waitFlagDevPipeRecord;
+        IntraBlockSyncRecord intraBlockSyncRecord;
         AtomicModeRecord atomicModeRecord;
         Set2DRecord set2DRecord;
         CmpMaskRecord cmpMaskRecord;

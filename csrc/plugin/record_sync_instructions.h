@@ -139,7 +139,7 @@ __aicore__ inline void RecordFftsSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64
         return;
     }
 
-    if (!DoRaceCheck(memInfo)) {
+    if (!(DoRaceCheck(memInfo) || DoSyncCheck(memInfo))) {
         return;
     }
  
@@ -166,7 +166,7 @@ __aicore__ inline void RecordWaitFlagDevEvent(EXTRA_PARAMS_DEC, int64_t flagID)
         return;
     }
 
-    if (!DoRaceCheck(memInfo)) {
+    if (!(DoRaceCheck(memInfo) || DoSyncCheck(memInfo))) {
         return;
     }
 
@@ -179,9 +179,60 @@ __aicore__ inline void RecordWaitFlagDevEvent(EXTRA_PARAMS_DEC, int64_t flagID)
     record.location.pc = static_cast<uint64_t>(pc);
     record.location.blockId = blockIdx;
     record.flagID = flagID;
- 
+
     Recorder recorder(memInfo, blockIdx);
     recorder.DumpRecord<RecordType::WAIT_FLAG_DEV>(record);
+}
+
+template<RecordType recordType>
+__aicore__ inline void RecordWaitFlagDevEventWithPipe(EXTRA_PARAMS_DEC, pipe_t pipe, int64_t flagID)
+{
+    if (MemInfoIsInvalid(memInfo)) {
+        return;
+    }
+
+    if (!(DoRaceCheck(memInfo) || DoSyncCheck(memInfo))) {
+        return;
+    }
+
+    uint64_t blockIdx = GetBlockIdx();
+    WaitFlagDevPipeRecord record;
+#if !defined(BUILD_DYNAMIC_PROBE)
+    record.location.fileNo = fileNo;
+    record.location.lineNo = lineNo;
+#endif
+    record.location.pc = static_cast<uint64_t>(pc);
+    record.location.blockId = blockIdx;
+    record.flagID = flagID;
+    record.pipe = static_cast<PipeType>(pipe);
+ 
+    Recorder recorder(memInfo, blockIdx);
+    recorder.DumpRecord<recordType>(record);
+}
+
+template<RecordType recordType>
+__aicore__ inline void RecordIntraBlockSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64_t syncID)
+{
+    if (MemInfoIsInvalid(memInfo)) {
+        return;
+    }
+
+    if (!(DoRaceCheck(memInfo) || DoSyncCheck(memInfo))) {
+        return;
+    }
+ 
+    uint64_t blockIdx = GetBlockIdx();
+    IntraBlockSyncRecord record;
+#if !defined(BUILD_DYNAMIC_PROBE)
+    record.location.fileNo = fileNo;
+    record.location.lineNo = lineNo;
+#endif
+    record.location.pc = static_cast<uint64_t>(pc);
+    record.location.blockId = blockIdx;
+    record.pipe = static_cast<PipeType>(pipe);
+    record.syncID = syncID;
+    Recorder recorder(memInfo, blockIdx);
+    recorder.DumpRecord<recordType>(record);
 }
 
 __aicore__ inline void RecordSetAtomicEvent(EXTRA_PARAMS_DEC, AtomicMode mode)

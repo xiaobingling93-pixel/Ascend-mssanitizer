@@ -630,11 +630,20 @@ bool IsEqual(FftsSyncRecord const &lhs, FftsSyncRecord const &rhs)
         lhs.flagID == rhs.flagID;
 }
 
-bool IsEqual(WaitFlagDevRecord const &lhs, WaitFlagDevRecord const &rhs)
+bool IsEqual(WaitFlagDevRecord const& lhs, WaitFlagDevRecord const& rhs)
 {
     return
         lhs.location == rhs.location &&
         lhs.flagID == rhs.flagID;
+}
+
+bool IsEqual(WaitFlagDevPipeRecord const& lhs, WaitFlagDevPipeRecord const& rhs)
+{
+    return
+        lhs.location == rhs.location &&
+        lhs.pipe == rhs.pipe &&
+        lhs.flagID == rhs.flagID;
+
 }
 
 bool IsEqual(VecRegPropCoordOpRecord const &lhs, VecRegPropCoordOpRecord const &rhs)
@@ -836,6 +845,14 @@ bool IsEqual(MovL1FbRecord const& lhs, MovL1FbRecord const& rhs)
         lhs.srcStride == rhs.srcStride &&
         lhs.dstStride == rhs.dstStride &&
         lhs.dstMemBlock == rhs.dstMemBlock;
+}
+
+bool IsEqual(IntraBlockSyncRecord const& lhs, IntraBlockSyncRecord const& rhs)
+{
+    return
+        lhs.location == rhs.location &&
+        lhs.pipe == rhs.pipe &&
+        lhs.syncID == rhs.syncID;
 }
 
 }  // namespace Sanitizer

@@ -94,6 +94,12 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::PIPE_BARRIER,                "PIPE_BARRIER"},
     {RecordType::FFTS_SYNC,                   "FFTS_SYNC"},
     {RecordType::WAIT_FLAG_DEV,               "WAIT_FLAG_DEV"},
+    {RecordType::WAIT_FLAG_DEV_PIPE,          "WAIT_FLAG_DEV"},
+    {RecordType::WAIT_FLAG_DEVI_PIPE,         "WAIT_FLAG_DEVI"},
+    {RecordType::SET_INTRA_BLOCK,             "SET_INTRA_BLOCK"},
+    {RecordType::WAIT_INTRA_BLOCK,            "WAIT_INTRA_BLOCK"},
+    {RecordType::SET_INTRA_BLOCKI,            "SET_INTRA_BLOCKI"},
+    {RecordType::WAIT_INTRA_BLOCKI,           "WAIT_INTRA_BLOCKI"},
     {RecordType::SET_ATOMIC,                  "SET_ATOMIC"},
     {RecordType::IB_SET_STUB,                 "IB_SET_STUB"},
     {RecordType::IB_WAIT_STUB,                "IB_WAIT_STUB"},
@@ -767,7 +773,21 @@ std::ostream &operator<<(std::ostream &os, FftsSyncRecord const &record)
 std::ostream &operator<<(std::ostream &os, WaitFlagDevRecord const &record)
 {
     return os << record.location
-              << ", " << "flagid:" << static_cast<uint16_t>(record.flagID);
+              << ", flagid:" << static_cast<uint16_t>(record.flagID);
+}
+
+std::ostream &operator<<(std::ostream &os, WaitFlagDevPipeRecord const &record)
+{
+    return os << record.location
+              << ", PipeType:" << record.pipe
+              << ", flagid:" << static_cast<uint16_t>(record.flagID);
+}
+
+std::ostream &operator<<(std::ostream &os, IntraBlockSyncRecord const &record)
+{
+    return os << record.location
+              << ", " << "PipeType:" << record.pipe
+              << ", " << "syncid:" << record.syncID;
 }
 
 std::ostream &operator<<(std::ostream &os, AddrCalMode addrCalMode)
@@ -1342,6 +1362,12 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::PIPE_BARRIER,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.pipeBarrierRecord; }},
     {RecordType::FFTS_SYNC,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.fftsSyncRecord; }},
     {RecordType::WAIT_FLAG_DEV, [](std::ostream &os, KernelRecord const &r) { os << r.payload.waitFlagDevRecord; }},
+    {RecordType::WAIT_FLAG_DEV_PIPE, [](std::ostream &os, KernelRecord const &r) { os << r.payload.waitFlagDevPipeRecord; }},
+    {RecordType::WAIT_FLAG_DEVI_PIPE, [](std::ostream &os, KernelRecord const &r) { os << r.payload.waitFlagDevPipeRecord; }},
+    {RecordType::SET_INTRA_BLOCK, [](std::ostream &os, KernelRecord const &r) { os << r.payload.intraBlockSyncRecord; }},
+    {RecordType::WAIT_INTRA_BLOCK, [](std::ostream &os, KernelRecord const &r) { os << r.payload.intraBlockSyncRecord; }},
+    {RecordType::SET_INTRA_BLOCKI, [](std::ostream &os, KernelRecord const &r) { os << r.payload.intraBlockSyncRecord; }},
+    {RecordType::WAIT_INTRA_BLOCKI, [](std::ostream &os, KernelRecord const &r) { os << r.payload.intraBlockSyncRecord; }},
     {RecordType::SET_ATOMIC,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.atomicModeRecord; }},
     {RecordType::IB_SET_STUB,   [](std::ostream& os, KernelRecord const& r) { os << r.payload.softSyncRecord; }},
     {RecordType::IB_WAIT_STUB,  [](std::ostream& os, KernelRecord const& r) { os << r.payload.softSyncRecord; }},
