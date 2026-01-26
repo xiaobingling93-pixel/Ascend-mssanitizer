@@ -16,9 +16,15 @@
 
 
 #include "checker.h"
+#include <algorithm>
 #include <atomic>
+#include <iterator>
+#include <numeric>
+#include <ostream>
+#include <sstream>
 #include <thread>
 #include <iostream>
+#include <vector>
 
 #include "record_defs.h"
 #include "record_format.h"
@@ -31,6 +37,56 @@
 #include "utility/umask_guard.h"
 #include "utility/log.h"
 #include "utility/cpp_future.h"
+
+namespace {
+
+using namespace Sanitizer;
+
+enum class SanitizerTool : uint8_t {
+    MEMCHECK = 0, // 内存检测
+    RACECHECK,    // 竞争检测
+    INITCHECK,    // 同步检测
+    SYNCCHECK,    // 同步检测
+    SIZE,
+};
+
+std::ostream &operator<<(std::ostream &os, SanitizerTool tool)
+{
+    static const std::map<SanitizerTool, std::string> SANITIZER_TOOL_MAP = {
+        {SanitizerTool::MEMCHECK,  "memcheck"},
+        {SanitizerTool::RACECHECK, "racecheck"},
+        {SanitizerTool::INITCHECK, "initcheck"},
+        {SanitizerTool::SYNCCHECK, "synccheck"},
+    };
+
+    return FormatEnum(os, SANITIZER_TOOL_MAP, tool, "SanitizerTool");
+}
+
+std::vector<SanitizerTool> GetEnabledSanitizerTools(Config const &config)
+{
+    std::vector<SanitizerTool> tools;
+    tools.reserve(static_cast<std::size_t>(SanitizerTool::SIZE));
+    if (config.memCheck) {
+        tools.emplace_back(SanitizerTool::MEMCHECK);
+    }
+    if (config.raceCheck) {
+        tools.emplace_back(SanitizerTool::RACECHECK);
+    }
+    if (config.initCheck) {
+        tools.emplace_back(SanitizerTool::INITCHECK);
+    }
+    if (config.syncCheck) {
+        tools.emplace_back(SanitizerTool::SYNCCHECK);
+    }
+    return tools;
+}
+
+bool IsSanitizerToolSupportDBI(SanitizerTool tool)
+{
+    return tool == SanitizerTool::MEMCHECK;
+}
+
+} // namespace [Dummy]
 
 namespace Sanitizer {
 
@@ -148,6 +204,10 @@ void Checker::ConsumeRecordThread(uint8_t consumeId, const std::thread::id &root
                 RuntimeContext::Instance().kernelSummary_ = args.kernelSummary;
                 continue;
             }
+            case BroadcastEvent::KERNEL_NAME_UPDATED: {
+                RuntimeContext::Instance().kernelNameDisplay = args.kernelNameDisplay;
+                continue;
+            }
             case BroadcastEvent::STOP:
                 // clear queue
                 std::queue<WorkArgs>().swap(que);
@@ -177,7 +237,10 @@ void Checker::SetDeviceInfo(const DeviceInfoSummary &deviceInfo)
             bool initDone = sanitizerArr_[i]->SetDeviceInfo(deviceInfo, config_);
             initWithDeviceInfoDone_[i] = initDone;
             std::lock_guard<std::mutex> lock(mtx_[i]);
-            workerArgs_[i].push({ BroadcastEvent::DEVICE_INFO_UPDATED, {}, {}, deviceInfo, {} });
+            WorkArgs workargs{};
+            workargs.eventType = BroadcastEvent::DEVICE_INFO_UPDATED;
+            workargs.deviceInfo = deviceInfo;
+            workerArgs_[i].push(std::move(workargs));
         }
     }
     workerCv_.notify_all();
@@ -185,13 +248,21 @@ void Checker::SetDeviceInfo(const DeviceInfoSummary &deviceInfo)
 
 void Checker::SetKernelInfo(const KernelSummary &kernelInfo)
 {
+    DisplaySanitizerBegin(config_);
+
     isKernelWithDBI_ = kernelInfo.isKernelWithDBI;
     printMissDebugLine_ = true;
     for (uint8_t i = 0; i < TOOL_NUM; ++i) {
         if (sanitizerArr_[i] != nullptr) {
             bool initDone = sanitizerArr_[i]->SetKernelInfo(kernelInfo);
             initWithKernelInfoDone_[i] = initDone;
-            workerArgs_[i].push({ BroadcastEvent::KERNEL_SUMMARY_UPDATED, {}, {}, {}, kernelInfo });
+            WorkArgs workargs{};
+            workargs.eventType = BroadcastEvent::KERNEL_SUMMARY_UPDATED;
+            workargs.kernelSummary = kernelInfo;
+            workerArgs_[i].push(std::move(workargs));
+            workargs.eventType = BroadcastEvent::KERNEL_NAME_UPDATED;
+            workargs.kernelNameDisplay = RuntimeContext::Instance().kernelNameDisplay;
+            workerArgs_[i].push(std::move(workargs));
         }
     }
 }
@@ -201,24 +272,84 @@ void Checker::TryPrintMissDebugLine()
     // 每个 kernel 出现第一条异常，并且缺失 debugline 信息时，打印提示
     const bool printMissDebugLine = printMissDebugLine_.exchange(false);
     if (printMissDebugLine && !RuntimeContext::Instance().kernelSummary_.hasDebugLine) {
-        std::string kernelName(RuntimeContext::Instance().kernelSummary_.kernelName);
-        if (kernelName.empty()) { kernelName = "Unknown"; }
         printf("[mssanitizer] WARN: Kernel %s missed debug_line information. Please recompile kernel "
-               "with `-g' or `-gline-tables-only' option to enable callstack display.\n", kernelName.c_str());
+               "with `-g' or `-gline-tables-only' option to enable callstack display.\n",
+               RuntimeContext::Instance().kernelNameDisplay.c_str());
+    }
+}
+
+void Checker::DisplaySanitizerBegin(Config const &config) const
+{
+    if (detectionOstream_ == nullptr) {
+        return;
+    }
+
+    std::ostream &os = *detectionOstream_;
+    RuntimeContext &runtimeContext = RuntimeContext::Instance();
+    std::vector<SanitizerTool> tools = GetEnabledSanitizerTools(config);
+
+    // 按是否支持动态插桩将用户开启的检测选项进行分组
+    auto ignoredToolIt = tools.cend();
+    if (runtimeContext.kernelSummary_.isKernelWithDBI) {
+        ignoredToolIt = std::partition(tools.begin(), tools.end(), IsSanitizerToolSupportDBI);
+    }
+
+    {
+        std::lock_guard<std::mutex> guard(detMutex_);
+        if (ignoredToolIt != tools.cbegin()) {
+            os << "[mssanitizer] Start "
+               << Utility::HumanReadableListFormat(tools.cbegin(), ignoredToolIt, ToString<SanitizerTool>)
+               << " sanitizer on kernel " << runtimeContext.kernelNameDisplay << std::endl;
+        } else {
+            os << "[mssanitizer] No active sanitizer tool on kernel "
+               << runtimeContext.kernelNameDisplay << "." << std::endl;
+        }
+    }
+
+    if (ignoredToolIt != tools.cend()) {
+        std::lock_guard<std::mutex> guard(detMutex_);
+        os << "[mssanitizer] WARN: "
+           << Utility::HumanReadableListFormat(ignoredToolIt, tools.cend(), ToString<SanitizerTool>)
+           << " is not supported on the kernel that without "
+           << "`--cce-enable-sanitizer' compiler option, thus it's temporarily ignored." << std::endl;
+    }
+}
+
+void Checker::DisplaySanitizerEnd(std::array<uint32_t, TOOL_NUM> const &errorCounts) const
+{
+    if (detectionOstream_ == nullptr) {
+        return;
+    }
+
+    std::ostream &os = *detectionOstream_;
+    RuntimeContext &runtimeContext = RuntimeContext::Instance();
+    auto totalErrorCounts = std::accumulate(errorCounts.cbegin(), errorCounts.cend(), 0U);
+
+    std::lock_guard<std::mutex> guard(detMutex_);
+    if (totalErrorCounts > 0) {
+        os << "[mssanitizer] Sanitizer finished on kernel "
+           << runtimeContext.kernelNameDisplay
+           << ". See all detected errors above." << std::endl;
+    } else {
+        os << "[mssanitizer] Sanitizer finished on kernel "
+           << runtimeContext.kernelNameDisplay
+           << ". No error detected." << std::endl;
     }
 }
 
 void Checker::SetDetectionInfo(const LogLv &expectLv, std::ostream &detectionOstream)
 {
-    auto func = [expectLv, &detectionOstream, this](const LogLv &lv, SanitizerBase::MSG_GEN &&gen) {
-        if (lv >= expectLv) {
-            TryPrintMissDebugLine();
-            std::lock_guard<std::mutex> guard(detMutex_);
-            detectionOstream << gen().message << std::flush;
-        }
-    };
+    detectionOstream_ = &detectionOstream;
     for (uint8_t i = 0; i < TOOL_NUM; ++i) {
         if (sanitizerArr_[i] != nullptr) {
+            auto func = [expectLv, i, &detectionOstream, this](const LogLv &lv, SanitizerBase::MSG_GEN &&gen) {
+                if (lv >= expectLv) {
+                    TryPrintMissDebugLine();
+                    ++errorCounts_[i];
+                    std::lock_guard<std::mutex> guard(detMutex_);
+                    detectionOstream << gen().message << std::flush;
+                }
+            };
             sanitizerArr_[i]->RegisterNotifyFunc(func);
         }
     }
@@ -257,12 +388,11 @@ void Checker::Do(const SanitizerRecord &record)
         if (sanitizerArr_[i] != nullptr) {
             std::lock_guard<std::mutex> lock(mtx_[i]);
             done_[i] = false;
-            workerArgs_[i].push({
-                BroadcastEvent::SANITIZER_RECORD_ARRIVED,
-                record,
-                events,
-                {}
-            });
+            WorkArgs workargs{};
+            workargs.eventType = BroadcastEvent::SANITIZER_RECORD_ARRIVED;
+            workargs.record = record;
+            workargs.event = events;
+            workerArgs_[i].push(std::move(workargs));
         }
     }
     if (record.payload.kernelRecord.recordType != RecordType::FINISH) {
@@ -270,6 +400,7 @@ void Checker::Do(const SanitizerRecord &record)
     } else {
         finishProduce_ = true;
         workerCv_.notify_all();
+        auto errorCounts = decltype(errorCounts_){};
         for (uint8_t i = 0; i < TOOL_NUM; ++i) {
             if (sanitizerArr_[i] == nullptr) {
                 continue;
@@ -280,7 +411,9 @@ void Checker::Do(const SanitizerRecord &record)
             std::unique_lock<std::mutex> lock(mtx_[i]);
             producerCv_.wait(lock, [this, i] () { return done_[i]; });
             printMissDebugLine_ = false;
+            std::swap(errorCounts, errorCounts_);
         }
+        DisplaySanitizerEnd(errorCounts);
     }
 
     std::stringstream ss;
@@ -294,7 +427,9 @@ void Checker::Finish()
         for (uint8_t i = 0; i < TOOL_NUM; ++i) {
             if (sanitizerArr_[i] != nullptr) {
                 std::lock_guard<std::mutex> lock(mtx_[i]);
-                workerArgs_[i].push({ BroadcastEvent::STOP, {}, {}, {} });
+                WorkArgs workargs{};
+                workargs.eventType = BroadcastEvent::STOP;
+                workerArgs_[i].push(std::move(workargs));
             }
         }
         workerCv_.notify_all();

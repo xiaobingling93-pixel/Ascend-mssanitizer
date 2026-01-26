@@ -40,6 +40,29 @@ inline std::string Join(Iterator beg, Iterator end, std::string const &sep = " "
     return ret;
 }
 
+template<typename Iterator, typename ElemFormatter>
+inline std::string HumanReadableListFormat(Iterator beg, Iterator end, ElemFormatter const &formatter)
+{
+    std::string ret;
+    if (beg == end) {
+        return ret;
+    }
+
+    ret = formatter(*beg);
+    if (beg + 1 == end) {
+        return ret;
+    }
+
+    ++beg;
+    for (; beg + 1 != end; ++beg) {
+        ret.append(", ");
+        ret.append(formatter(*beg));
+    }
+    ret.append(" and ");
+    ret.append(formatter(*beg));
+    return ret;
+}
+
 /* 字符串分割
  * 使用指定的分隔符对字符串进行分割
  * @param str 要分割的字符串
@@ -108,6 +131,8 @@ inline bool StoiConverter(const std::string &numString, int &num, int radix = 10
     }
     return true;
 }
+
+bool Demangle(std::string const &name, std::string &demangled);
 
 }  // namespace Utility
 

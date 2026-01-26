@@ -310,9 +310,7 @@ inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &format
     // 内存异常可能发生在 host 侧也可能发生在 kernel 侧，只有发生在
     // kernel 侧时才打印 kernel name
     if (formatKernelName.msg.auxData.side == MemOpSide::KERNEL) {
-        std::string kernelName(RuntimeContext::Instance().kernelSummary_.kernelName);
-        kernelName = kernelName.empty() ? "unknown" : std::move(kernelName);
-        os << " in " << kernelName;
+        os << " in " << RuntimeContext::Instance().kernelNameDisplay;
     }
     return os;
 }

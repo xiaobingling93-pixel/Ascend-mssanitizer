@@ -60,11 +60,7 @@ struct FormatKernelName {};
 inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &formatKernelName)
 {
     // 同步异常一定是 kernel 上发生的，因此打印 kernel name
-    std::string kernelName(RuntimeContext::Instance().kernelSummary_.kernelName);
-    if (kernelName.empty()) {
-        kernelName = "unknown";
-    }
-    return os << " in " << kernelName;
+    return os << " in " << RuntimeContext::Instance().kernelNameDisplay;
 }
 
 inline std::ostream &operator << (std::ostream &os, SyncDispInfo const &info)

@@ -35,6 +35,12 @@ enum class ToolType : uint8_t {
     SIZE,
 };
 
+enum class DemangleMode : uint8_t {
+    FULL_DEMANGLED_NAME = 0,
+    SIMPLE_DEMANGLED_NAME,
+    MANGLED_NAME,
+};
+
 // result of all sanitizers
 struct DetectionInfo {
     ToolType type;
@@ -59,6 +65,7 @@ struct Config {
     bool isPrintFullStack{false};
     int16_t checkBlockId = -1;            // -1代表默认检查所有核的记录
     uint32_t cacheSize = 100;             // 默认大小为100M
+    DemangleMode demangleMode{DemangleMode::FULL_DEMANGLED_NAME};
     char pluginPath[PLUGIN_PATH_MAX];
     char kernelName[KERNEL_NAME_MAX];
     char dumpPath[DUMP_PATH_MAX];

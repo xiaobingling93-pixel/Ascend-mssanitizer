@@ -46,6 +46,17 @@ struct TaggedType {
 template <typename T>
 using Generator = std::function<T(void)>;
 
+/* 函数单位元
+ * a -> b 函数范畴上的单位元，用于表示映射到自身
+ */
+template <typename T>
+struct Identity {
+    T const &operator()(T const &v) const
+    {
+        return v;
+    }
+};
+
 } // namespace Sanitizer
 
 #endif // __CORE_FRAMEWORK_UTILITY_TYPES_H__

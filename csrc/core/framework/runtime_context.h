@@ -40,13 +40,14 @@ public:
 
 public:
     DeviceInfoSummary deviceSummary_ {};
-    KernelSummary kernelSummary_ {};
+    KernelSummary kernelSummary_{};
     uint32_t currentBlockIdx_ {};
     uint64_t serialNo_ {};
     bool determined_ {};
     MemInfoSrc memInfoSrc_ {};
     std::thread::id rootTid_{std::this_thread::get_id()};  // current thread get resource from which thread id
     std::vector<HostMemRecord> cachedRecords;
+    std::string kernelNameDisplay{};
 };
 
 } // namespace Sanitizer

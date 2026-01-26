@@ -15,6 +15,7 @@
  * ------------------------------------------------------------------------- */
 
 
+#include "utility/types.h"
 #include "utility/ustring.h"
 
 #include <gtest/gtest.h>
@@ -22,6 +23,7 @@
 #include <string>
 #include <iterator>
 
+using namespace Sanitizer;
 using namespace Utility;
 
 TEST(UString, join_empty_list_expect_empty_string)
@@ -110,4 +112,42 @@ TEST(UString, split_string_with_several_delims_expect_correct_list)
     ASSERT_EQ(items[2], "bbb");
     ASSERT_EQ(items[3], "ccc");
     ASSERT_EQ(items[4], "");
+}
+
+TEST(UString, format_empty_list_by_human_readable_list_format_expect_return_empty_string)
+{
+    std::vector<std::string> items;
+    std::string ret = HumanReadableListFormat(items.cbegin(), items.cend(), Identity<std::string>());
+    ASSERT_TRUE(ret.empty());
+}
+
+TEST(UString, format_list_of_one_elem_by_human_readable_list_format_expect_return_elem)
+{
+    std::vector<std::string> items = {
+        "aaa"
+    };
+    std::string ret = HumanReadableListFormat(items.cbegin(), items.cend(), Identity<std::string>());
+    ASSERT_EQ(ret, "aaa");
+}
+
+TEST(UString, format_list_of_two_elems_by_human_readable_list_format_expect_return_correct_string)
+{
+    std::vector<std::string> items = {
+        "aaa",
+        "bbb"
+    };
+    std::string ret = HumanReadableListFormat(items.cbegin(), items.cend(), Identity<std::string>());
+    ASSERT_EQ(ret, "aaa and bbb");
+}
+
+TEST(UString, format_list_of_more_than_two_elems_by_human_readable_list_format_expect_return_correct_string)
+{
+    std::vector<std::string> items = {
+        "aaa",
+        "bbb",
+        "ccc",
+        "ddd"
+    };
+    std::string ret = HumanReadableListFormat(items.cbegin(), items.cend(), Identity<std::string>());
+    ASSERT_EQ(ret, "aaa, bbb, ccc and ddd");
 }

@@ -42,6 +42,7 @@ enum class BroadcastEvent : uint8_t {
     NO_INFO = 0,
     DEVICE_INFO_UPDATED,
     KERNEL_SUMMARY_UPDATED,
+    KERNEL_NAME_UPDATED,
     SANITIZER_RECORD_ARRIVED,
     STOP,
 };
@@ -52,6 +53,7 @@ struct WorkArgs {
     std::vector<SanEvent> event;
     DeviceInfoSummary deviceInfo;
     KernelSummary kernelSummary;
+    std::string kernelNameDisplay;
 };
 
 // Checker类主要用于将单条解析信息分发给合适的sanitier工具
@@ -80,21 +82,25 @@ private:
     inline void WaitAfterConsumed(uint8_t consumeId);
     inline bool IsNeedFilterDbi(const SanitizerRecord &record, uint8_t toolIdx);
     inline void TryPrintMissDebugLine();
+    inline void DisplaySanitizerBegin(Config const &config) const;
+    inline void DisplaySanitizerEnd(std::array<uint32_t, TOOL_NUM> const &errorCounts) const;
 
 private:
     Config config_;
+    std::ostream *detectionOstream_{};
 
     std::array<std::mutex, TOOL_NUM> mtx_{};
     std::condition_variable workerCv_{};
     std::condition_variable producerCv_{};
 
     std::array<bool, TOOL_NUM> done_{};
+    std::array<uint32_t, TOOL_NUM> errorCounts_{};
     std::atomic_bool finishProduce_{};
     std::atomic_bool printMissDebugLine_{};
     std::array<std::queue<WorkArgs>, TOOL_NUM> workerArgs_{};
     std::vector<std::thread> workers_{};
-    std::mutex detMutex_{};
-    std::mutex doMutex_{};
+    mutable std::mutex detMutex_{};
+    mutable std::mutex doMutex_{};
   
     std::array<std::shared_ptr<Sanitizer::SanitizerBase>, TOOL_NUM> sanitizerArr_{};
     std::array<bool, TOOL_NUM> initWithDeviceInfoDone_{};

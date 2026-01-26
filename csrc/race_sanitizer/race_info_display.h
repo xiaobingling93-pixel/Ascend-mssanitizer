@@ -62,9 +62,7 @@ struct FormatKernelName {};
 inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &formatKernelName)
 {
     // 竞争异常一定是 kernel 上发生的，因此打印 kernel name
-    std::string kernelName(RuntimeContext::Instance().kernelSummary_.kernelName);
-    kernelName = kernelName.empty() ? "unknown" : std::move(kernelName);
-    return os << " in " << kernelName;
+    return os << " in " << RuntimeContext::Instance().kernelNameDisplay;
 }
 
 inline std::ostream &operator << (std::ostream &os, RaceDispInfo const &raceInfo)

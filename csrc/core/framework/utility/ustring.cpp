@@ -15,6 +15,10 @@
  * ------------------------------------------------------------------------- */
 
 
+#include <cstdlib>
+#include <cxxabi.h>
+#include <memory>
+
 #include "ustring.h"
 
 namespace Utility {
@@ -35,4 +39,17 @@ std::string ReplaceInvalidChar(const std::string &input)
     }
     return initStr;
 }
+
+bool Demangle(std::string const &name, std::string &demangled)
+{
+    int status{-1};
+    std::unique_ptr<char, decltype(&std::free)> res {
+        abi::__cxa_demangle(name.c_str(), nullptr, nullptr, &status), std::free
+    };
+    if (status == 0) {
+        demangled = res.get();
+    }
+    return status == 0;
+}
+
 }

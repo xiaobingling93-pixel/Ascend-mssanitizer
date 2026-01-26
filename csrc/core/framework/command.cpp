@@ -80,7 +80,32 @@ void HandleDeviceInfo(Checker &checker, DeviceInfoSummary const &summary)
     checker.SetDeviceInfo(summary);
 }
 
-void HandleKernelInfo(Checker &checker, KernelSummary const &kernelSummary)
+std::string GetDisplayKernelName(KernelSummary const &kernelSummary, DemangleMode demangleMode)
+{
+    std::string kernelName(kernelSummary.kernelName);
+    if (kernelName.empty()) {
+        kernelName = "unknown";
+        return kernelName;
+    }
+
+    if (EndWith(kernelName, "_mix_aic") || EndWith(kernelName, "_mix_aiv")) {
+        kernelName = kernelName.substr(0, kernelName.length() - 8UL);
+    }
+
+    if (demangleMode == DemangleMode::MANGLED_NAME) {
+        return kernelName;
+    }
+
+    std::string demangled;
+    if (!Demangle(kernelName, demangled)) {
+        return kernelName;
+    }
+
+    // demangle 后的函数名中有空格，两侧增加引号保证显示清晰
+    return "\"" + demangled + "\"";
+}
+
+void HandleKernelInfo(Checker &checker, KernelSummary const &kernelSummary, Config const &config)
 {
     std::string kernelNameLog = Utility::ReplaceInvalidChar(std::string(kernelSummary.kernelName));
     SAN_INFO_LOG("Receive kernel summary. kernelName: %s, pcStartAddr:0x%lx, "
@@ -88,8 +113,9 @@ void HandleKernelInfo(Checker &checker, KernelSummary const &kernelSummary)
                  kernelNameLog.c_str(), kernelSummary.pcStartAddr, kernelSummary.blockDim,
                  static_cast<uint32_t>(kernelSummary.kernelType), kernelSummary.isKernelWithDBI);
 
-    RuntimeContext::Instance().kernelSummary_ = kernelSummary;
     RuntimeContext::Instance().currentBlockIdx_ = 0;
+    RuntimeContext::Instance().kernelSummary_ = kernelSummary;
+    RuntimeContext::Instance().kernelNameDisplay = GetDisplayKernelName(kernelSummary, config.demangleMode);
     checker.SetKernelInfo(kernelSummary);
 }
 
@@ -337,7 +363,7 @@ void Command::Exec(const ParamList &execParams)
                     HandleDeviceInfo(checker, packet.GetPayload().deviceSummary);
                     break;
                 case PacketType::KERNEL_SUMMARY:
-                    HandleKernelInfo(checker, packet.GetPayload().kernelSummary);
+                    HandleKernelInfo(checker, packet.GetPayload().kernelSummary, config_);
                     break;
                 case PacketType::HOST_RECORD:
                     HandleHostMemRecord(checker, packet.GetPayload().hostMemRecord);

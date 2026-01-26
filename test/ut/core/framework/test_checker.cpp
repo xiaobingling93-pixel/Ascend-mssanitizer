@@ -232,7 +232,7 @@ TEST(Checker, test_element_alignment_for_310p_expect_no_misalignment)
     kernelRecord.recordType = RecordType::FINISH;
     checker->Do(record);
     checker->Finish();
-    ASSERT_TRUE(ss.str().empty());
+    ASSERT_EQ(ss.str().find("misalign"), std::string::npos);
 }
 
 TEST(Checker, test_element_alignment_for_910b_expect_misalignment)
@@ -261,7 +261,7 @@ TEST(Checker, test_element_alignment_for_910b_expect_misalignment)
     kernelRecord.recordType = RecordType::FINISH;
     checker->Do(record);
     checker->Finish();
-    ASSERT_TRUE(!ss.str().empty());
+    ASSERT_NE(ss.str().find("misalign"), std::string::npos);
 }
 
 TEST(Checker, test_online_mem_check_expect_got_error)
