@@ -2444,7 +2444,7 @@ TEST_F(TestRecordParse, parse_set_flag_record_and_expect_success)
     record.payload.syncRecord.location.blockId = 7;
     record.payload.syncRecord.src = PipeType::PIPE_MTE1;
     record.payload.syncRecord.dst = PipeType::PIPE_V;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID1;
+    record.payload.syncRecord.eventID = 1;
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
     sanitizerRecord.payload.kernelRecord = record;
@@ -2472,7 +2472,7 @@ TEST_F(TestRecordParse, parse_wait_flag_record_and_expect_success)
     record.payload.syncRecord.location.blockId = 7;
     record.payload.syncRecord.src = PipeType::PIPE_MTE1;
     record.payload.syncRecord.dst = PipeType::PIPE_V;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID1;
+    record.payload.syncRecord.eventID = 1;
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
     sanitizerRecord.payload.kernelRecord = record;
@@ -2839,7 +2839,7 @@ TEST_F(TestRecordParse, parse_wait_flag_and_hwait_flag_end_to_end_in_pipe_record
     record.payload.syncRecord.location.blockId = 0;
     record.payload.syncRecord.src = PipeType::PIPE_MTE1;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE2;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID0;
+    record.payload.syncRecord.eventID = 0;
     record.blockType = BlockType::AICUBE;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
@@ -2924,7 +2924,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_two_sync_expect_get_in
     record.payload.syncRecord.location.blockId = 0;
     record.payload.syncRecord.src = PipeType::PIPE_V;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE2;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID0;
+    record.payload.syncRecord.eventID = 0;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
@@ -2934,7 +2934,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_two_sync_expect_get_in
     record.recordType = RecordType::SET_FLAG;
     record.payload.syncRecord.src = PipeType::PIPE_MTE2;
     record.payload.syncRecord.dst = PipeType::PIPE_V;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID5;
+    record.payload.syncRecord.eventID = 5;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
     sanitizerRecord.payload.kernelRecord = record;
@@ -2960,7 +2960,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_three_sync_expect_get_
     record.payload.syncRecord.location.blockId = 0;
     record.payload.syncRecord.src = PipeType::PIPE_V;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE2;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID3;
+    record.payload.syncRecord.eventID = 3;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
@@ -2970,7 +2970,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_three_sync_expect_get_
     record.recordType = RecordType::SET_FLAG;
     record.payload.syncRecord.src = PipeType::PIPE_MTE2;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE3;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID5;
+    record.payload.syncRecord.eventID = 5;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
     sanitizerRecord.payload.kernelRecord = record;
@@ -2979,7 +2979,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_three_sync_expect_get_
     record.recordType = RecordType::SET_FLAG;
     record.payload.syncRecord.src = PipeType::PIPE_MTE3;
     record.payload.syncRecord.dst = PipeType::PIPE_V;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID6;
+    record.payload.syncRecord.eventID = 6;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
     sanitizerRecord.payload.kernelRecord = record;
@@ -3006,7 +3006,7 @@ TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_pipe_s_sync_expect_get
     record.payload.syncRecord.location.blockId = 0;
     record.payload.syncRecord.src = PipeType::PIPE_MTE2;
     record.payload.syncRecord.dst = PipeType::PIPE_S;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID2;
+    record.payload.syncRecord.eventID = 2;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
@@ -3035,7 +3035,7 @@ TEST_F(TestRecordParse,
     record.payload.syncRecord.location.blockId = 0;
     record.payload.syncRecord.src = PipeType::PIPE_V;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE1;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID2;
+    record.payload.syncRecord.eventID = 2;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
@@ -3045,7 +3045,7 @@ TEST_F(TestRecordParse,
     record.recordType = RecordType::SET_FLAG;
     record.payload.syncRecord.src = PipeType::PIPE_MTE1;
     record.payload.syncRecord.dst = PipeType::PIPE_MTE2;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID0;
+    record.payload.syncRecord.eventID = 0;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
     sanitizerRecord.payload.kernelRecord = record;
@@ -3054,7 +3054,7 @@ TEST_F(TestRecordParse,
     record.recordType = RecordType::SET_FLAG;
     record.payload.syncRecord.src = PipeType::PIPE_MTE2;
     record.payload.syncRecord.dst = PipeType::PIPE_S;
-    record.payload.syncRecord.eventID = EventID::EVENT_ID7;
+    record.payload.syncRecord.eventID = 7;
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::WAIT_FLAG;
     sanitizerRecord.payload.kernelRecord = record;

@@ -32,7 +32,7 @@ auto g_fillSyncRecord = [](SanitizerRecord& record, uint16_t coreId = 0U, Record
     syncRecord.location.blockId = coreId;
     syncRecord.src = srcPipe;
     syncRecord.dst = dstPipe;
-    syncRecord.eventID = eventId;
+    syncRecord.eventID = static_cast<uint64_t>(eventId);
 };
 
 TEST(SyncSanitizer, unpaired_set_flag_instruction_expect_return_synccheck_detection)

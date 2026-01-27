@@ -203,6 +203,8 @@ enum class RecordType : uint32_t {
     SCATTERVNCHWCONV,
     SCATTERVNCHWCONV_A5,
     VBS32_A5,
+    SET_FLAGI,
+    WAIT_FLAGI,
 
     SIMT_START = 39999,
     SIMT_LDG,
@@ -1120,7 +1122,7 @@ struct SyncRecord {
     Location location;
     PipeType src;
     PipeType dst;
-    EventID eventID;
+    uint64_t eventID;
 };
 
 struct HardSyncRecord {

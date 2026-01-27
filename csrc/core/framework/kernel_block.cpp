@@ -278,7 +278,13 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::SET_FLAG, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
     }},
+    {RecordType::SET_FLAGI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
     {RecordType::WAIT_FLAG, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
+    {RecordType::WAIT_FLAGI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
     }},
     {RecordType::FFTS_SYNC, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {

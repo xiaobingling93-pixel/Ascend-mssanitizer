@@ -4,6 +4,26 @@
 #include "plugin/record_sync_instructions.h"
 using namespace Sanitizer;
 
+SANITIZER_REPORT(set_flag, pipe_t pipe, pipe_t tpipe, uint64_t eventID)
+{
+    RecordSyncEvent<RecordType::SET_FLAG>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(set_flagi, pipe_t pipe, pipe_t tpipe, uint64_t eventID)
+{
+    RecordSyncEvent<RecordType::SET_FLAGI>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(wait_flag, pipe_t pipe, pipe_t tpipe, uint64_t eventID)
+{
+    RecordSyncEvent<RecordType::WAIT_FLAG>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(wait_flagi, pipe_t pipe, pipe_t tpipe, uint64_t eventID)
+{
+    RecordSyncEvent<RecordType::WAIT_FLAGI>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
 SANITIZER_REPORT(wait_flag_dev_pipe, pipe_t pipe, int64_t flagID)
 {
     RecordWaitFlagDevEventWithPipe<RecordType::WAIT_FLAG_DEV_PIPE>(EXTRA_PARAMS, pipe, flagID);

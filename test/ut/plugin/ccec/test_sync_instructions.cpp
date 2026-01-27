@@ -125,7 +125,7 @@ TEST(SyncInstructions, dump_set_flag_with_racecheck_expect_get_correct_records)
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
@@ -158,7 +158,7 @@ TEST(SyncInstructions, dump_set_flag_with_memcheck_and_initcheck_expect_get_none
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
@@ -195,7 +195,7 @@ TEST(SyncInstructions, dump_wait_flag_with_racecheck_expect_get_correct_records)
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
@@ -228,7 +228,7 @@ TEST(SyncInstructions, dump_wait_flag_with_memcheck_and_initcheck_expect_get_non
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);

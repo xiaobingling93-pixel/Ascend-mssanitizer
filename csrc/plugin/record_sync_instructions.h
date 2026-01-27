@@ -44,7 +44,7 @@ __aicore__ inline void RecordSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, pipe_t tpi
     record.location.blockId = blockIdx;
     record.src = static_cast<PipeType>(pipe);
     record.dst = static_cast<PipeType>(tpipe);
-    record.eventID = static_cast<EventID>(eventID);
+    record.eventID = eventID;
 
     Recorder recorder(memInfo, blockIdx);
     recorder.DumpRecord<recordType>(record);

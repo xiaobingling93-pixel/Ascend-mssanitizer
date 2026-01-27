@@ -328,6 +328,10 @@ std::vector<BindStub> bindStubs{
     {InstrType::PIPE_BARRIER, "__sanitizer_report_pipe_barrier", {0}},
     
     /// sync_instructions.cpp start
+    {InstrType::SET_FLAG, "__sanitizer_report_set_flag", {0, 1, 2}},
+    {InstrType::SET_FLAGI, "__sanitizer_report_set_flagi", {0, 1, 2}},
+    {InstrType::WAIT_FLAG, "__sanitizer_report_wait_flag", {0, 1, 2}},
+    {InstrType::WAIT_FLAGI, "__sanitizer_report_wait_flagi", {0, 1, 2}},
     {InstrType::WAIT_FLAG_DEV, "__sanitizer_report_wait_flag_dev_pipe", {0, 1}},
     {InstrType::WAIT_FLAG_DEVI, "__sanitizer_report_wait_flag_devi_pipe", {0, 1}},
     {InstrType::SET_CROSS_CORE, "__sanitizer_report_set_cross_core", {0, 1}},

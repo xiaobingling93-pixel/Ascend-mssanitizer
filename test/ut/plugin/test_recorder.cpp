@@ -197,7 +197,7 @@ TEST(Recorder, dump_block_data_with_not_equal_block_records_default_cache_size_a
         .location = {10, 10},
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     Recorder handler = Recorder(memInfo.data(),
@@ -223,7 +223,7 @@ TEST(Recorder, dump_block_data_with_not_equal_block_records_set_cache_size_and_g
         .location = {10, 10},
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     Recorder handler = Recorder(memInfo.data(),
@@ -248,7 +248,7 @@ TEST(Recorder, dump_block_data_with_equal_block_records_dafault_cache_size_and_g
         .location = {10, 10},
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     Recorder handler = Recorder(memInfo.data(), head.checkParms.checkBlockId);
@@ -271,7 +271,7 @@ TEST(Recorder, dump_block_data_with_equal_block_records_set_cache_size_and_get_s
         .location = {10, 10},
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     Recorder handler = Recorder(memInfo.data(), head.checkParms.checkBlockId);
@@ -294,7 +294,7 @@ TEST(Recorder, dump_block_data_with_single_check_expect_get_success)
         .location = {10, 10},
         .src      = PipeType::PIPE_V,
         .dst      = PipeType::PIPE_MTE1,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = 1,
     };
 
     Recorder handler1 = Recorder(memInfo.data(), head.checkParms.checkBlockId + 1);
