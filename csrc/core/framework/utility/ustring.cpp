@@ -52,4 +52,59 @@ bool Demangle(std::string const &name, std::string &demangled)
     return status == 0;
 }
 
+std::string::size_type RfindEnclosureChar(std::string const& str, char left, char right, std::string::size_type pos)
+{
+    int depth = 0;
+    for (; pos >= 0UL; --pos) {
+        if (str[pos] == right) {
+            ++depth;
+        } else if (str[pos] == left) {
+            --depth;
+        }
+        if (depth <= 0) {
+            break;
+        }
+        if (pos == 0UL) {
+            break;
+        }
+    }
+
+    return depth > 0 ? std::string::npos : pos;
+}
+
+bool SimplifyDemangledName(std::string const &name, std::string &simplified)
+{
+    // kernel name must end with right parenthesis
+    if (name.empty() || name[name.length() - 1] != ')') {
+        return false;
+    }
+
+    // try to find the paired left parenthesis
+    std::string::size_type end = RfindEnclosureChar(name, '(', ')', name.length() - 1);
+    if (end == 0UL || end == std::string::npos) {
+        return false;
+    }
+
+    // drop `<...>' if has template specialization
+    if (name[end - 1] == '>') {
+        end = RfindEnclosureChar(name, '<', '>', end - 1);
+        if (end == 0UL || end == std::string::npos) {
+            return false;
+        }
+    }
+
+    // find the start position of funtion name
+    std::string::size_type start = name.find_last_of(" ", end);
+    if (start == 0UL || start == std::string::npos) {
+        return false;
+    }
+
+    ++start;
+    if (start >= end) {
+        return false;
+    }
+    simplified = name.substr(start, end - start);
+    return true;
+}
+
 }

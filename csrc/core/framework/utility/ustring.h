@@ -132,7 +132,21 @@ inline bool StoiConverter(const std::string &numString, int &num, int radix = 10
     return true;
 }
 
+/**
+ * @brief Get demangled name by calling builtin function `__cxa_demangle'.
+ * @param name - mangled function name
+ * @param demangled - output demangled function name if demangling succeeds
+ * @return demangling success status
+ */
 bool Demangle(std::string const &name, std::string &demangled);
+
+/**
+ * @brief Get the first part of the full demangled function name without parameter list.
+ * @param name - full demangled function name
+ * @param simplified - output simplified function name if simplification succeeds
+ * @return simplification success status
+ */
+bool SimplifyDemangledName(std::string const &name, std::string &simplified);
 
 }  // namespace Utility
 

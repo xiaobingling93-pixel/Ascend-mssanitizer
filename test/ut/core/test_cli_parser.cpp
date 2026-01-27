@@ -765,6 +765,51 @@ TEST(CliParser, set_full_backtrace_parameter_expect_get_full_backtrace_true)
     UserCommand cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
     ASSERT_TRUE(cmd.config.isPrintFullStack);
 }
+
+TEST(CliParser, do_not_set_demangle_mode_expect_get_default_demangle_mode_is_full_demangled_name)
+{
+    std::vector<const char*> argv = {
+        "mssanitizer",
+    };
+
+    CliParser cliParser;
+    UserCommand cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
+    ASSERT_EQ(cmd.config.demangleMode, DemangleMode::FULL_DEMANGLED_NAME);
+}
  
+TEST(CliParser, set_demangle_mode_parameter_expect_get_correct_demangle_mode)
+{
+    std::vector<const char*> argv = {
+        "mssanitizer",
+        "--demangle",
+        "full"
+    };
+
+    CliParser cliParser;
+
+    UserCommand cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
+    ASSERT_EQ(cmd.config.demangleMode, DemangleMode::FULL_DEMANGLED_NAME);
+
+    argv[2] = "simple";
+    cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
+    ASSERT_EQ(cmd.config.demangleMode, DemangleMode::SIMPLE_DEMANGLED_NAME);
+
+    argv[2] = "no";
+    cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
+    ASSERT_EQ(cmd.config.demangleMode, DemangleMode::MANGLED_NAME);
+}
+
+TEST(CliParser, set_invalid_demangle_mode_parameter_expect_print_help)
+{
+    std::vector<const char*> argv = {
+        "mssanitizer",
+        "--demangle",
+        "invalid"
+    };
+
+    CliParser cliParser;
+    UserCommand cmd = cliParser.Parse(argv.size(), const_cast<char**>(argv.data()));
+    ASSERT_TRUE(cmd.printHelpInfo);
+}
 
 }

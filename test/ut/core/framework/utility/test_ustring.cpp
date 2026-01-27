@@ -151,3 +151,78 @@ TEST(UString, format_list_of_more_than_two_elems_by_human_readable_list_format_e
     std::string ret = HumanReadableListFormat(items.cbegin(), items.cend(), Identity<std::string>());
     ASSERT_EQ(ret, "aaa, bbb, ccc and ddd");
 }
+
+TEST(UString, simplify_simple_function_name_expect_return_false)
+{
+    std::string name = "illegal_read_and_write_kernel";
+    std::string simplified;
+    ASSERT_FALSE(SimplifyDemangledName(name, simplified));
+}
+
+TEST(UString, simplify_mangled_function_name_expect_return_false)
+{
+    std::string name = "_Z29illegal_read_and_write_kernelIiEvPhS0_";
+    std::string simplified;
+    ASSERT_FALSE(SimplifyDemangledName(name, simplified));
+}
+
+TEST(UString, simplify_function_name_with_incomplete_specialization_expect_return_false)
+{
+    std::string name = "void illegal_read_and_write_kernel>(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_FALSE(SimplifyDemangledName(name, simplified));
+}
+
+TEST(UString, simplify_function_name_without_return_type_expect_return_false)
+{
+    std::string name = "illegal_read_and_write_kernel(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_FALSE(SimplifyDemangledName(name, simplified));
+}
+
+TEST(UString, simplify_function_name_with_empty_name_expect_return_false)
+{
+    std::string name = "(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_FALSE(SimplifyDemangledName(name, simplified));
+}
+
+TEST(UString, simplify_valid_function_name_expect_get_correct_name)
+{
+    std::string name = "void illegal_read_and_write_kernel(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_TRUE(SimplifyDemangledName(name, simplified));
+    ASSERT_EQ(simplified, "illegal_read_and_write_kernel");
+}
+
+TEST(UString, simplify_valid_function_name_with_specialization_expect_get_correct_name)
+{
+    std::string name = "void illegal_read_and_write_kernel<int>(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_TRUE(SimplifyDemangledName(name, simplified));
+    ASSERT_EQ(simplified, "illegal_read_and_write_kernel");
+}
+
+TEST(UString, simplify_valid_function_name_with_namespace_expect_get_correct_name)
+{
+    std::string name = "void AscendC::Custom::illegal_read_and_write_kernel(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_TRUE(SimplifyDemangledName(name, simplified));
+    ASSERT_EQ(simplified, "AscendC::Custom::illegal_read_and_write_kernel");
+}
+
+TEST(UString, simplify_valid_function_name_with_namespace_in_return_type_expect_get_correct_name)
+{
+    std::string name = "AscendC::Custom::T illegal_read_and_write_kernel(unsigned char*, unsigned char*)";
+    std::string simplified;
+    ASSERT_TRUE(SimplifyDemangledName(name, simplified));
+    ASSERT_EQ(simplified, "illegal_read_and_write_kernel");
+}
+
+TEST(UString, simplify_valid_function_name_with_namespace_in_parameters_expect_get_correct_name)
+{
+    std::string name = "void illegal_read_and_write_kernel(unsigned char*, AscendC::Custom::Tiling)";
+    std::string simplified;
+    ASSERT_TRUE(SimplifyDemangledName(name, simplified));
+    ASSERT_EQ(simplified, "illegal_read_and_write_kernel");
+}

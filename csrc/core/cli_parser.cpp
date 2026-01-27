@@ -52,6 +52,7 @@ enum class OptVal : int32_t {
     CACHE_SIZE,
     FULL_BACKTRACE,
     KERNEL_NAME,
+    DEMANGLE_MODE,
 };
 
 std::vector<option> GetLongOptArray()
@@ -71,6 +72,7 @@ std::vector<option> GetLongOptArray()
         {"cache-size", required_argument, nullptr, static_cast<int32_t>(OptVal::CACHE_SIZE)},
         {"kernel-name", required_argument, nullptr, static_cast<int32_t>(OptVal::KERNEL_NAME)},
         {"full-backtrace", required_argument, nullptr, static_cast<int32_t>(OptVal::FULL_BACKTRACE)},
+        {"demangle", required_argument, nullptr, static_cast<int32_t>(OptVal::DEMANGLE_MODE)},
         {nullptr, 0, nullptr, 0},
     };
     return longOpts;
@@ -379,6 +381,24 @@ void ParseKernelName(const std::string &param, UserCommand &userCommand)
     param.copy(userCommand.config.kernelName, KERNEL_NAME_MAX - 1);
 }
 
+void ParseDemangleMode(const std::string &param, UserCommand &userCommand)
+{
+    if (param == "full") {
+        userCommand.config.demangleMode = DemangleMode::FULL_DEMANGLED_NAME;
+        SAN_BUFF_INFO_LOG("Set full demangle mode");
+    } else if (param == "simple") {
+        userCommand.config.demangleMode = DemangleMode::SIMPLE_DEMANGLED_NAME;
+        SAN_BUFF_INFO_LOG("Set simple demangle mode");
+    } else if (param == "no") {
+        SAN_BUFF_INFO_LOG("Set no demangle mode");
+        userCommand.config.demangleMode = DemangleMode::MANGLED_NAME;
+    } else {
+        std::cout << "[mssanitizer] ERROR: --demangle param is invalid" << std::endl;
+        userCommand.printHelpInfo = true;
+        return;
+    }
+}
+
 using ParseHandler = std::function<void(const std::string &, UserCommand &)>;
 std::unordered_map<int32_t, ParseHandler>& GetCommandHandlers()
 {
@@ -397,7 +417,8 @@ std::unordered_map<int32_t, ParseHandler>& GetCommandHandlers()
         {static_cast<int32_t>(OptVal::BLOCK_ID), ParseBlockId},
         {static_cast<int32_t>(OptVal::CACHE_SIZE), ParseCacheSize},
         {static_cast<int32_t>(OptVal::KERNEL_NAME), ParseKernelName},
-        {static_cast<int32_t>(OptVal::FULL_BACKTRACE), ParseFullBacktrace}
+        {static_cast<int32_t>(OptVal::FULL_BACKTRACE), ParseFullBacktrace},
+        {static_cast<int32_t>(OptVal::DEMANGLE_MODE), ParseDemangleMode},
     };
 
     return handlers;
@@ -438,8 +459,9 @@ void ShowHelpInfo()
         "    --log-level=<level>  set log level to <level> [warn]" << std::endl <<
         "    --max-debuglog-size=<size>" << std::endl <<
         "                         set debuglog file's max size to <size> (MB), default:1024" << std::endl <<
-        "    --kernel-name=<name> only the kernel with the specified name <kernel> is going to be checked" <<
-        std::endl << std::endl <<
+        "    --kernel-name=<name> only the kernel with the specified name <kernel> is going to be checked" << std::endl <<
+        "    --demangle=<mode>    set the demangling <mode> of device funtion name. [full]" << std::endl <<
+        std::endl <<
         "  user options for Memcheck:" << std::endl <<
         "    --leak-check=no|yes  search for memory leaks at exit [no]" << std::endl <<
         "    --check-unused-memory=no|yes" << std::endl <<

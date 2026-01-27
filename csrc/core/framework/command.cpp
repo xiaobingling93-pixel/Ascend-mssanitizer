@@ -101,6 +101,13 @@ std::string GetDisplayKernelName(KernelSummary const &kernelSummary, DemangleMod
         return kernelName;
     }
 
+    std::string simplified;
+    if (demangleMode == DemangleMode::SIMPLE_DEMANGLED_NAME) {
+        if (SimplifyDemangledName(demangled, simplified)) {
+            return simplified;
+        }
+    }
+
     // demangle 后的函数名中有空格，两侧增加引号保证显示清晰
     return "\"" + demangled + "\"";
 }

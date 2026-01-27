@@ -26,6 +26,7 @@
 #include <iostream>
 #include <vector>
 
+#include "platform_config.h"
 #include "record_defs.h"
 #include "record_format.h"
 #include "runtime_context.h"
@@ -81,8 +82,11 @@ std::vector<SanitizerTool> GetEnabledSanitizerTools(Config const &config)
     return tools;
 }
 
-bool IsSanitizerToolSupportDBI(SanitizerTool tool)
+bool IsSanitizerToolSupportDBI(DeviceType deviceType, SanitizerTool tool)
 {
+    if (IsAscend95(deviceType)) {
+        return true;
+    }
     return tool == SanitizerTool::MEMCHECK;
 }
 
@@ -291,7 +295,9 @@ void Checker::DisplaySanitizerBegin(Config const &config) const
     // 按是否支持动态插桩将用户开启的检测选项进行分组
     auto ignoredToolIt = tools.cend();
     if (runtimeContext.kernelSummary_.isKernelWithDBI) {
-        ignoredToolIt = std::partition(tools.begin(), tools.end(), IsSanitizerToolSupportDBI);
+        ignoredToolIt = std::partition(tools.begin(), tools.end(), [this](SanitizerTool tool) {
+            return IsSanitizerToolSupportDBI(deviceType_, tool);
+        });
     }
 
     {
