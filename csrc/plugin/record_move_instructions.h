@@ -41,7 +41,7 @@ __aicore__ inline uint64_t StackAddrTransform(uint64_t addr)
     return transformedAddr;
 }
 
-template<RecordType recordType>
+template<RecordType recordType, DetailedDataType dataType = DetailedDataType::Default>
 __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space, uint64_t addr,
                                             uint64_t size, uint8_t alignSize)
 {
@@ -59,7 +59,8 @@ __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space
     recorder.SetRegister(&Register::paraBase, reg);
 // 目前只有c310的动态插桩会启动extra的信息写入
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(BUILD_DYNAMIC_PROBE)
-    if (recordType == RecordType::LDP || recordType == RecordType::LOAD || recordType == RecordType::LD_DEV) {
+    if (recordType == RecordType::LDP || recordType == RecordType::LD || recordType == RecordType::LD_IO ||
+        recordType == RecordType::LD_DEV) {
         recorder.ProcessParaBaseAddr();
     }
 #endif // __NPU_ARCH__
@@ -87,6 +88,7 @@ __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space
     record.alignSize = alignSize;
     record.location.blockId = blockIdx;
     record.space = space;
+    record.dataType = dataType;
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
     record.location.lineNo = lineNo;

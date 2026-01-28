@@ -86,10 +86,25 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::STORE, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
     }},
+    {RecordType::LD, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
+    }},
+    {RecordType::LD_IO, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
+    }},
+    {RecordType::ST, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
+    }},
+    {RecordType::ST_IO, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
+    }},
     {RecordType::STP, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
     }},
     {RecordType::STI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
+    }},
+    {RecordType::STI_IO, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.loadStoreRecord, offset);
     }},
     {RecordType::LDP, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {

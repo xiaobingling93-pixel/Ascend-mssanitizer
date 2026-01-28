@@ -33,368 +33,315 @@ inline __aicore__ uint64_t UpdateAddrByOffset(uint64_t addr, int64_t offset, uin
 
 SANITIZER_REPORT(st_b64_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_IO, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(st_b64_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint64_t), post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(st_b32_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_IO, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(st_b32_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint32_t), post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(st_b16_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_IO, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(st_b16_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-    if (space == AddressSpace::INVALID) {
-        return;
-    }
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint16_t), post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(st_b8_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
     addr = UpdateAddrByOffset(addr, offset, post);
-#else
-// 规避bisheng-tune插桩失败问题
-    addr = addr + (1-post) * offset;
-#endif
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_IO, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(st_b8_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint8_t), post);
-    RecordLoadStoreEvent<RecordType::STORE>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(stp_b64, uint64_t addr, int64_t offset)
 {
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::STP>(EXTRA_PARAMS, space, addr, sizeof(uint64_t) * 2, sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STP, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t) * 2, sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(stp_b32, uint64_t addr, int64_t offset)
 {
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::STP>(EXTRA_PARAMS, space, addr, sizeof(uint32_t) * 2, sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STP, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t) * 2, sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(stp_b16, uint64_t addr, int64_t offset)
 {
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::STP>(EXTRA_PARAMS, space, addr, sizeof(uint16_t) * 2, sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STP, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t) * 2, sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(stp_b8, uint64_t addr, int64_t offset)
 {
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::STP>(EXTRA_PARAMS, space, addr, sizeof(uint8_t) * 2, sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STP, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t) * 2, sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(sti_b64_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_IO, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(sti_b32_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_IO, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(sti_b16_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_IO, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 SANITIZER_REPORT(sti_b8_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
     addr = UpdateAddrByOffset(addr, offset, post);
-#else
-    addr = addr + (1-post) * offset;
-#endif
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_IO, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(sti_b64_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
+    size_t typeBytes = sizeof(uint64_t);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint64_t), post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(sti_b32_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint32_t), post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(sti_b16_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint16_t), post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 SANITIZER_REPORT(sti_b8_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint8_t), post);
-    RecordLoadStoreEvent<RecordType::STI>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
-SANITIZER_REPORT(load_b64_imm, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b64_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD_IO, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
-SANITIZER_REPORT(load_b32_imm, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b32_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD_IO, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
-SANITIZER_REPORT(load_b16_imm, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b16_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD_IO, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
-SANITIZER_REPORT(load_b8_imm, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b8_imm, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD_IO, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
-SANITIZER_REPORT(load_b64_reg, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b64_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint64_t), post);
-#else
-    addr = addr + (1-post) * offset * sizeof(uint64_t);
-#endif
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
-SANITIZER_REPORT(load_b32_reg, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b32_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint32_t), post);
-#else
-    addr = addr + (1-post) * offset * sizeof(uint32_t);
-#endif
-
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
-SANITIZER_REPORT(load_b16_reg, uint64_t addr, int64_t offset, uint64_t post)
+SANITIZER_REPORT(ld_b16_reg, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint16_t), post);
-#else
-    addr = addr + (1-post) * offset * sizeof(uint16_t);
-#endif
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
-}
-
-SANITIZER_REPORT(load_b8_reg, uint64_t addr, int64_t offset, uint64_t post)
-{
     AddressSpace space = RemapAddress(addr);
-#if !(defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
-    addr = UpdateAddrByOffset(addr, offset * sizeof(uint8_t), post);
-#else
-    addr = addr + (1-post) * offset * sizeof(uint8_t);
-#endif
-    RecordLoadStoreEvent<RecordType::LOAD>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    RecordLoadStoreEvent<RecordType::LD, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
-// 规避LDP在a2动态插桩场景下的误报问题
+SANITIZER_REPORT(ld_b8_reg, uint64_t addr, int64_t offset, uint64_t post)
+{
+    addr = UpdateAddrByOffset(addr, offset * sizeof(uint8_t), post);
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LD, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+}
+
 SANITIZER_REPORT(ldp_b64, uint64_t addr, int64_t offset)
 {
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::LDP>(EXTRA_PARAMS, space, addr, sizeof(uint64_t)*2, sizeof(uint64_t));
-#else
-    (void)addr;
-    (void)offset;
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LDP, DetailedDataType::B64>(EXTRA_PARAMS, space, addr, sizeof(uint64_t) * 2, sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(ldp_b32, uint64_t addr, int64_t offset)
 {
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::LDP>(EXTRA_PARAMS, space, addr, sizeof(uint32_t)*2, sizeof(uint32_t));
-#else
-    (void)addr;
-    (void)offset;
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LDP, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t) * 2, sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(ldp_b16, uint64_t addr, int64_t offset)
 {
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::LDP>(EXTRA_PARAMS, space, addr, sizeof(uint16_t)*2, sizeof(uint16_t));
-#else
-    (void)addr;
-    (void)offset;
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LDP, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t) * 2, sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(ldp_b8, uint64_t addr, int64_t offset)
 {
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
-    AddressSpace space = RemapAddress(addr);
     addr += offset;
-    RecordLoadStoreEvent<RecordType::LDP>(EXTRA_PARAMS, space, addr, sizeof(uint8_t)*2, sizeof(uint8_t));
-#else
-    (void)addr;
-    (void)offset;
-#endif
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::LDP, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t) * 2, sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(st_atomic_b32, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint32_t), post);
-    RecordLoadStoreEvent<RecordType::ST_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_ATOMIC, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(st_atomic_b16, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint16_t), post);
-    RecordLoadStoreEvent<RecordType::ST_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_ATOMIC, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(st_atomic_b8, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset * sizeof(uint8_t), post);
-    RecordLoadStoreEvent<RecordType::ST_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::ST_ATOMIC, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(sti_atomic_b32, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_ATOMIC, DetailedDataType::B32>(EXTRA_PARAMS, space, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(sti_atomic_b16, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_ATOMIC, DetailedDataType::B16>(EXTRA_PARAMS, space, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(sti_atomic_b8, uint64_t addr, int64_t offset, uint64_t post)
 {
-    AddressSpace space = RemapAddress(addr);
     addr = UpdateAddrByOffset(addr, offset, post);
-    RecordLoadStoreEvent<RecordType::STI_ATOMIC>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
+    AddressSpace space = RemapAddress(addr);
+    RecordLoadStoreEvent<RecordType::STI_ATOMIC, DetailedDataType::B8>(EXTRA_PARAMS, space, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(st_dev_b64, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::ST_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint64_t), sizeof(uint64_t));
+    RecordLoadStoreEvent<RecordType::ST_DEV, DetailedDataType::B64>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(st_dev_b32, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::ST_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint32_t), sizeof(uint32_t));
+    RecordLoadStoreEvent<RecordType::ST_DEV, DetailedDataType::B32>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(st_dev_b16, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::ST_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint16_t), sizeof(uint16_t));
+    RecordLoadStoreEvent<RecordType::ST_DEV, DetailedDataType::B16>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(st_dev_b8, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::ST_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint8_t), sizeof(uint8_t));
+    RecordLoadStoreEvent<RecordType::ST_DEV, DetailedDataType::B8>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(ld_dev_b64, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::LD_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint64_t), sizeof(uint64_t));
+    RecordLoadStoreEvent<RecordType::LD_DEV, DetailedDataType::B64>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint64_t), sizeof(uint64_t));
 }
 
 SANITIZER_REPORT(ld_dev_b32, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::LD_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint32_t), sizeof(uint32_t));
+    RecordLoadStoreEvent<RecordType::LD_DEV, DetailedDataType::B32>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint32_t), sizeof(uint32_t));
 }
 
 SANITIZER_REPORT(ld_dev_b16, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::LD_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint16_t), sizeof(uint16_t));
+    RecordLoadStoreEvent<RecordType::LD_DEV, DetailedDataType::B16>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint16_t), sizeof(uint16_t));
 }
 
 SANITIZER_REPORT(ld_dev_b8, uint64_t addr, int64_t offset)
 {
     addr = addr + offset;
-    RecordLoadStoreEvent<RecordType::LD_DEV>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint8_t), sizeof(uint8_t));
+    RecordLoadStoreEvent<RecordType::LD_DEV, DetailedDataType::B8>(EXTRA_PARAMS, AddressSpace::GM, addr, sizeof(uint8_t), sizeof(uint8_t));
 }
 
 SANITIZER_REPORT(scalar_atom_u32, uint64_t addr)

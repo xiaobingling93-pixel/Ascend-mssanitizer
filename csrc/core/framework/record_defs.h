@@ -108,17 +108,25 @@ constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
 constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
 
 enum class RecordType : uint32_t {
+    /// load_store
     LOAD = 0,
     STORE,
+    LD,
+    LD_IO,
+    ST,
+    ST_IO,
     STP,
     STI,
+    STI_IO,
     LDP,
     ST_ATOMIC,
     STI_ATOMIC,
     ST_DEV,
     LD_DEV,
-    DMA_MOV,
-    MOV_ALIGN = 10,
+
+     /// data_move
+    DMA_MOV = 100,
+    MOV_ALIGN,
     MOV_ALIGN_V2,
     VEC_DUP,
     LOAD_2D,
@@ -127,8 +135,8 @@ enum class RecordType : uint32_t {
     LOAD_L1_2D_TRANSPOSE,
     LOAD_B2,
     LOAD_A_WINOGRAD,
-    LOAD_B_WINOGRAD,
-    LOAD_3D = 20,
+    LOAD_B_WINOGRAD = 110,
+    LOAD_3D,
     SET_2D,
     SET_L1_2D,
     DMA_MOV_ND2NZ,
@@ -137,8 +145,8 @@ enum class RecordType : uint32_t {
     MOV_FP,
     LOAD_2D_SPARSE,
     LOAD_2D_TRANSPOSE,
-    DECOMPRESS_HEADER,
-    DMA_MOV_CONV_RELU = 30,
+    DECOMPRESS_HEADER = 120,
+    DMA_MOV_CONV_RELU,
     LOAD_SMASK,
     BROADCAST,
     DMA_MOV_DEPTH_WISE,
@@ -147,8 +155,8 @@ enum class RecordType : uint32_t {
     DMA_MOV_ND2NZ_D,   // fix name conflict for dav_c310
     DMA_MOV_DN2NZ_D,
     SCALAR_RED,
-    SCALAR_ATOM,
-    LDVA = 40,
+    SCALAR_ATOM = 130,
+    LDVA,
     MOV_L1_TO_UB,
     MOV_UB_TO_L1,
     MOV_UB_TO_UB,
@@ -157,12 +165,13 @@ enum class RecordType : uint32_t {
     VMRGSORT4_OP_C220,
     VMRGSORT4_OP_M200,
     VMRGSORT4_OP_C310,
-    FIX_L0C_TO_L1,
+    FIX_L0C_TO_L1 = 140,
     FIX_L0C_TO_UB,
     LOAD_3D_V2,
 
     // SIMD范围内的指令适用于310p的"X address mode"数据类型对齐规则
     SIMD_START = 9999,
+    /// calc
     UNARY_OP = 10000,
     VGATHER,
     ELEMENT,
@@ -182,6 +191,8 @@ enum class RecordType : uint32_t {
     VSEL_OP,
 
     SIMD_END = 19999,
+
+    /// sync
     SET_FLAG = 20000,
     WAIT_FLAG,
     HSET_FLAG,
@@ -242,7 +253,8 @@ enum class DataType : uint8_t {
 // 为了避免编译器优化函数导致动态插桩失败的问题，增加一个表示细节数据类型的占位枚举
 // 目前仅用于防止编译器优化函数
 enum class DetailedDataType : uint8_t {
-    B4 = 0,
+    Default = 0,
+    B4,
     E1M2,
     E2M1,
     B8,
@@ -745,6 +757,7 @@ struct LoadStoreRecord {
     uint64_t size;
     Location location;
     AddressSpace space;
+    DetailedDataType dataType;
     uint8_t alignSize;
 };
 

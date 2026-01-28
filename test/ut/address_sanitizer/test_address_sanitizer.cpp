@@ -413,7 +413,7 @@ TEST(AddressSanitizer, same_record_on_different_blocks_expect_get_reduced_errors
     KernelRecord kernelRecord;
     kernelRecord.recordType = RecordType::LOAD;
     kernelRecord.blockType = BlockType::AIVEC;
-    kernelRecord.payload.loadStoreRecord = {0x00, 8, {0, 0, 0}, AddressSpace::GM, 0};
+    kernelRecord.payload.loadStoreRecord = {0x00, 8, {0, 0, 0}, AddressSpace::GM, {}, 0};
     SanitizerRecord record;
     record.version = RecordVersion::KERNEL_RECORD;
     record.payload.kernelRecord = kernelRecord;

@@ -25,8 +25,13 @@ namespace Sanitizer {
 static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::LOAD,                        "LOAD"},
     {RecordType::STORE,                       "STORE"},
+    {RecordType::LD,                          "LD"},
+    {RecordType::LD_IO,                       "LD_IO"},
+    {RecordType::ST,                          "ST"},
+    {RecordType::ST_IO,                       "ST_IO"},
     {RecordType::STP,                         "STP"},
     {RecordType::STI,                         "STI"},
+    {RecordType::STI_IO,                      "STI_IO"},
     {RecordType::LDP,                         "LDP"},
     {RecordType::ST_ATOMIC,                   "ST_ATOMIC"},
     {RecordType::STI_ATOMIC,                  "STI_ATOMIC"},
@@ -366,7 +371,8 @@ std::ostream &operator<<(std::ostream &os, LoadStoreRecord const &record)
     return os << record.location
               << ", " << "type:" << record.space
               << ";" << "addr:0x" << std::hex << record.addr << std::dec
-              << ";" << "size:" << record.size;
+              << ";" << "size:" << record.size
+              << ";" << "datatype:" << record.dataType;
 }
 
 std::ostream &operator<<(std::ostream &os, MstxCrossRecord const &record)
@@ -1206,6 +1212,7 @@ std::ostream &operator<<(std::ostream &os, RedRecord const &record)
 std::ostream &operator<<(std::ostream &os, DetailedDataType type)
 {
     static const std::map<DetailedDataType, std::string> DATA_TYPE_STR = {
+        {DetailedDataType::Default, "Default"},
         {DetailedDataType::B4, "B4"},
         {DetailedDataType::E1M2, "E1M2"},
         {DetailedDataType::E2M1, "E2M1"},
@@ -1283,8 +1290,13 @@ using KernelRecordStreamFunc = std::function<void(std::ostream &, KernelRecord c
 static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_MAP = {
     {RecordType::LOAD,          [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::STORE,         [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
+    {RecordType::LD,            [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
+    {RecordType::LD_IO,         [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
+    {RecordType::ST,            [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
+    {RecordType::ST_IO,         [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::STP,           [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::STI,           [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
+    {RecordType::STI_IO,        [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::LDP,           [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::ST_ATOMIC,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
     {RecordType::STI_ATOMIC,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
