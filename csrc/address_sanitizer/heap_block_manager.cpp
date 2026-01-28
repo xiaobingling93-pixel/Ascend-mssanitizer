@@ -158,16 +158,16 @@ bool HeapBlockManager::AddMstxRegionBlock(const MemOpRecord &record)
 {
     uint64_t rootAddr = record.rootAddr;
     auto it = mstxHeapBlocks_.find(rootAddr);
-    if (it == mstxHeapBlocks_.cend()) {
+    if (rootAddr != 0UL && it == mstxHeapBlocks_.cend()) {
         std::cout << "[mssanitizer] ERROR: add regions error, heap is not registered, addr:" << std::hex << rootAddr
-            << std::dec << " size: " << record.memSize << std::endl;
+                  << std::dec << " size: " << record.memSize << std::endl;
         return false;
     }
     SAN_INFO_LOG("Add region block, serialNo:%lu, memInfoSrc:%u, addr:0x%lx, size:%lu",
         record.serialNo, static_cast<uint32_t>(record.infoSrc), record.dstAddr, record.memSize);
     HeapBlock block(record);
     mstxRegionBlocks_[rootAddr].push_back(block);
-    return !it->second.isInvalid;
+    return rootAddr == 0UL || !it->second.isInvalid;
 }
 
 ErrorMsg HeapBlockManager::FreeHeapBlock(const MemOpRecord &record, uint64_t &size)
