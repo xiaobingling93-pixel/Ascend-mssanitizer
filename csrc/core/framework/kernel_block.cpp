@@ -326,6 +326,18 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::WAIT_INTRA_BLOCKI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
     }},
+    {RecordType::SET_FLAG_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
+    {RecordType::SET_FLAGI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
+    {RecordType::WAIT_FLAG_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
+    {RecordType::WAIT_FLAGI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
+    }},
     {RecordType::HSET_FLAG, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.hardSyncRecord, offset);
     }},

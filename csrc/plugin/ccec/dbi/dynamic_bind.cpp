@@ -339,6 +339,10 @@ std::vector<BindStub> bindStubs{
     {InstrType::SET_INTRA_BLOCK, "__sanitizer_report_set_intra_block", {0, 1}},
     {InstrType::WAIT_INTRA_BLOCKI, "__sanitizer_report_wait_intra_blocki", {0, 1}},
     {InstrType::SET_INTRA_BLOCKI, "__sanitizer_report_set_intra_blocki", {0, 1}},
+    {InstrType::SET_FLAG_V, "__sanitizer_report_set_flag_v", {0, 1}},
+    {InstrType::SET_FLAGI_V, "__sanitizer_report_set_flagi_v", {0, 1}},
+    {InstrType::WAIT_FLAG_V, "__sanitizer_report_wait_flag_v", {0, 1}},
+    {InstrType::WAIT_FLAGI_V, "__sanitizer_report_wait_flagi_v", {0, 1}},
     /// sync_instructions.cpp end
 
 };

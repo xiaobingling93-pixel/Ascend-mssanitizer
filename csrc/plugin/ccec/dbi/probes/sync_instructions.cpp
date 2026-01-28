@@ -58,3 +58,27 @@ SANITIZER_REPORT(set_intra_blocki, pipe_t pipe, uint8_t syncID)
 {
     RecordIntraBlockSyncEvent<RecordType::SET_INTRA_BLOCKI>(EXTRA_PARAMS, pipe, syncID);
 }
+
+SANITIZER_REPORT(set_flag_v, pipe_t tpipe, uint64_t eventID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordSyncEvent<RecordType::SET_FLAG_V>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(set_flagi_v, pipe_t tpipe, uint64_t eventID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordSyncEvent<RecordType::SET_FLAGI_V>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(wait_flag_v, pipe_t pipe, uint64_t eventID)
+{
+    pipe_t tpipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordSyncEvent<RecordType::WAIT_FLAG_V>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}
+
+SANITIZER_REPORT(wait_flagi_v, pipe_t pipe, uint64_t eventID)
+{
+    pipe_t tpipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordSyncEvent<RecordType::WAIT_FLAGI_V>(EXTRA_PARAMS, pipe, tpipe, eventID);
+}

@@ -216,6 +216,10 @@ enum class RecordType : uint32_t {
     VBS32_A5,
     SET_FLAGI,
     WAIT_FLAGI,
+    SET_FLAG_V,
+    SET_FLAGI_V,
+    WAIT_FLAG_V,
+    WAIT_FLAGI_V,
 
     SIMT_START = 39999,
     SIMT_LDG,
