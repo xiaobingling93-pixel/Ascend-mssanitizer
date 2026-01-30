@@ -557,7 +557,7 @@ static void DmaMovNdorDn2nzDavSmallC0(bool srcIsNd, const DmaMovNd2nzDavRecord &
     }
     uint64_t rowNum = srcIsNd ? dmaMovRecord.nValue : dmaMovRecord.dValue;
     for (uint64_t h = 0; h < dmaMovRecord.ndNum; ++h) {
-        uint64_t ndAddr = dmaMovRecord.src + h * dmaMovRecord.loop4SrcStride * dmaMovRecord.loop1SrcStride;
+        uint64_t ndAddr = dmaMovRecord.src + h * dmaMovRecord.loop4SrcStride;
         for (uint64_t i = 0; i < rowNum; ++i) {
             memInfo.addr = ndAddr + i * dmaMovRecord.loop1SrcStride;
             events.emplace_back(event);
@@ -603,7 +603,7 @@ static void DmaMovNdorDn2nzDavDefault(bool srcIsNd, const DmaMovNd2nzDavRecord &
     AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV_ND2NZ_D);
     uint64_t rowNum = srcIsNd ? dmaMovRecord.nValue : dmaMovRecord.dValue;
     for (uint64_t h = 0; h < dmaMovRecord.ndNum; ++h) {
-        uint64_t ndAddr = dmaMovRecord.src + h * dmaMovRecord.loop4SrcStride * dmaMovRecord.loop1SrcStride;
+        uint64_t ndAddr = dmaMovRecord.src + h * dmaMovRecord.loop4SrcStride;
         for (uint64_t i = 0; i < rowNum; ++i) {
             memInfo.addr = ndAddr + i * dmaMovRecord.loop1SrcStride;
             events.emplace_back(event);
@@ -612,22 +612,23 @@ static void DmaMovNdorDn2nzDavDefault(bool srcIsNd, const DmaMovNd2nzDavRecord &
 
     // write
     constexpr uint64_t C0_SIZE = 32U;
-    constexpr uint32_t CLUSTE_MATRIX_SIZE = 512UL;
     memInfo.addr = dmaMovRecord.dst;
     memInfo.memType = dmaMovRecord.dstMemType;
     memInfo.opType = AccessType::WRITE;
     memInfo.blockNum = 1;
-    memInfo.blockSize = CLUSTE_MATRIX_SIZE;
+    memInfo.blockSize = C0_SIZE;
     memInfo.repeatTimes = 1;
     AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV_ND2NZ_D);
     /// 向上取整计算每个ndNum数据包含多少个完整的分型矩阵
     uint32_t matrixNum = CeilByAlignSize<C0_SIZE>(dmaMovRecord.dValue * dTypeByteSize) / C0_SIZE;
     for (uint64_t i = 0; i < matrixNum; ++i) {
-        uint64_t matrixAddr = dmaMovRecord.dst + i * dmaMovRecord.loop3DstStride * C0_SIZE +
-            (i + 1) * dmaMovRecord.loop2DstStride * C0_SIZE;
+        uint64_t loop3Addr = dmaMovRecord.dst + i * dmaMovRecord.loop3DstStride * C0_SIZE;
         for (uint64_t h = 0; h < dmaMovRecord.ndNum; ++h) {
-            memInfo.addr = matrixAddr + h * dmaMovRecord.loop4DstStride * C0_SIZE;
-            events.emplace_back(event);
+            uint64_t loop4Addr = loop3Addr + h * dmaMovRecord.loop4DstStride * C0_SIZE;
+            for (uint64_t k = 0; k < rowNum; ++k) {
+                memInfo.addr = loop4Addr + k * dmaMovRecord.loop2DstStride * C0_SIZE;
+                events.emplace_back(event);
+            }
         }
     }
 }
