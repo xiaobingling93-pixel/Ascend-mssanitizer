@@ -289,4 +289,20 @@ CallStack::StackCacheMap CallStack::ParseStacks(std::string const &msg) const
     return stackCacheMap;
 }
 
+std::ostream &CallStack::FormatCallStack(std::ostream &os, Stack const &stack) const
+{
+    char const *ascendHomePath = getenv("ASCEND_HOME_PATH");
+    bool envValid = ascendHomePath != nullptr && ascendHomePath[0] != '\0';
+
+    std::size_t idx = 0;
+    for (auto const &frame : stack) {
+        if (isPrintFullStack_ || !envValid ||
+            !Path(frame.fileName).IsSubPathOf(Path(ascendHomePath))) {
+            os << "======    #" << idx++ << " " << frame.fileName
+               << ":" << frame.line << ":" << frame.column << std::endl;
+        }
+    }
+    return os;
+}
+
 } // namespace Sanitizer

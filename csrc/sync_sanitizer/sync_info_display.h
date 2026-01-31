@@ -48,11 +48,8 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, BaseEvent const &info)
 
     os << "======    code in pc current 0x" << std::hex << info.pc << std::dec
        << " (serialNo:" << info.serialNo << ")" << std::endl;
-    for (std::size_t idx = 0UL; idx < stack.size(); ++idx) {
-        os << "======    #" << idx << " " << stack[idx].fileName
-           << ":" << stack[idx].line << ":" << stack[idx].column << std::endl;
-    }
-    return os;
+
+    return CallStack::Instance().FormatCallStack(os, stack);
 }
 
 struct FormatKernelName {};

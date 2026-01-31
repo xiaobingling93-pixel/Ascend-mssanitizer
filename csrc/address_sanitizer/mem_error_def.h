@@ -33,7 +33,6 @@
 #include "core/framework/utility/numeric.h"
 #include "core/framework/runtime_context.h"
 #include "core/framework/platform_config.h"
-#include "core/framework/utility/path.h"
 
 namespace Sanitizer {
 enum class MemErrorType : uint8_t {
@@ -282,23 +281,8 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, const ErrorMsg &msg)
 
     os << "======    code in pc current 0x" << std::hex << msg.auxData.pc << std::dec <<
           " (serialNo:" << msg.auxData.serialNo << ")" << std::endl;
-    
-    char const *env = getenv("ASCEND_HOME_PATH");
-   
-    bool envValid = true;
-    if (env == nullptr || env[0] == '\0') {
-        envValid = false;
-    }
 
-    std::size_t seq = 0;
-    for (std::size_t idx = 0UL; idx < stack.size(); ++idx) {
-        if (CallStack::Instance().IsPrintFullStack() || !envValid ||
-            !Path(stack[idx].fileName).IsSubPathOf(Path(env))) {
-            os << "======    #" << seq++ << " " << stack[idx].fileName <<
-                ":" << stack[idx].line << ":" << stack[idx].column << std::endl;
-        }
-    }
-    return os;
+    return CallStack::Instance().FormatCallStack(os, stack);
 }
 
 struct FormatKernelName {

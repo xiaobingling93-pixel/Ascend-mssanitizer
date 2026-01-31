@@ -24,6 +24,7 @@
 #include <vector>
 #include <cstdint>
 #include <unordered_map>
+#include <ostream>
 #include "core/framework/utility/singleton.h"
 
 #include "nlohmann/json.hpp"
@@ -49,6 +50,7 @@ public:
     friend class std::pair<const std::thread::id, CallStack>;
     void SetIsPrintFullStack(bool isPrintFullStack){ isPrintFullStack_ = isPrintFullStack; }
     bool IsPrintFullStack() const { return isPrintFullStack_; }
+    std::ostream &FormatCallStack(std::ostream &os, Stack const &stack) const;
 
 private:
     CallStack(void) : isBinaryEmpty_(true) { }

@@ -50,11 +50,8 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, BaseEvent const & event
 
     os << "at pc current 0x" << std::hex << event.pc << std::dec <<
           " (serialNo:" << serialNo << ")" << std::endl;
-    for (std::size_t idx = 0UL; idx < stack.size(); ++idx) {
-        os << "======    #" << idx << " " << stack[idx].fileName <<
-            ":" << stack[idx].line << ":" << stack[idx].column << std::endl;
-    }
-    return os;
+
+    return CallStack::Instance().FormatCallStack(os, stack);
 }
 
 struct FormatKernelName {};
