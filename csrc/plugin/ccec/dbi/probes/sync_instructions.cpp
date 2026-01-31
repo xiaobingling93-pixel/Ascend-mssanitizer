@@ -82,3 +82,8 @@ SANITIZER_REPORT(wait_flagi_v, pipe_t pipe, uint64_t eventID)
     pipe_t tpipe = static_cast<pipe_t>(PipeType::PIPE_V);
     RecordSyncEvent<RecordType::WAIT_FLAGI_V>(EXTRA_PARAMS, pipe, tpipe, eventID);
 }
+
+SANITIZER_REPORT(pipe_barrier, pipe_t pipe)
+{
+    RecordPipeBarrierEvent(EXTRA_PARAMS, pipe);
+}
