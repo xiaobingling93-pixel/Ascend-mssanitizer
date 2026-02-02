@@ -23,6 +23,12 @@ endif()
 option(BUILD_TESTS "build unit tests" OFF)
 option(FUZZ_TESTS "build fuzz tests" OFF)
 
+# 设置默认构建类型为 Release
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type (Debug/Release)" FORCE)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 # 通过ExternalProject构建本工程，从而实现在install后再将打包过程纳入CMAKE管理
 include(ExternalProject)
 
@@ -31,6 +37,7 @@ ExternalProject_Add(build_sanitizer
                     SOURCE_DIR  ${ROOT_DIR}
                     CMAKE_ARGS  -DBUILD_TESTS=${BUILD_TESTS} 
                                 -DFUZZ_TESTS=${FUZZ_TESTS}
+                                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                                 -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install
