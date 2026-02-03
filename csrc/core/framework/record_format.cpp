@@ -17,8 +17,25 @@
 
 #include "record_format.h"
 #include "file_mapping.h"
+#include "record_defs.h"
 
 #include <functional>
+
+namespace {
+
+struct NonEmptyString {
+    NonEmptyString(std::string const &str, std::string const &placeholder = "<unknown>")
+        : str{str}, placeholder{placeholder} { }
+    std::string const &str;
+    std::string const &placeholder;
+};
+
+std::ostream &operator<<(std::ostream &os, NonEmptyString const &nonEmptyString)
+{
+    return os << (nonEmptyString.str.empty() ? nonEmptyString.placeholder : nonEmptyString.str);
+}
+
+} // namespace [Dummy]
 
 namespace Sanitizer {
 
@@ -148,11 +165,12 @@ std::ostream &operator<<(std::ostream &os, RecordType recordType)
 std::ostream &operator<<(std::ostream &os, InterfaceType interfaceType)
 {
     static const std::map<InterfaceType, std::string> INTERFACE_TYPE_MAP = {
-        {InterfaceType::MSTX_SET_CROSS_SYNC,            "SET_CROSS"},
-        {InterfaceType::MSTX_WAIT_CROSS_SYNC,           "WAIT_CROSS"},
-        {InterfaceType::MSTX_HCCL,                      "HCCL"},
-        {InterfaceType::MSTX_HCCLV,                   "HCCLV"},
-
+        {InterfaceType::MSTX_SET_CROSS_SYNC,   "SET_CROSS"},
+        {InterfaceType::MSTX_WAIT_CROSS_SYNC,  "WAIT_CROSS"},
+        {InterfaceType::MSTX_HCCL,             "HCCL"},
+        {InterfaceType::MSTX_HCCLV,            "HCCLV"},
+        {InterfaceType::MSTX_VEC_UNARY_OP,     "VEC_UNARY"},
+        {InterfaceType::MSTX_VEC_BINARY_OP,    "VEC_BINARY"},
     };
 
     return FormatEnum(os, INTERFACE_TYPE_MAP, interfaceType, "InterfaceType");
@@ -414,6 +432,53 @@ std::ostream &operator<<(std::ostream &os, MstxHcclCoreRecord const &record)
               << ", " << "repeat:" << record.repeat;
 }
 
+std::ostream &operator<<(std::ostream &os, MstxTensorDesc const &tensor)
+{
+  return os << "(addr:0x" << std::hex << tensor.addr << std::dec
+            << ",size:" << tensor.size
+            << ",space:" << tensor.space
+            << ",dataBits:" << static_cast<uint32_t>(tensor.dataBits) << ")";
+}
+
+std::ostream &operator<<(std::ostream &os, MstxVecWrapper const &record)
+{
+    return os << "maskMode:" << record.maskMode
+              << ", " << "mask:" << record.mask
+              << ", " << "reserveBufSize:" << record.reserveBufSize
+              << ", " << "useMask:" << std::boolalpha << record.useMask;
+}
+
+std::ostream &operator<<(std::ostream &os, MstxVecUnaryDesc const &record)
+{
+    return os << ", " << "dst:" << record.dst
+              << ", " << "src:" << record.src
+              << ", " << record.wrapper
+              << ", " << "blockNum:" << record.blockNum
+              << ", " << "dstBlockStride:" << static_cast<uint32_t>(record.dstBlockStride)
+              << ", " << "srcBlockStride:" << static_cast<uint32_t>(record.srcBlockStride)
+              << ", " << "repeatTimes:" << static_cast<uint32_t>(record.repeatTimes)
+              << ", " << "dstRepeatStride:" << static_cast<uint32_t>(record.dstRepeatStride)
+              << ", " << "srcRepeatStride:" << static_cast<uint32_t>(record.srcRepeatStride)
+              << ", " << "name:" << NonEmptyString{record.name};
+}
+
+std::ostream &operator<<(std::ostream &os, MstxVecBinaryDesc const &record)
+{
+    return os << ", " << "dst:" << record.dst
+              << ", " << "src0:" << record.src0
+              << ", " << "src1:" << record.src1
+              << ", " << record.wrapper
+              << ", " << "blockNum:" << record.blockNum
+              << ", " << "dstBlockStride:" << static_cast<uint32_t>(record.dstBlockStride)
+              << ", " << "src0BlockStride:" << static_cast<uint32_t>(record.src0BlockStride)
+              << ", " << "src1BlockStride:" << static_cast<uint32_t>(record.src1BlockStride)
+              << ", " << "repeatTimes:" << static_cast<uint32_t>(record.repeatTimes)
+              << ", " << "dstRepeatStride:" << static_cast<uint32_t>(record.dstRepeatStride)
+              << ", " << "src0RepeatStride:" << static_cast<uint32_t>(record.src0RepeatStride)
+              << ", " << "src1RepeatStride:" << static_cast<uint32_t>(record.src1RepeatStride)
+              << ", " << "name:" << NonEmptyString{record.name};
+}
+
 std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
 {
     os << record.location
@@ -431,6 +496,10 @@ std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxHcclRecord; }},
         {InterfaceType::MSTX_HCCLV,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxHcclCoreRecord; }},
+        {InterfaceType::MSTX_VEC_UNARY_OP,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecUnaryDesc; }},
+        {InterfaceType::MSTX_VEC_BINARY_OP,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecBinaryDesc; }},
     };
 
     typename decltype(MSTX_RECORD_FORMAT_MAP)::const_iterator it = MSTX_RECORD_FORMAT_MAP.find(record.interfaceType);

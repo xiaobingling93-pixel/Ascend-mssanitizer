@@ -1199,6 +1199,112 @@ TEST(RecordFormat, format_mstx_hccl_record_expect_correct_result)
     ASSERT_NE(mstxHcclFormat.find("rankDim:8"), std::string::npos);
 }
 
+TEST(RecordFormat, format_mstx_tensor_desc_expect_correct_result)
+{
+    MstxTensorDesc tensorDesc = {
+        .space = AddressSpace::UB,
+        .addr = 0x200,
+        .size = 100,
+        .dataBits = 8,
+    };
+
+    std::stringstream ss;
+    ss << tensorDesc;
+    std::string result = ss.str();
+    ASSERT_NE(result.find("addr:0x200"), std::string::npos);
+    ASSERT_NE(result.find("size:100"), std::string::npos);
+    ASSERT_NE(result.find("space:UB"), std::string::npos);
+    ASSERT_NE(result.find("dataBits:8"), std::string::npos);
+}
+
+TEST(RecordFormat, format_mstx_vec_unary_desc_expect_correct_result)
+{
+    MstxTensorDesc tensorDesc = {
+        .space = AddressSpace::UB,
+        .addr = 0x200,
+        .size = 100,
+        .dataBits = 8,
+    };
+    VectorMask mask = {1, 2};
+    MstxVecUnaryDesc record{};
+    record.dst = tensorDesc;
+    record.src = tensorDesc;
+    record.wrapper.maskMode = MaskMode::MASK_NORM;
+    record.wrapper.mask = mask;
+    record.wrapper.reserveBufSize = 0;
+    record.wrapper.useMask = true;
+    record.blockNum = 8;
+    record.repeatTimes = 1;
+    record.dstBlockStride = 1;
+    record.srcBlockStride = 1;
+    record.dstRepeatStride = 1;
+    record.srcRepeatStride = 1;
+
+    std::stringstream ss;
+    ss << record;
+    std::string result = ss.str();
+    ASSERT_NE(result.find("dst:" + ToString(tensorDesc)), std::string::npos);
+    ASSERT_NE(result.find("src:" + ToString(tensorDesc)), std::string::npos);
+    ASSERT_NE(result.find("maskMode:" + ToString(MaskMode::MASK_NORM)), std::string::npos);
+    ASSERT_NE(result.find("mask:" + ToString(mask)), std::string::npos);
+    ASSERT_NE(result.find("reserveBufSize:0"), std::string::npos);
+    ASSERT_NE(result.find("useMask:true"), std::string::npos);
+    ASSERT_NE(result.find("blockNum:8"), std::string::npos);
+    ASSERT_NE(result.find("repeatTimes:1"), std::string::npos);
+    ASSERT_NE(result.find("dstBlockStride:1"), std::string::npos);
+    ASSERT_NE(result.find("srcBlockStride:1"), std::string::npos);
+    ASSERT_NE(result.find("dstRepeatStride:1"), std::string::npos);
+    ASSERT_NE(result.find("srcRepeatStride:1"), std::string::npos);
+    ASSERT_NE(result.find("name:<unknown>"), std::string::npos);
+}
+
+TEST(RecordFormat, format_mstx_vec_binary_desc_expect_correct_result)
+{
+    MstxTensorDesc tensorDesc = {
+        .space = AddressSpace::UB,
+        .addr = 0x200,
+        .size = 100,
+        .dataBits = 8,
+    };
+    VectorMask mask = {1, 2};
+    MstxVecBinaryDesc record{};
+    record.dst = tensorDesc;
+    record.src0 = tensorDesc;
+    record.src1 = tensorDesc;
+    record.wrapper.maskMode = MaskMode::MASK_NORM;
+    record.wrapper.mask = mask;
+    record.wrapper.reserveBufSize = 0;
+    record.wrapper.useMask = true;
+    record.blockNum = 8;
+    record.repeatTimes = 1;
+    record.dstBlockStride = 1;
+    record.src0BlockStride = 1;
+    record.src1BlockStride = 1;
+    record.dstRepeatStride = 1;
+    record.src0RepeatStride = 1;
+    record.src1RepeatStride = 1;
+
+    std::stringstream ss;
+    ss << record;
+    std::string result = ss.str();
+    ASSERT_NE(result.find("dst:" + ToString(tensorDesc)), std::string::npos);
+    ASSERT_NE(result.find("src0:" + ToString(tensorDesc)), std::string::npos);
+    ASSERT_NE(result.find("src1:" + ToString(tensorDesc)), std::string::npos);
+    ASSERT_NE(result.find("maskMode:" + ToString(MaskMode::MASK_NORM)), std::string::npos);
+    ASSERT_NE(result.find("mask:" + ToString(mask)), std::string::npos);
+    ASSERT_NE(result.find("reserveBufSize:0"), std::string::npos);
+    ASSERT_NE(result.find("useMask:true"), std::string::npos);
+    ASSERT_NE(result.find("blockNum:8"), std::string::npos);
+    ASSERT_NE(result.find("repeatTimes:1"), std::string::npos);
+    ASSERT_NE(result.find("dstBlockStride:1"), std::string::npos);
+    ASSERT_NE(result.find("src0BlockStride:1"), std::string::npos);
+    ASSERT_NE(result.find("src1BlockStride:1"), std::string::npos);
+    ASSERT_NE(result.find("dstRepeatStride:1"), std::string::npos);
+    ASSERT_NE(result.find("src0RepeatStride:1"), std::string::npos);
+    ASSERT_NE(result.find("src1RepeatStride:1"), std::string::npos);
+    ASSERT_NE(result.find("name:<unknown>"), std::string::npos);
+}
+
 TEST(RecordFormat, format_scattervnchwconv_record_expect_correct_result)
 {
     ScatterVnchwconvRecord record = {

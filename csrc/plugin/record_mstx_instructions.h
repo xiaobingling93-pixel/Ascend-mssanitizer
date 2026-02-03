@@ -51,6 +51,21 @@ __aicore__ inline void AssignHcclRecord(MstxRecord &rhs, const MstxHcclRecord &l
     record.flagId = lhs.flagId;
 }
 
+template<typename RecordT>
+__aicore__ inline void RecordMstxPlainRecord(Recorder &recorder, MstxRecord &mstxRecord,
+                                             RecordT MstxRecord::Interface::*record,
+                                             uint32_t bufferLens, void *buffer)
+{
+    if (bufferLens != sizeof(RecordT) || buffer == nullptr) {
+        mstxRecord.error = true;
+        recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+        return;
+    }
+
+    mstxRecord.interface.*record = *static_cast<RecordT *>(buffer);
+    recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
+}
+
 __aicore__ inline void RecordMstxCrossRecord(Recorder &recorder, MstxRecord &mstxRecord,
                                              uint32_t bufferLens, void *buffer)
 {
@@ -97,6 +112,23 @@ __aicore__ inline void RecordMstxHcclVRecord(Recorder &recorder, MstxRecord &mst
     }
 }
 
+template<typename RecordT>
+__aicore__ inline void ProcessMstxVecMask(Recorder &recorder, uint32_t bufferLens, void *buffer)
+{
+    if (bufferLens != sizeof(RecordT) || buffer == nullptr) {
+        return;
+    }
+
+    RecordT &record = *static_cast<RecordT *>(buffer);
+    if (static_cast<uint8_t>(record.wrapper.maskMode) == 0xFF) {
+        recorder.GetRegister(&Register::maskMode, record.wrapper.maskMode);
+    }
+    if (!record.wrapper.useMask) {
+        recorder.GetRegister(&Register::vectorMask0, record.wrapper.mask.mask0);
+        recorder.GetRegister(&Register::vectorMask1, record.wrapper.mask.mask1);
+    }
+}
+
 __aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, uint32_t bufferLens, void *buffer)
 {
     if (InvalidMemInfoOrOnlySynccheck(memInfo)) { return;}
@@ -128,6 +160,12 @@ __aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, u
         RecordMstxHcclRecord(recorder, mstxRecord, bufferLens, buffer);
     } else if (interfaceId == static_cast<uint32_t>(InterfaceType::MSTX_HCCLV)) {
         RecordMstxHcclVRecord(recorder, mstxRecord, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_VEC_UNARY_OP) {
+        ProcessMstxVecMask<MstxVecUnaryDesc>(recorder, bufferLens, buffer);
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxVecUnaryDesc, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_VEC_BINARY_OP) {
+        ProcessMstxVecMask<MstxVecBinaryDesc>(recorder, bufferLens, buffer);
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxVecBinaryDesc, bufferLens, buffer);
     } else {
         mstxRecord.error = true;
         recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);

@@ -106,6 +106,8 @@ constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
 constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
 // 用于标记GM上定义的数据来源于host
 constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+// MSTX API 信息上报时 API 的名字长度
+constexpr std::size_t MSTX_API_NAME_LENGTH = 64UL;
 
 enum class RecordType : uint32_t {
     /// load_store
@@ -734,8 +736,55 @@ enum class InterfaceType : uint32_t {
     MSTX_WAIT_CROSS_SYNC,
     MSTX_HCCL,
     MSTX_HCCLV,
+
     MSTX_FUSE_SCOPE_START = 1000,  // 融合语义范围开始标记，范围内的指令记录会被忽略
     MSTX_FUSE_SCOPE_END,           // 融合语义范围结束标记
+
+    MSTX_VEC_UNARY_OP = 3000,
+    MSTX_VEC_BINARY_OP,
+};
+
+struct MstxTensorDesc {
+    AddressSpace space;
+    uint64_t addr;
+    uint64_t size;
+    uint8_t dataBits;
+};
+
+struct MstxVecWrapper {
+    MaskMode maskMode;
+    VectorMask mask;
+    uint32_t reserveBufSize;
+    bool useMask;  // 是否使用 api 传入的 vector mask
+};
+
+struct MstxVecUnaryDesc {
+    MstxTensorDesc dst;
+    MstxTensorDesc src;
+    MstxVecWrapper wrapper;
+    uint32_t blockNum;
+    uint16_t dstBlockStride;
+    uint16_t srcBlockStride;
+    uint8_t repeatTimes;
+    uint8_t dstRepeatStride;
+    uint8_t srcRepeatStride;
+    char name[MSTX_API_NAME_LENGTH];
+};
+
+struct MstxVecBinaryDesc {
+    MstxTensorDesc dst;
+    MstxTensorDesc src0;
+    MstxTensorDesc src1;
+    MstxVecWrapper wrapper;
+    uint32_t blockNum;
+    uint16_t dstBlockStride;
+    uint16_t src0BlockStride;
+    uint16_t src1BlockStride;
+    uint8_t repeatTimes;
+    uint8_t dstRepeatStride;
+    uint8_t src0RepeatStride;
+    uint8_t src1RepeatStride;
+    char name[MSTX_API_NAME_LENGTH];
 };
 
 struct MstxRecord {
@@ -747,6 +796,8 @@ struct MstxRecord {
         MstxCrossRecord mstxCrossRecord;
         MstxHcclRecord mstxHcclRecord;
         MstxHcclCoreRecord mstxHcclCoreRecord; // 一条MstxHcclRecordV会转换为多条MstxHcclCoreRecord
+        MstxVecUnaryDesc mstxVecUnaryDesc;
+        MstxVecBinaryDesc mstxVecBinaryDesc;
     } interface;
 };
 
