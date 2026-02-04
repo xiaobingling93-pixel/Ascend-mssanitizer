@@ -24,6 +24,48 @@ SANITIZER_REPORT(wait_flagi, pipe_t pipe, pipe_t tpipe, uint64_t eventID)
     RecordSyncEvent<RecordType::WAIT_FLAGI>(EXTRA_PARAMS, pipe, tpipe, eventID);
 }
 
+SANITIZER_REPORT(get_buf, pipe_t pipe, uint8_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::GET_BUF>(EXTRA_PARAMS, pipe, static_cast<uint64_t>(bufId), mode);
+}
+
+SANITIZER_REPORT(get_bufi, pipe_t pipe, uint64_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::GET_BUFI>(EXTRA_PARAMS, pipe, bufId, mode);
+}
+
+SANITIZER_REPORT(rls_buf, pipe_t pipe, uint8_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::RLS_BUF>(EXTRA_PARAMS, pipe, static_cast<uint64_t>(bufId), mode);
+}
+
+SANITIZER_REPORT(rls_bufi, pipe_t pipe, uint64_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::RLS_BUFI>(EXTRA_PARAMS, pipe, bufId, mode);
+}
+
+SANITIZER_REPORT(get_buf_v, uint8_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::GET_BUF_V>(EXTRA_PARAMS, static_cast<pipe_t>(PipeType::PIPE_V),
+        static_cast<uint64_t>(bufId), mode);
+}
+
+SANITIZER_REPORT(get_bufi_v, uint64_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::GET_BUFI_V>(EXTRA_PARAMS, static_cast<pipe_t>(PipeType::PIPE_V), bufId, mode);
+}
+
+SANITIZER_REPORT(rls_buf_v, uint8_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::RLS_BUF_V>(EXTRA_PARAMS, static_cast<pipe_t>(PipeType::PIPE_V),
+        static_cast<uint64_t>(bufId), mode);
+}
+
+SANITIZER_REPORT(rls_bufi_v, uint64_t bufId, bool mode)
+{
+    RecordBufEvent<RecordType::RLS_BUFI_V>(EXTRA_PARAMS, static_cast<pipe_t>(PipeType::PIPE_V), bufId, mode);
+}
+
 SANITIZER_REPORT(wait_flag_dev_pipe, pipe_t pipe, int64_t flagID)
 {
     RecordWaitFlagDevEventWithPipe<RecordType::WAIT_FLAG_DEV_PIPE>(EXTRA_PARAMS, pipe, flagID);

@@ -42,6 +42,7 @@ ExternalProject_Add(build_sanitizer
                     BUILD_COMMAND $(MAKE)
                     INSTALL_COMMAND $(MAKE) install
                     EXCLUDE_FROM_ALL FALSE
+                    BUILD_ALWAYS TRUE
 )
 
 # 检查是否可用 python

@@ -153,6 +153,7 @@ std::ostream &operator<<(std::ostream &os, LoadImageRecord const &record);
 std::ostream &operator<<(std::ostream &os, LoadSmaskRecord const &record);
 std::ostream &operator<<(std::ostream &os, VecRegPropCoordOpRecord const &record);
 std::ostream &operator<<(std::ostream &os, SoftSyncRecord const& record);
+std::ostream& operator<<(std::ostream& os, BufRecord const& record);
 std::ostream &operator<<(std::ostream &os, CmpMaskRecord const &record);
 std::ostream &operator<<(std::ostream &os, MstxTensorDesc const &tensor);
 std::ostream &operator<<(std::ostream &os, MstxVecWrapper const &record);

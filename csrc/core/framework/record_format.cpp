@@ -113,6 +113,14 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::SET_FLAGI,                   "SET_FLAGI"},
     {RecordType::WAIT_FLAG,                   "WAIT_FLAG"},
     {RecordType::WAIT_FLAGI,                  "WAIT_FLAGI"},
+    {RecordType::GET_BUF,                    "GET_BUF"},
+    {RecordType::GET_BUFI,                    "GET_BUFI"},
+    {RecordType::RLS_BUF,                    "RLS_BUF"},
+    {RecordType::RLS_BUFI,                    "RLS_BUFI"},
+    {RecordType::GET_BUF_V,                    "GET_BUF_V"},
+    {RecordType::GET_BUFI_V,                    "GET_BUFI_V"},
+    {RecordType::RLS_BUF_V,                    "RLS_BUF_V"},
+    {RecordType::RLS_BUFI_V,                    "RLS_BUFI_V"},
     {RecordType::HSET_FLAG,                   "HSET_FLAG"},
     {RecordType::HWAIT_FLAG,                  "HWAIT_FLAG"},
     {RecordType::PIPE_BARRIER,                "PIPE_BARRIER"},
@@ -871,6 +879,14 @@ std::ostream &operator<<(std::ostream &os, IntraBlockSyncRecord const &record)
               << ", " << "syncid:" << record.syncID;
 }
 
+std::ostream& operator<<(std::ostream& os, BufRecord const& record)
+{
+    return os << record.location
+              << ", " << "pipe:" << record.pipe
+              << ";" << "bufId:" << record.bufId
+              << ";" << "mode:" << static_cast<uint16_t>(record.mode);
+}
+
 std::ostream &operator<<(std::ostream &os, AddrCalMode addrCalMode)
 {
     static const std::map<AddrCalMode, std::string> ADDR_CAL_MODE_MAP = {
@@ -1446,6 +1462,14 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::SET_FLAGI,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.syncRecord; }},
     {RecordType::WAIT_FLAG,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.syncRecord; }},
     {RecordType::WAIT_FLAGI,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.syncRecord; }},
+    {RecordType::GET_BUF,      [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::GET_BUFI,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::RLS_BUF,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::RLS_BUFI,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::GET_BUF_V,      [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::GET_BUFI_V,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::RLS_BUF_V,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
+    {RecordType::RLS_BUFI_V,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.bufRecord; }},
     {RecordType::HSET_FLAG,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.hardSyncRecord; }},
     {RecordType::HWAIT_FLAG,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.hardSyncRecord; }},
     {RecordType::PIPE_BARRIER,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.pipeBarrierRecord; }},

@@ -216,12 +216,20 @@ enum class RecordType : uint32_t {
     SCATTERVNCHWCONV,
     SCATTERVNCHWCONV_A5,
     VBS32_A5,
+    GET_BUF,
+    GET_BUFI,
+    RLS_BUF,
+    RLS_BUFI,
     SET_FLAGI,
     WAIT_FLAGI,
     SET_FLAG_V,
     SET_FLAGI_V,
     WAIT_FLAG_V,
     WAIT_FLAGI_V,
+    GET_BUF_V,
+    GET_BUFI_V,
+    RLS_BUF_V,
+    RLS_BUFI_V,
 
     SIMT_START = 39999,
     SIMT_LDG,
@@ -400,6 +408,12 @@ enum class SimtAtomMode : uint8_t {
     ADD,
     EXCH,
     CAS,
+};
+
+// 用于标识 set/rls buf指令的模式e
+enum class BufMode : uint8_t {
+    BLOCK_MODE = 0,
+    NONBLOCK_MODE,
 };
 
 /// MemOpRecord 使用的内存操作类型枚举
@@ -1193,6 +1207,13 @@ struct SyncRecord {
     uint64_t eventID;
 };
 
+struct BufRecord {
+    Location location;
+    PipeType pipe;
+    uint64_t bufId;
+    BufMode mode;
+};
+
 struct HardSyncRecord {
     Location location;
     PipeType src;
@@ -1827,6 +1848,7 @@ struct KernelRecord {
         MarixMulOpRecord matrixMulOpRecord;
         VecRegPropCoordOpRecord vecRegPropCoordOpRecord;
         SyncRecord syncRecord;
+        BufRecord bufRecord;
         HardSyncRecord hardSyncRecord;
         SoftSyncRecord softSyncRecord;
         PipeBarrierRecord pipeBarrierRecord;

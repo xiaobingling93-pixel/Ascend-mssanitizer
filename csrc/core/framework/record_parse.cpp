@@ -2970,6 +2970,36 @@ static void ParseRecordWaitFlag(const KernelRecord &record, std::vector<SanEvent
     events.emplace_back(event);
 }
 
+static void ParseRecordGetBuf(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event;
+    SetLocationInfo(event, record.payload.bufRecord, record.blockType, record.serialNo);
+    event.type = EventType::SYNC_EVENT;
+    event.pipe = record.payload.syncRecord.src;
+    event.eventInfo.bufSyncInfo.opType = SyncType::GET_BUF;
+    event.eventInfo.bufSyncInfo.pipe = record.payload.bufRecord.pipe;
+    event.eventInfo.bufSyncInfo.bufId = record.payload.bufRecord.bufId;
+    event.eventInfo.bufSyncInfo.mode = static_cast<uint8_t>(record.payload.bufRecord.mode);
+    event.eventInfo.syncInfo.memType = MemType::INVALID;
+    event.eventInfo.syncInfo.isRetrogress = false;
+    events.emplace_back(event);
+}
+
+static void ParseRecordRlsBuf(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event;
+    SetLocationInfo(event, record.payload.bufRecord, record.blockType, record.serialNo);
+    event.type = EventType::SYNC_EVENT;
+    event.pipe = record.payload.syncRecord.src;
+    event.eventInfo.bufSyncInfo.opType = SyncType::RLS_BUF;
+    event.eventInfo.bufSyncInfo.pipe = record.payload.bufRecord.pipe;
+    event.eventInfo.bufSyncInfo.bufId = record.payload.bufRecord.bufId;
+    event.eventInfo.bufSyncInfo.mode = static_cast<uint8_t>(record.payload.bufRecord.mode);
+    event.eventInfo.syncInfo.memType = MemType::INVALID;
+    event.eventInfo.syncInfo.isRetrogress = false;
+    events.emplace_back(event);
+}
+
 static void ParseFftsSyncRecord(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3564,6 +3594,14 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::WAIT_FLAG_V, ParseRecordWaitFlag},
     {RecordType::SET_FLAGI_V, ParseRecordSetFlag},
     {RecordType::WAIT_FLAGI_V, ParseRecordWaitFlag},
+    {RecordType::GET_BUF, ParseRecordGetBuf},
+    {RecordType::GET_BUFI, ParseRecordGetBuf},
+    {RecordType::RLS_BUF, ParseRecordRlsBuf},
+    {RecordType::RLS_BUFI, ParseRecordRlsBuf},
+    {RecordType::GET_BUF_V, ParseRecordGetBuf},
+    {RecordType::GET_BUFI_V, ParseRecordGetBuf},
+    {RecordType::RLS_BUF_V, ParseRecordRlsBuf},
+    {RecordType::RLS_BUFI_V, ParseRecordRlsBuf},
     {RecordType::FFTS_SYNC, ParseFftsSyncRecord},
     {RecordType::WAIT_FLAG_DEV, ParseWaitDevRecord},
     {RecordType::IB_SET_STUB, ParseRecordIBSetStub},

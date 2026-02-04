@@ -50,6 +50,8 @@ enum class SyncType : uint8_t {
     SYNC_ALL,
     MSTX_SET_CROSS,
     MSTX_WAIT_CROSS,
+    GET_BUF,
+    RLS_BUF,
 };
 
 enum class RaceCheckType: uint8_t {
@@ -101,6 +103,13 @@ struct FftsSyncInfo {
     uint8_t vecSubBlockDim;
 };
 
+struct BufSyncInfo {
+    SyncType opType;
+    PipeType pipe;
+    uint64_t bufId;
+    uint8_t mode;
+};
+
 struct SoftSyncInfo {
     SyncType opType;
     int32_t eventID;
@@ -141,6 +150,7 @@ struct SanEvent {
         SyncOpInfo syncInfo;
         MemOpInfo memInfo;
         FftsSyncInfo fftsSyncInfo;
+        BufSyncInfo bufSyncInfo;
         SoftSyncInfo softSyncInfo;
         MstxCrossInfo mstxCrossInfo;
         AtomicModeInfo atomicModeInfo;

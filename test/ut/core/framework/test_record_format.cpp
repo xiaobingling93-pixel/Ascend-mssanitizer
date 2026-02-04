@@ -504,6 +504,44 @@ TEST(RecordFormat, format_sync_record_expect_correct_result)
     ASSERT_NE(format.find("3"), std::string::npos);
 }
 
+TEST(RecordFormat, format_buf_record_on_pipev_expect_correct_result)
+{
+    BufRecord record = {
+        .location = {01, 56, 0x0001c, 25},
+        .pipe = PipeType::PIPE_V,
+        .bufId = 10,
+        .mode = BufMode::BLOCK_MODE,
+    };
+    std::stringstream ss;
+    ss << record;
+    std::string format = ss.str();
+    printf("%s", format.c_str());
+    ASSERT_NE(format.find("56"), std::string::npos);
+    ASSERT_NE(format.find("25"), std::string::npos);
+    ASSERT_NE(format.find("V"), std::string::npos);
+    ASSERT_NE(format.find("10"), std::string::npos);
+    ASSERT_NE(format.find("0"), std::string::npos);
+}
+
+TEST(RecordFormat, format_buf_record_on_pipes_expect_correct_result)
+{
+    BufRecord record = {
+        .location = {3, 26, 0x0001d, 10},
+        .pipe = PipeType::PIPE_S,
+        .bufId = 2,
+        .mode = BufMode::NONBLOCK_MODE,
+    };
+    std::stringstream ss;
+    ss << record;
+    std::string format = ss.str();
+    printf("%s", format.c_str());
+    ASSERT_NE(format.find("10"), std::string::npos);
+    ASSERT_NE(format.find("26"), std::string::npos);
+    ASSERT_NE(format.find("S"), std::string::npos);
+    ASSERT_NE(format.find("2"), std::string::npos);
+    ASSERT_NE(format.find("1"), std::string::npos);
+}
+
 TEST(RecordFormat, format_hard_sync_record_expect_correct_result)
 {
     HardSyncRecord record = {

@@ -302,6 +302,30 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::WAIT_FLAGI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
     }},
+    {RecordType::GET_BUF, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::GET_BUFI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::RLS_BUF, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::RLS_BUFI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::GET_BUF_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::GET_BUFI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::RLS_BUF_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
+    {RecordType::RLS_BUFI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.bufRecord, offset);
+    }},
     {RecordType::FFTS_SYNC, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.fftsSyncRecord, offset);
     }},

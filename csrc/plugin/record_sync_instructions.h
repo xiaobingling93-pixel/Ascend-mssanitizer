@@ -51,6 +51,33 @@ __aicore__ inline void RecordSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, pipe_t tpi
 }
 
 template<RecordType recordType>
+__aicore__ inline void RecordBufEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64_t bufId, bool mode)
+{
+    if (MemInfoIsInvalid(memInfo)) {
+        return;
+    }
+
+    if (!DoRaceCheck(memInfo) && !DoSyncCheck(memInfo)) {
+        return;
+    }
+
+    uint64_t blockIdx = GetBlockIdx();
+    auto record = BufRecord {};
+#if !defined(BUILD_DYNAMIC_PROBE)
+    record.location.fileNo = fileNo;
+    record.location.lineNo = lineNo;
+#endif
+    record.location.pc = static_cast<uint64_t>(pc);
+    record.location.blockId = blockIdx;
+    record.pipe = static_cast<PipeType>(pipe);
+    record.bufId = bufId;
+    record.mode = static_cast<BufMode>(mode);
+
+    Recorder recorder(memInfo, blockIdx);
+    recorder.DumpRecord<recordType>(record);
+}
+
+template<RecordType recordType>
 __aicore__ inline void RecordSoftSyncEvent(EXTRA_PARAMS_DEC, int32_t waitBlockIdx, int32_t eventID,
     int32_t usedCores, bool isAIVOnly)
 {
