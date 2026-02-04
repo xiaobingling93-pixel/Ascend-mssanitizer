@@ -125,6 +125,8 @@ using RecordTypeMap = TypeMap<
     TypePair<RecordType::RLS_BUFI_V, BufRecord>,
     TypePair<RecordType::HSET_FLAG, HardSyncRecord>,
     TypePair<RecordType::HWAIT_FLAG, HardSyncRecord>,
+    TypePair<RecordType::HSET_FLAGI, HardSyncRecord>,
+    TypePair<RecordType::HWAIT_FLAGI, HardSyncRecord>,
     TypePair<RecordType::FFTS_SYNC, FftsSyncRecord>,
     TypePair<RecordType::WAIT_FLAG_DEV, WaitFlagDevRecord>,
     TypePair<RecordType::WAIT_FLAG_DEV_PIPE, WaitFlagDevPipeRecord>,

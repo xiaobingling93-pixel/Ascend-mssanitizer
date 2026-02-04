@@ -548,7 +548,7 @@ TEST(RecordFormat, format_hard_sync_record_expect_correct_result)
         .location = {12, 34, 0, 111},
         .src = PipeType::PIPE_V,
         .dst = PipeType::PIPE_MTE2,
-        .eventID = EventID::EVENT_ID3,
+        .eventID = 3,
         .memory = MemType::UB,
         .v = 1
     };
@@ -559,7 +559,7 @@ TEST(RecordFormat, format_hard_sync_record_expect_correct_result)
     ASSERT_NE(format.find("111"), std::string::npos);
     ASSERT_NE(format.find("PIPE_V"), std::string::npos);
     ASSERT_NE(format.find("PIPE_MTE2"), std::string::npos);
-    ASSERT_NE(format.find("ID3"), std::string::npos);
+    ASSERT_NE(format.find("3"), std::string::npos);
     ASSERT_NE(format.find("UB"), std::string::npos);
     ASSERT_NE(format.find("1"), std::string::npos);
 }

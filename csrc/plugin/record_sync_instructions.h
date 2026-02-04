@@ -128,7 +128,7 @@ __aicore__ inline void RecordHardSyncEvent(EXTRA_PARAMS_DEC,
     record.location.blockId = blockIdx;
     record.src = static_cast<PipeType>(pipe);
     record.dst = static_cast<PipeType>(tpipe);
-    record.eventID = static_cast<EventID>(eventID);
+    record.eventID = eventID;
     record.memory = static_cast<MemType>(memory);
     record.v = v;
 

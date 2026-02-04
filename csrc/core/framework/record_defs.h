@@ -222,6 +222,8 @@ enum class RecordType : uint32_t {
     RLS_BUFI,
     SET_FLAGI,
     WAIT_FLAGI,
+    HSET_FLAGI,
+    HWAIT_FLAGI,
     SET_FLAG_V,
     SET_FLAGI_V,
     WAIT_FLAG_V,
@@ -1224,7 +1226,7 @@ struct HardSyncRecord {
     Location location;
     PipeType src;
     PipeType dst;
-    EventID eventID;
+    uint64_t eventID;
     MemType memory;
     uint8_t v;
 };

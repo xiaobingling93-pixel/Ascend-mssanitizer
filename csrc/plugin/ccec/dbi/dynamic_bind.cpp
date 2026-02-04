@@ -332,6 +332,11 @@ std::vector<BindStub> bindStubs{
     {InstrType::SET_FLAGI, "__sanitizer_report_set_flagi", {0, 1, 2}},
     {InstrType::WAIT_FLAG, "__sanitizer_report_wait_flag", {0, 1, 2}},
     {InstrType::WAIT_FLAGI, "__sanitizer_report_wait_flagi", {0, 1, 2}},
+    {InstrType::HSET_FLAG, "__sanitizer_report_hset_flag", {0, 1, 2, 3, 4}},
+    {InstrType::HWAIT_FLAG, "__sanitizer_report_hwait_flag", {0, 1, 2, 3, 4}},
+    {InstrType::HSET_FLAGI, "__sanitizer_report_hset_flagi", {0, 1, 2, 3, 4}},
+    {InstrType::HWAIT_FLAGI, "__sanitizer_report_hwait_flagi", {0, 1, 2, 3, 4}},
+
     {InstrType::GET_BUF, "__sanitizer_report_get_buf", {0, 1, 2}},
     {InstrType::GET_BUFI, "__sanitizer_report_get_bufi", {0, 1, 2}},
     {InstrType::RLS_BUF, "__sanitizer_report_rls_buf", {0, 1, 2}},

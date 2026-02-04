@@ -102,6 +102,26 @@ SANITIZER_REPORT(set_intra_blocki, pipe_t pipe, uint8_t syncID)
     RecordIntraBlockSyncEvent<RecordType::SET_INTRA_BLOCKI>(EXTRA_PARAMS, pipe, syncID);
 }
 
+SANITIZER_REPORT(hset_flag, pipe_t pipe, pipe_t tpipe, uint64_t eventID, mem_t memID, bool v)
+{
+    RecordHardSyncEvent<RecordType::HSET_FLAG>(EXTRA_PARAMS, pipe, tpipe, eventID, memID, v);
+}
+
+SANITIZER_REPORT(hwait_flag, pipe_t pipe, pipe_t tpipe, uint64_t eventID, mem_t memID, bool v)
+{
+    RecordHardSyncEvent<RecordType::HWAIT_FLAG>(EXTRA_PARAMS, pipe, tpipe, eventID, memID, v);
+}
+
+SANITIZER_REPORT(hset_flagi, pipe_t pipe, pipe_t tpipe, uint64_t eventID, mem_t memID, bool v)
+{
+    RecordHardSyncEvent<RecordType::HSET_FLAGI>(EXTRA_PARAMS, pipe, tpipe, eventID, memID, v);
+}
+
+SANITIZER_REPORT(hwait_flagi, pipe_t pipe, pipe_t tpipe, uint64_t eventID, mem_t memID, bool v)
+{
+    RecordHardSyncEvent<RecordType::HWAIT_FLAGI>(EXTRA_PARAMS, pipe, tpipe, eventID, memID, v);
+}
+
 SANITIZER_REPORT(set_flag_v, pipe_t tpipe, uint64_t eventID)
 {
     pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);

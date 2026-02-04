@@ -2616,7 +2616,7 @@ TEST_F(TestRecordParse, parse_hsync_record)
     record.payload.hardSyncRecord.location.blockId = 7;
     record.payload.hardSyncRecord.src = PipeType::PIPE_MTE1;
     record.payload.hardSyncRecord.dst = PipeType::PIPE_M;
-    record.payload.hardSyncRecord.eventID = EventID::EVENT_ID1;
+    record.payload.hardSyncRecord.eventID = 1;
     record.payload.hardSyncRecord.memory = MemType::L0A;
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
@@ -2867,7 +2867,7 @@ TEST_F(TestRecordParse, parse_wait_flag_and_hwait_flag_end_to_end_in_pipe_record
     record.payload.hardSyncRecord.location.blockId = 0;
     record.payload.hardSyncRecord.src = PipeType::PIPE_MTE1;
     record.payload.hardSyncRecord.dst = PipeType::PIPE_FIX;
-    record.payload.hardSyncRecord.eventID = EventID::EVENT_ID0;
+    record.payload.hardSyncRecord.eventID = 0;
     record.payload.hardSyncRecord.memory = MemType::L0A;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
@@ -2894,7 +2894,7 @@ TEST_F(TestRecordParse, parse_hwait_flag_end_to_end_in_pipe_record_expect_succes
     record.payload.hardSyncRecord.src = PipeType::PIPE_MTE1;
     record.payload.hardSyncRecord.dst = PipeType::PIPE_FIX;
     record.payload.hardSyncRecord.memory = MemType::L0A;
-    record.payload.hardSyncRecord.eventID = EventID::EVENT_ID0;
+    record.payload.hardSyncRecord.eventID = 0;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     ASSERT_EQ(events.size(), 1);

@@ -34,7 +34,7 @@ TEST(SyncInstructions, dump_hset_flag_expect_get_correct_records)
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_S,
         .dst      = PipeType::PIPE_V,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = static_cast<uint64_t>(EventID::EVENT_ID1),
         .memory   = MemType::GM,
         .v        = 0
     };
@@ -81,7 +81,7 @@ TEST(SyncInstructions, dump_hwait_flag_expect_get_correct_records)
         /// host 侧 GetBlockIdx 接口始终返回 0，因此标杆中 coreID 应始终为 0
         .src      = PipeType::PIPE_S,
         .dst      = PipeType::PIPE_V,
-        .eventID  = EventID::EVENT_ID1,
+        .eventID  = static_cast<uint64_t>(EventID::EVENT_ID1),
         .memory   = MemType::GM,
         .v        = 0
     };

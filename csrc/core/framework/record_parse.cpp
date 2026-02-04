@@ -3627,6 +3627,8 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::MSTX_STUB, ParseRecordMstxStub},
     {RecordType::HSET_FLAG, ParseRecordHsetFlag},
     {RecordType::HWAIT_FLAG, ParseRecordHwaitFlag},
+    {RecordType::HSET_FLAGI, ParseRecordHsetFlag},
+    {RecordType::HWAIT_FLAGI, ParseRecordHwaitFlag},
     {RecordType::PIPE_BARRIER, ParseRecordPipeBarrier},
     {RecordType::SET_ATOMIC, ParseRecordSetAtomic},
     {RecordType::SCALAR_RED, ParseRedAndAtomRecord},

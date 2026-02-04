@@ -45,7 +45,7 @@ TEST(Utils, test_get_uint_from_conf_expect_success)
 
     for (size_t i = 0 ;i < 100; ++i) {
         uint64_t config1 =
-            (static_cast<int>(Sanitizer::RandInt(0, INT32_MAX)) << 32) + Sanitizer::RandInt(0, INT32_MAX);
+            (static_cast<uint64_t>(Sanitizer::RandInt(0, INT32_MAX)) << 32) + static_cast<uint64_t>(Sanitizer::RandInt(0, INT32_MAX));
         ASSERT_EQ((GetUintFromConf<13, 7>(config1)), config1 >> 7 & 0x7f);
         ASSERT_EQ((GetUintFromConf<35, 21>(config1)), config1 >> 21 & 0x7fff);
         ASSERT_EQ((GetUintFromConf<63, 2>(config1)), config1 >> 2 & (~0x0ULL >> 2));

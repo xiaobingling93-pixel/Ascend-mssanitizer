@@ -386,7 +386,13 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::HSET_FLAG, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.hardSyncRecord, offset);
     }},
+    {RecordType::HSET_FLAGI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.hardSyncRecord, offset);
+    }},
     {RecordType::HWAIT_FLAG, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.hardSyncRecord, offset);
+    }},
+    {RecordType::HWAIT_FLAGI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.hardSyncRecord, offset);
     }},
     {RecordType::PIPE_BARRIER, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
