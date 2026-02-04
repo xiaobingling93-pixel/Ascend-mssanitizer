@@ -119,7 +119,7 @@ SANITIZER_REPORT(pipe_barrier, pipe_t pipe)
 
 SANITIZER_REPORT(ffts_cross_core_sync, pipe_t pipe, uint64_t config)
 {
-    RecordFftsSyncEvent(EXTRA_PARAMS, pipe, config);
+    RecordFftsSyncEvent<RecordType::FFTS_SYNC>(EXTRA_PARAMS, pipe, config);
 }
 
 SANITIZER_REPORT(wait_flag_dev, int64_t flagID)

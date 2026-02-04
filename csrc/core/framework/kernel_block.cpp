@@ -350,6 +350,27 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::WAIT_INTRA_BLOCKI, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
     }},
+    {RecordType::FFTS_SYNC_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.fftsSyncRecord, offset);
+    }},
+    {RecordType::WAIT_FLAG_DEV_PIPE_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.waitFlagDevPipeRecord, offset);
+    }},
+    {RecordType::WAIT_FLAG_DEVI_PIPE_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.waitFlagDevPipeRecord, offset);
+    }},
+    {RecordType::SET_INTRA_BLOCK_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
+    }},
+    {RecordType::SET_INTRA_BLOCKI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
+    }},
+    {RecordType::WAIT_INTRA_BLOCK_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
+    }},
+    {RecordType::WAIT_INTRA_BLOCKI_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.intraBlockSyncRecord, offset);
+    }},
     {RecordType::SET_FLAG_V, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.syncRecord, offset);
     }},

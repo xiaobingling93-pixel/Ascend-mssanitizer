@@ -3034,6 +3034,18 @@ static void ParseWaitDevRecord(const KernelRecord &record, std::vector<SanEvent>
     events.emplace_back(event);
 }
 
+static void ParseWaitDevPipeRecord(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event;
+    SetLocationInfo(event, record.payload.waitFlagDevPipeRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SYNC_EVENT;
+    event.pipe = record.payload.waitFlagDevPipeRecord.pipe;
+    event.eventInfo.fftsSyncInfo.opType = SyncType::WAIT_FLAG_DEV;
+    event.eventInfo.fftsSyncInfo.dstPipe = record.payload.waitFlagDevPipeRecord.pipe;
+    event.eventInfo.fftsSyncInfo.flagId = record.payload.waitFlagDevPipeRecord.flagID;
+    events.emplace_back(event);
+}
+
 static void ParseRecordIBSetStub(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3604,6 +3616,11 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::RLS_BUFI_V, ParseRecordRlsBuf},
     {RecordType::FFTS_SYNC, ParseFftsSyncRecord},
     {RecordType::WAIT_FLAG_DEV, ParseWaitDevRecord},
+    {RecordType::WAIT_FLAG_DEV_PIPE, ParseWaitDevPipeRecord},
+    {RecordType::WAIT_FLAG_DEVI_PIPE, ParseWaitDevPipeRecord},
+    {RecordType::FFTS_SYNC_V, ParseFftsSyncRecord},
+    {RecordType::WAIT_FLAG_DEV_PIPE_V, ParseWaitDevPipeRecord},
+    {RecordType::WAIT_FLAG_DEVI_PIPE_V, ParseWaitDevPipeRecord},
     {RecordType::IB_SET_STUB, ParseRecordIBSetStub},
     {RecordType::IB_WAIT_STUB, ParseRecordIBWaitStub},
     {RecordType::SYNC_ALL_STUB, ParseRecordSyncAllStub},

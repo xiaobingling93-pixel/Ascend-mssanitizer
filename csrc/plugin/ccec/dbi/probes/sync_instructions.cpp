@@ -66,8 +66,9 @@ SANITIZER_REPORT(rls_bufi_v, uint64_t bufId, bool mode)
     RecordBufEvent<RecordType::RLS_BUFI_V>(EXTRA_PARAMS, static_cast<pipe_t>(PipeType::PIPE_V), bufId, mode);
 }
 
-SANITIZER_REPORT(wait_flag_dev_pipe, pipe_t pipe, int64_t flagID)
+SANITIZER_REPORT(wait_flag_dev_pipe, pipe_t pipe, int64_t xt)
 {
+    int64_t flagID = xt & 0xF;
     RecordWaitFlagDevEventWithPipe<RecordType::WAIT_FLAG_DEV_PIPE>(EXTRA_PARAMS, pipe, flagID);
 }
 
@@ -78,7 +79,7 @@ SANITIZER_REPORT(wait_flag_devi_pipe, pipe_t pipe, uint8_t flagID)
 
 SANITIZER_REPORT(set_cross_core, pipe_t pipe, uint64_t config)
 {
-    RecordFftsSyncEvent(EXTRA_PARAMS, pipe, config);
+    RecordFftsSyncEvent<RecordType::FFTS_SYNC>(EXTRA_PARAMS, pipe, config);
 }
 
 SANITIZER_REPORT(wait_intra_block, pipe_t pipe, uint64_t syncID)
@@ -128,4 +129,47 @@ SANITIZER_REPORT(wait_flagi_v, pipe_t pipe, uint64_t eventID)
 SANITIZER_REPORT(pipe_barrier, pipe_t pipe)
 {
     RecordPipeBarrierEvent(EXTRA_PARAMS, pipe);
+}
+
+SANITIZER_REPORT(set_cross_core_v, uint64_t config)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordFftsSyncEvent<RecordType::FFTS_SYNC_V>(EXTRA_PARAMS, pipe, config);
+}
+
+SANITIZER_REPORT(wait_flag_dev_pipe_v, int64_t xt)
+{
+    int64_t flagID = xt & 0xF;
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordWaitFlagDevEventWithPipe<RecordType::WAIT_FLAG_DEV_PIPE_V>(EXTRA_PARAMS, pipe, flagID);
+}
+
+SANITIZER_REPORT(wait_flag_devi_pipe_v, uint8_t flagID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordWaitFlagDevEventWithPipe<RecordType::WAIT_FLAG_DEVI_PIPE_V>(EXTRA_PARAMS, pipe, flagID);
+}
+
+SANITIZER_REPORT(set_intra_block_v, uint64_t syncID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordIntraBlockSyncEvent<RecordType::SET_INTRA_BLOCK_V>(EXTRA_PARAMS, pipe, syncID);
+}
+
+SANITIZER_REPORT(set_intra_blocki_v, uint8_t syncID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordIntraBlockSyncEvent<RecordType::SET_INTRA_BLOCKI_V>(EXTRA_PARAMS, pipe, syncID);
+}
+
+SANITIZER_REPORT(wait_intra_block_v, uint64_t syncID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordIntraBlockSyncEvent<RecordType::WAIT_INTRA_BLOCK_V>(EXTRA_PARAMS, pipe, syncID);
+}
+
+SANITIZER_REPORT(wait_intra_blocki_v, uint8_t syncID)
+{
+    pipe_t pipe = static_cast<pipe_t>(PipeType::PIPE_V);
+    RecordIntraBlockSyncEvent<RecordType::WAIT_INTRA_BLOCKI_V>(EXTRA_PARAMS, pipe, syncID);
 }

@@ -160,6 +160,7 @@ __aicore__ inline void RecordPipeBarrierEvent(EXTRA_PARAMS_DEC, pipe_t pipe)
     recorder.DumpRecord<RecordType::PIPE_BARRIER>(record);
 }
 
+template<RecordType recordType>
 __aicore__ inline void RecordFftsSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64_t config)
 {
     if (MemInfoIsInvalid(memInfo)) {
@@ -184,7 +185,7 @@ __aicore__ inline void RecordFftsSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64
     record.mode = (config >> modeShift) & 0x3;
     record.flagID = (config >> flagIdShift) & 0xF;
     Recorder recorder(memInfo, blockIdx);
-    recorder.DumpRecord<RecordType::FFTS_SYNC>(record);
+    recorder.DumpRecord<recordType>(record);
 }
 
 __aicore__ inline void RecordWaitFlagDevEvent(EXTRA_PARAMS_DEC, int64_t flagID)
