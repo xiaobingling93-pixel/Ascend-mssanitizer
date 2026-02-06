@@ -206,7 +206,7 @@ TEST(RaceSanitizer, race_sanitizer_can_detect_aiv_pipe_race_events_expect_succes
     kernelRecord.recordType = RecordType::FINISH;
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 6);
-    alg.Do(events);
+    alg.Do(record, events);
     ASSERT_EQ((*alg.raceAlgs_[2]->GetResult()).size(), 2);
 }
 

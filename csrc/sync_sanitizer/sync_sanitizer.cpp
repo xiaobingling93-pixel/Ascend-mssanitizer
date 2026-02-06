@@ -55,8 +55,10 @@ inline bool SyncSanitizer::IsTargetBlockId(uint32_t blockId)
     return false;
 }
 
-void SyncSanitizer::Do(const std::vector<SanEvent> &events)
+void SyncSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
+    (void)record;
+
     if (events.empty()) {
         return;
     }

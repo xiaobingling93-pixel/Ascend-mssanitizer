@@ -22,11 +22,11 @@
 
 using namespace Sanitizer;
 
-TEST(BoundsCheck, global_memory_bounds_add_range_overflow_uint64_max_expect_return_illegal_write)
+TEST(BoundsCheck, discrete_bounds_add_range_overflow_uint64_max_expect_return_illegal_write)
 {
     uint64_t addr = static_cast<uint64_t>(-1);
     uint64_t size = 100;
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg = bounds.Add(addr, size);
     ASSERT_TRUE(msg.isError);
     ASSERT_EQ(msg.type, MemErrorType::ILLEGAL_ADDR_WRITE);
@@ -34,9 +34,9 @@ TEST(BoundsCheck, global_memory_bounds_add_range_overflow_uint64_max_expect_retu
     ASSERT_EQ(msg.auxData.nBadBytes, size);
 }
 
-TEST(BoundsCheck, global_memory_bounds_add_range_fuse_with_sides_expect_return_success)
+TEST(BoundsCheck, discrete_bounds_add_range_fuse_with_sides_expect_return_success)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
     // add first range [0, 100]
     msg = bounds.Add(0, 100);
@@ -56,11 +56,11 @@ TEST(BoundsCheck, global_memory_bounds_add_range_fuse_with_sides_expect_return_s
     ASSERT_EQ(bounds.GetRanges()[0].addrR, 300);
 }
 
-TEST(BoundsCheck, global_memory_bounds_remove_range_overflow_uint64_max_expect_return_illegal_write)
+TEST(BoundsCheck, discrete_bounds_remove_range_overflow_uint64_max_expect_return_illegal_write)
 {
     uint64_t addr = static_cast<uint64_t>(-1);
     uint64_t size = 100;
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg = bounds.Remove(addr, size);
     ASSERT_TRUE(msg.isError);
     ASSERT_EQ(msg.type, MemErrorType::ILLEGAL_ADDR_WRITE);
@@ -68,9 +68,9 @@ TEST(BoundsCheck, global_memory_bounds_remove_range_overflow_uint64_max_expect_r
     ASSERT_EQ(msg.auxData.nBadBytes, size);
 }
 
-TEST(BoundsCheck, global_memory_bounds_remove_range_overflow_all_ranges_expect_return)
+TEST(BoundsCheck, discrete_bounds_remove_range_overflow_all_ranges_expect_return)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
     // add range [0, 100]
     bounds.Add(0, 100);
@@ -81,9 +81,9 @@ TEST(BoundsCheck, global_memory_bounds_remove_range_overflow_all_ranges_expect_r
     ASSERT_FALSE(msg.isError);
 }
 
-TEST(BoundsCheck, global_memory_bounds_remove_range_out_of_range_expect_return)
+TEST(BoundsCheck, discrete_bounds_remove_range_out_of_range_expect_return)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
     // add range [200, 300]
     bounds.Add(200, 100);
@@ -95,9 +95,9 @@ TEST(BoundsCheck, global_memory_bounds_remove_range_out_of_range_expect_return)
     ASSERT_FALSE(msg.isError);
 }
 
-TEST(BoundsCheck, global_memory_bounds_remove_range_inside_of_range_expect_return_success)
+TEST(BoundsCheck, discrete_bounds_remove_range_inside_of_range_expect_return_success)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
     // add range [200, 300]
     bounds.Add(200, 100);
@@ -132,9 +132,9 @@ TEST(BoundsCheck, global_memory_bounds_remove_range_inside_of_range_expect_retur
     ASSERT_EQ(bounds.GetRanges().size(), 1UL);
 }
 
-TEST(BoundsCheck, global_memory_bounds_check_range_inside_expect_return_success)
+TEST(BoundsCheck, discrete_bounds_check_range_inside_expect_return_success)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
     // add range [200, 300]
     bounds.Add(200, 100);
@@ -144,9 +144,9 @@ TEST(BoundsCheck, global_memory_bounds_check_range_inside_expect_return_success)
     ASSERT_FALSE(msg.isError);
 }
 
-TEST(BoundsCheck, global_memory_bounds_check_range_out_of_ranges_expect_return_illegal_access)
+TEST(BoundsCheck, discrete_bounds_check_range_out_of_ranges_expect_return_illegal_access)
 {
-    GlobalMemoryBounds bounds;
+    DiscreteBounds bounds;
     ErrorMsg msg;
 
     // check range in empty bounds
@@ -185,9 +185,9 @@ TEST(BoundsCheck, global_memory_bounds_check_range_out_of_ranges_expect_return_i
     ASSERT_EQ(msg.auxData.nBadBytes, 800);
 }
 
-TEST(BoundsCheck, local_memory_bounds_add_and_remove_range_expect_return_success)
+TEST(BoundsCheck, union_bounds_add_and_remove_range_expect_return_success)
 {
-    LocalMemoryBounds bounds(200, 100);
+    UnionBounds bounds(200, 100);
     ErrorMsg msg;
     msg = bounds.Add(200, 100);
     ASSERT_FALSE(msg.isError);
@@ -195,9 +195,9 @@ TEST(BoundsCheck, local_memory_bounds_add_and_remove_range_expect_return_success
     ASSERT_FALSE(msg.isError);
 }
 
-TEST(BoundsCheck, local_memory_bounds_check_range_inside_expect_return_success)
+TEST(BoundsCheck, union_bounds_check_range_inside_expect_return_success)
 {
-    LocalMemoryBounds bounds(200, 100);
+    UnionBounds bounds(200, 100);
     ErrorMsg msg;
 
     // check range [200, 300]
@@ -205,9 +205,9 @@ TEST(BoundsCheck, local_memory_bounds_check_range_inside_expect_return_success)
     ASSERT_FALSE(msg.isError);
 }
 
-TEST(BoundsCheck, local_memory_bounds_check_range_out_of_ranges_expect_return_illegal_access)
+TEST(BoundsCheck, union_bounds_check_range_out_of_ranges_expect_return_illegal_access)
 {
-    LocalMemoryBounds bounds(200, 100);
+    UnionBounds bounds(200, 100);
     ErrorMsg msg;
 
     // check range out of left bound

@@ -41,7 +41,7 @@ public:
     AddressSanitizer();
     bool SetDeviceInfo(DeviceInfoSummary const &deviceInfo, Config const &config) override;
     bool SetKernelInfo(KernelSummary const &kernelInfo) override;
-    void Do(const std::vector<SanEvent> &events) override;
+    void Do(const SanitizerRecord &record, const std::vector<SanEvent> &events) override;
     void ParseOnlineError(const KernelErrorRecord &record, BlockType blockType, uint64_t serialNo) override;
     bool CheckRecordBeforeProcess(const SanitizerRecord &record) override;
     void RegisterNotifyFunc(const MSG_FUNC &func) override;
@@ -71,6 +71,7 @@ private:
     BoundsCheckScope MemInfoToScope(MemInfoSrc infoSrc);
     std::string ScopeToString(BoundsCheckScope scope);
     void UpdateHeapInfo(MemOpRecord const &record);
+    void DoWithLocalTensor(const MstxRecord &record, const std::vector<MemOpRecord> &records);
 
     std::unique_ptr<ShadowMemory> shadowMemory_;
     MSG_FUNC msgFunc_;

@@ -38,7 +38,7 @@ public:
     virtual ErrorMsg Check(uint64_t addr, uint64_t size) const = 0;
 };
 
-class GlobalMemoryBounds : public Bounds {
+class DiscreteBounds : public Bounds {
 public:
     ErrorMsg Add(uint64_t addr, uint64_t size) override;
     ErrorMsg Remove(uint64_t addr, uint64_t size) override;
@@ -57,9 +57,9 @@ private:
     std::vector<Range> ranges_;
 };
 
-class LocalMemoryBounds : public Bounds {
+class UnionBounds : public Bounds {
 public:
-    LocalMemoryBounds(uint64_t addr, uint64_t size) : range_{addr, addr + size} { }
+    UnionBounds(uint64_t addr, uint64_t size) : range_{addr, addr + size} { }
     ErrorMsg Add(uint64_t addr, uint64_t size) override { return {}; }
     ErrorMsg Remove(uint64_t addr, uint64_t size) override { return {}; };
     ErrorMsg Check(uint64_t addr, uint64_t size) const override;
@@ -73,13 +73,14 @@ private:
 
 class BoundsCheck {
 public:
-    BoundsCheck(void);
+    BoundsCheck(bool localMemoryNeedAlloc = false);
     void Init(ChipInfo const &chipInfo);
     ErrorMsg Add(AddressSpace space, uint64_t addr, uint64_t size);
     ErrorMsg Remove(AddressSpace space, uint64_t addr, uint64_t size);
     ErrorMsg Check(AddressSpace space, uint64_t addr, uint64_t size) const;
 
 private:
+    bool localMemoryNeedAlloc_;
     std::unordered_map<AddressSpace, std::unique_ptr<Bounds>> bounds_;
 };
 

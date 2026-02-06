@@ -41,7 +41,7 @@ inline uint64_t OverlapSize(Bounds::Range const &a, Bounds::Range const &b)
 
 namespace Sanitizer {
 
-ErrorMsg GlobalMemoryBounds::Add(uint64_t addr, uint64_t size)
+ErrorMsg DiscreteBounds::Add(uint64_t addr, uint64_t size)
 {
     ErrorMsg msg = CheckOverflow(addr, size);
     if (msg.isError) {
@@ -73,7 +73,7 @@ ErrorMsg GlobalMemoryBounds::Add(uint64_t addr, uint64_t size)
     return ErrorMsg();
 }
 
-ErrorMsg GlobalMemoryBounds::Remove(uint64_t addr, uint64_t size)
+ErrorMsg DiscreteBounds::Remove(uint64_t addr, uint64_t size)
 {
     ErrorMsg msg = CheckOverflow(addr, size);
     if (msg.isError) {
@@ -105,7 +105,7 @@ ErrorMsg GlobalMemoryBounds::Remove(uint64_t addr, uint64_t size)
     return ErrorMsg();
 }
 
-ErrorMsg GlobalMemoryBounds::Check(uint64_t addr, uint64_t size) const
+ErrorMsg DiscreteBounds::Check(uint64_t addr, uint64_t size) const
 {
     // 当要检查的范围 size 为 0 时，只检查 addr 地址是否在范围内，并且
     // 异常报告中的越界大小显示为 1 以保持格式兼容
@@ -134,7 +134,7 @@ ErrorMsg GlobalMemoryBounds::Check(uint64_t addr, uint64_t size) const
     return ErrorMsg();
 }
 
-ErrorMsg GlobalMemoryBounds::CheckAddrOnly(uint64_t addr) const
+ErrorMsg DiscreteBounds::CheckAddrOnly(uint64_t addr) const
 {
     auto pred = [](uint64_t a, Range const &b) { return a < b.addrR; };
     auto it = std::upper_bound(ranges_.begin(), ranges_.end(), addr, pred);
@@ -149,7 +149,7 @@ ErrorMsg GlobalMemoryBounds::CheckAddrOnly(uint64_t addr) const
     return ErrorMsg();
 }
 
-ErrorMsg GlobalMemoryBounds::CheckOverflow(uint64_t addr, uint64_t size) const
+ErrorMsg DiscreteBounds::CheckOverflow(uint64_t addr, uint64_t size) const
 {
     static constexpr uint64_t globalMemMask = 0xFFFFFFFFFFFFULL;
     uint64_t badBytes {};
@@ -170,7 +170,7 @@ ErrorMsg GlobalMemoryBounds::CheckOverflow(uint64_t addr, uint64_t size) const
     return msg;
 }
 
-ErrorMsg LocalMemoryBounds::Check(uint64_t addr, uint64_t size) const
+ErrorMsg UnionBounds::Check(uint64_t addr, uint64_t size) const
 {
     if (size == 0) {
         return CheckAddrOnly(addr);
@@ -187,7 +187,7 @@ ErrorMsg LocalMemoryBounds::Check(uint64_t addr, uint64_t size) const
     return ErrorMsg();
 }
 
-ErrorMsg LocalMemoryBounds::CheckAddrOnly(uint64_t addr) const
+ErrorMsg UnionBounds::CheckAddrOnly(uint64_t addr) const
 {
     if (addr < range_.addrL || addr >= range_.addrR) {
         ErrorMsg msg;
@@ -200,20 +200,29 @@ ErrorMsg LocalMemoryBounds::CheckAddrOnly(uint64_t addr) const
     return ErrorMsg();
 }
 
-BoundsCheck::BoundsCheck(void)
+BoundsCheck::BoundsCheck(bool localMemoryNeedAlloc) : localMemoryNeedAlloc_{localMemoryNeedAlloc}
 {
-    bounds_[AddressSpace::GM] = MakeUnique<GlobalMemoryBounds>();
+    bounds_[AddressSpace::GM] = MakeUnique<DiscreteBounds>();
+    if (localMemoryNeedAlloc_) {
+        bounds_[AddressSpace::L1] = MakeUnique<DiscreteBounds>();
+        bounds_[AddressSpace::L0A] = MakeUnique<DiscreteBounds>();
+        bounds_[AddressSpace::L0B] = MakeUnique<DiscreteBounds>();
+        bounds_[AddressSpace::L0C] = MakeUnique<DiscreteBounds>();
+        bounds_[AddressSpace::UB] = MakeUnique<DiscreteBounds>();
+    }
 }
 
 void BoundsCheck::Init(ChipInfo const &chipInfo)
 {
     // 卡切换时除 GM 内存外其他内存都重新初始化
-    bounds_[AddressSpace::L1] = MakeUnique<LocalMemoryBounds>(0, chipInfo.l1Size);
-    bounds_[AddressSpace::L0A] = MakeUnique<LocalMemoryBounds>(0, chipInfo.l0aSize);
-    bounds_[AddressSpace::L0B] = MakeUnique<LocalMemoryBounds>(0, chipInfo.l0bSize);
-    bounds_[AddressSpace::L0C] = MakeUnique<LocalMemoryBounds>(0, chipInfo.l0cSize);
-    bounds_[AddressSpace::UB] = MakeUnique<LocalMemoryBounds>(0, chipInfo.ubSize);
-    bounds_[AddressSpace::PRIVATE] = MakeUnique<LocalMemoryBounds>(0, chipInfo.privateSize);
+    if (!localMemoryNeedAlloc_) {
+        bounds_[AddressSpace::L1] = MakeUnique<UnionBounds>(0, chipInfo.l1Size);
+        bounds_[AddressSpace::L0A] = MakeUnique<UnionBounds>(0, chipInfo.l0aSize);
+        bounds_[AddressSpace::L0B] = MakeUnique<UnionBounds>(0, chipInfo.l0bSize);
+        bounds_[AddressSpace::L0C] = MakeUnique<UnionBounds>(0, chipInfo.l0cSize);
+        bounds_[AddressSpace::UB] = MakeUnique<UnionBounds>(0, chipInfo.ubSize);
+    }
+    bounds_[AddressSpace::PRIVATE] = MakeUnique<UnionBounds>(0, chipInfo.privateSize);
 }
 
 ErrorMsg BoundsCheck::Add(AddressSpace space, uint64_t addr, uint64_t size)

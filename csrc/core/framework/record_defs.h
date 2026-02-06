@@ -785,11 +785,11 @@ struct MstxVecUnaryDesc {
     MstxTensorDesc src;
     MstxVecWrapper wrapper;
     uint32_t blockNum;
-    uint16_t dstBlockStride;
-    uint16_t srcBlockStride;
-    uint8_t repeatTimes;
-    uint8_t dstRepeatStride;
-    uint8_t srcRepeatStride;
+    uint32_t dstBlockStride;
+    uint32_t srcBlockStride;
+    uint32_t repeatTimes;
+    uint32_t dstRepeatStride;
+    uint32_t srcRepeatStride;
     char name[MSTX_API_NAME_LENGTH];
 };
 
@@ -799,13 +799,13 @@ struct MstxVecBinaryDesc {
     MstxTensorDesc src1;
     MstxVecWrapper wrapper;
     uint32_t blockNum;
-    uint16_t dstBlockStride;
-    uint16_t src0BlockStride;
-    uint16_t src1BlockStride;
-    uint8_t repeatTimes;
-    uint8_t dstRepeatStride;
-    uint8_t src0RepeatStride;
-    uint8_t src1RepeatStride;
+    uint32_t dstBlockStride;
+    uint32_t src0BlockStride;
+    uint32_t src1BlockStride;
+    uint32_t repeatTimes;
+    uint32_t dstRepeatStride;
+    uint32_t src0RepeatStride;
+    uint32_t src1RepeatStride;
     char name[MSTX_API_NAME_LENGTH];
 };
 

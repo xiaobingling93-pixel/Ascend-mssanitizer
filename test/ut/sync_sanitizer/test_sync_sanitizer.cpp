@@ -55,7 +55,7 @@ TEST(SyncSanitizer, unpaired_set_flag_instruction_expect_return_synccheck_detect
     SanEvent event {};
     event.isEndFrame = true;
     events.emplace_back(event);
-    syncSan->Do(events);
+    syncSan->Do(record, events);
     ASSERT_TRUE(msg.find("Unpaired set_flag instructions detected") != std::string::npos);
 }
 
@@ -77,7 +77,7 @@ TEST(SyncSanitizer, unpaired_set_flag_instructions_on_different_blocks_expect_al
     SanEvent event {};
     event.isEndFrame = true;
     events.emplace_back(event);
-    syncSan.Do(events);
+    syncSan.Do(record, events);
     ASSERT_EQ(syncSan.syncEvents_.size(), 3U);
     ASSERT_TRUE(msg.find("in block aiv(0) on device 0") != std::string::npos);
     ASSERT_TRUE(msg.find("in block aiv(1) on device 0") != std::string::npos);
@@ -103,7 +103,7 @@ TEST(SyncSanitizer, unpaired_set_flag_instructions_on_different_blocks_expect_sp
     SanEvent event {};
     event.isEndFrame = true;
     events.emplace_back(event);
-    syncSan.Do(events);
+    syncSan.Do(record, events);
     ASSERT_EQ(syncSan.syncEvents_.size(), 1U);
     ASSERT_TRUE(msg.find("in block aiv(0) on device 0") == std::string::npos);
     ASSERT_TRUE(msg.find("in block aiv(1) on device 0") != std::string::npos);
@@ -129,7 +129,7 @@ TEST(SyncSanitizer, multi_instructions_with_no_paired_flag)
     SanEvent event {};
     event.isEndFrame = true;
     events.emplace_back(event);
-    syncSan.Do(events);
+    syncSan.Do(record, events);
     ASSERT_EQ(syncSan.syncEvents_.size(), 4U);
     ASSERT_TRUE(msg.find("from PIPE_V to PIPE_MTE1") != std::string::npos);
     ASSERT_TRUE(msg.find("in block aiv(0) on device 0") != std::string::npos);
@@ -154,7 +154,7 @@ TEST(SyncSanitizer, multi_instructions_with_one_paired_flag)
     SanEvent event {};
     event.isEndFrame = true;
     events.emplace_back(event);
-    syncSan.Do(events);
+    syncSan.Do(record, events);
     ASSERT_EQ(syncSan.syncEvents_.size(), 2U);
     ASSERT_TRUE(msg.find("Unpaired set_flag instructions detected") == std::string::npos);
 }

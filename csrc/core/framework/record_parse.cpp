@@ -3223,6 +3223,75 @@ static void ParseRecordMstxHCCL(const KernelRecord &record, std::vector<SanEvent
     }
 }
 
+static void ParseRecordMstxVecUnary(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event;
+    auto &memInfo = event.eventInfo.memInfo;
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxVecUnary = mstxRecord.interface.mstxVecUnaryDesc;
+    SetLocationInfo(event, mstxRecord, record.blockType, record.serialNo);
+
+    event.type = EventType::MEM_EVENT;
+    event.pipe = PipeType::PIPE_V;
+    memInfo.memType = MemType::UB;
+    memInfo.opType = AccessType::READ;
+    memInfo.vectorMask = mstxVecUnary.wrapper.mask;
+    memInfo.maskMode = mstxVecUnary.wrapper.maskMode;
+    memInfo.dataBits = mstxVecUnary.src.dataBits;
+    memInfo.addr = mstxVecUnary.src.addr;
+    memInfo.blockNum = mstxVecUnary.blockNum;
+    memInfo.blockSize = 32;
+    memInfo.blockStride = mstxVecUnary.srcBlockStride;
+    memInfo.repeatTimes = mstxVecUnary.repeatTimes;
+    memInfo.repeatStride = mstxVecUnary.srcRepeatStride;
+    MaskModeProcess(events, event, RecordType::UNARY_OP);
+
+    memInfo.opType = AccessType::WRITE;
+    memInfo.dataBits = mstxVecUnary.dst.dataBits;
+    memInfo.addr = mstxVecUnary.dst.addr;
+    memInfo.blockStride = mstxVecUnary.dstBlockStride;
+    memInfo.repeatStride = mstxVecUnary.dstRepeatStride;
+    MaskModeProcess(events, event, RecordType::UNARY_OP);
+}
+
+static void ParseRecordMstxVecBinary(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event;
+    auto &memInfo = event.eventInfo.memInfo;
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxVecBinary = mstxRecord.interface.mstxVecBinaryDesc;
+    SetLocationInfo(event, mstxRecord, record.blockType, record.serialNo);
+
+    event.type = EventType::MEM_EVENT;
+    event.pipe = PipeType::PIPE_V;
+    memInfo.memType = MemType::UB;
+    memInfo.opType = AccessType::READ;
+    memInfo.vectorMask = mstxVecBinary.wrapper.mask;
+    memInfo.maskMode = mstxVecBinary.wrapper.maskMode;
+    memInfo.dataBits = mstxVecBinary.src0.dataBits;
+    memInfo.addr = mstxVecBinary.src0.addr;
+    memInfo.blockNum = mstxVecBinary.blockNum;
+    memInfo.blockSize = 32;
+    memInfo.blockStride = mstxVecBinary.src0BlockStride;
+    memInfo.repeatTimes = mstxVecBinary.repeatTimes;
+    memInfo.repeatStride = mstxVecBinary.src0RepeatStride;
+    MaskModeProcess(events, event, RecordType::BINARY_OP);
+
+    memInfo.opType = AccessType::READ;
+    memInfo.dataBits = mstxVecBinary.src1.dataBits;
+    memInfo.addr = mstxVecBinary.src1.addr;
+    memInfo.blockStride = mstxVecBinary.src1BlockStride;
+    memInfo.repeatStride = mstxVecBinary.src1RepeatStride;
+    MaskModeProcess(events, event, RecordType::BINARY_OP);
+
+    memInfo.opType = AccessType::WRITE;
+    memInfo.dataBits = mstxVecBinary.dst.dataBits;
+    memInfo.addr = mstxVecBinary.dst.addr;
+    memInfo.blockStride = mstxVecBinary.dstBlockStride;
+    memInfo.repeatStride = mstxVecBinary.dstRepeatStride;
+    MaskModeProcess(events, event, RecordType::BINARY_OP);
+}
+
 static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3253,7 +3322,7 @@ static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent
             SyncType::MSTX_WAIT_CROSS : SyncType::MSTX_SET_CROSS;
         events.emplace_back(event);
     }
-    
+
     if (mstxRecord.interfaceType == InterfaceType::MSTX_HCCLV) {
         eventMemInfo.memType = MemType::GM;
         event.type = EventType::MEM_EVENT;
@@ -3272,6 +3341,11 @@ static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent
         eventMemInfo.blockSize = hcclCoreRecord.dstlenBurst;
         eventMemInfo.opType =  AccessType::WRITE;
         events.emplace_back(event);
+    }
+    if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_UNARY_OP) {
+        ParseRecordMstxVecUnary(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_BINARY_OP) {
+        ParseRecordMstxVecBinary(record, events);
     }
 }
 

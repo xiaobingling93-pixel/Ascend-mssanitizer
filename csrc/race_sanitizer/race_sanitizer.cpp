@@ -157,8 +157,10 @@ bool RaceSanitizer::CheckRecordBeforeProcess(const SanitizerRecord &record)
     return false;
 }
 
-void RaceSanitizer::Do(const std::vector<SanEvent> &events)
+void RaceSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
+    (void)record;
+
     if (events.empty()) {
         return;
     }

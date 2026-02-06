@@ -34,7 +34,7 @@ class RaceSanitizer : public SanitizerBase {
 public:
     bool SetDeviceInfo(DeviceInfoSummary const &deviceInfo, Config const &config) override;
     bool SetKernelInfo(KernelSummary const &kernelInfo) override;
-    void Do(const std::vector<SanEvent> &events) override;
+    void Do(const SanitizerRecord &record, const std::vector<SanEvent> &events) override;
     void ParseOnlineError(const KernelErrorRecord &record, BlockType blockType, uint64_t serialNo) override;
     bool CheckRecordBeforeProcess(const SanitizerRecord &record) override;
     void RegisterNotifyFunc(const MSG_FUNC &func) override;

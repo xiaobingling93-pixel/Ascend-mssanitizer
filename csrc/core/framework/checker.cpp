@@ -225,7 +225,7 @@ void Checker::ConsumeRecordThread(uint8_t consumeId, const std::thread::id &root
         if ((initWithDeviceInfoDone_[consumeId] ||
             initWithKernelInfoDone_[consumeId]) &&
             sanitizerArr_[consumeId]->CheckRecordBeforeProcess(record)) {
-            sanitizerArr_[consumeId]->Do(events);
+            sanitizerArr_[consumeId]->Do(record, events);
         }
         if (finishProduce_) {
             WaitAfterConsumed(consumeId);

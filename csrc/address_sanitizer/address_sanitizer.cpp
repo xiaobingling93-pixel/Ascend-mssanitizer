@@ -23,11 +23,14 @@
 #include <sstream>
 #include <memory>
 
+#include "bounds_check.h"
 #include "mem_error_def.h"
 #include "securec.h"
 #include "shadow_memory.h"
 #include "align_checker.h"
 #include "asan_action.h"
+#include "core/framework/constant.h"
+#include "core/framework/record_defs.h"
 #include "core/framework/file_mapping.h"
 #include "core/framework/format_converter.h"
 #include "core/framework/utility/cpp_future.h"
@@ -424,7 +427,7 @@ size_t AddressSanitizer::GetRecordsNum(const std::vector<SanEvent> &events) cons
     return numRecords;
 }
 
-void AddressSanitizer::Do(const std::vector<SanEvent> &events)
+void AddressSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
     size_t numRecords = GetRecordsNum(events);
     std::vector<MemOpRecord> records;
@@ -440,6 +443,42 @@ void AddressSanitizer::Do(const std::vector<SanEvent> &events)
     MergeRecords(records);
     for (MemOpRecord const& r : records) {
         this->DoMemOpRecord(r, true);
+    }
+    if (record.version == RecordVersion::KERNEL_RECORD && record.payload.kernelRecord.recordType == RecordType::MSTX_STUB) {
+        DoWithLocalTensor(record.payload.kernelRecord.payload.mstxRecord, records);
+    }
+}
+
+inline void AddLocalTensorBound(BoundsCheck &boundsCheck, MstxTensorDesc const &tensor)
+{
+    boundsCheck.Add(tensor.space, tensor.addr, tensor.size * tensor.dataBits / BITS_EACH_BYTE);
+}
+
+void AddressSanitizer::DoWithLocalTensor(const MstxRecord &record, const std::vector<MemOpRecord> &records)
+{
+    BoundsCheck boundsCheckR(true); // 用于检查读 tensor 越界
+    BoundsCheck boundsCheckW(true); // 用于检查写 tensor 越界
+
+    if (record.interfaceType == InterfaceType::MSTX_VEC_UNARY_OP) {
+        AddLocalTensorBound(boundsCheckR, record.interface.mstxVecUnaryDesc.src);
+        AddLocalTensorBound(boundsCheckW, record.interface.mstxVecUnaryDesc.dst);
+    } else if (record.interfaceType == InterfaceType::MSTX_VEC_BINARY_OP) {
+        AddLocalTensorBound(boundsCheckR, record.interface.mstxVecBinaryDesc.src0);
+        AddLocalTensorBound(boundsCheckR, record.interface.mstxVecBinaryDesc.src1);
+        AddLocalTensorBound(boundsCheckW, record.interface.mstxVecBinaryDesc.dst);
+    }
+
+    for (MemOpRecord const& r : records) {
+        auto action = AsanActionFactory::CreateAsanAction(r);
+        if (action == nullptr) {
+            SAN_WARN_LOG("Failed to create action");
+            return;
+        }
+        BoundsCheck &boundsCheck = r.type == MemOpType::LOAD ? boundsCheckR : boundsCheckW;
+        ErrorMsgList errors = action->doAction(*shadowMemory_, boundsCheck, config_, true);
+        for (auto const &error : errors) {
+            this->errorBuffer_.Add(error);
+        }
     }
 }
 

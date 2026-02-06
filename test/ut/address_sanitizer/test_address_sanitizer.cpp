@@ -420,17 +420,17 @@ TEST(AddressSanitizer, same_record_on_different_blocks_expect_get_reduced_errors
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     std::vector<SanEvent> events;
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     // load same addr on blockIdx 1
     record.payload.kernelRecord.payload.loadStoreRecord.location.blockId = 1;
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     // report finish to reduce error msgs
     record.payload.kernelRecord.recordType = RecordType::FINISH;
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     asan->Exit();
     ASSERT_TRUE(msg.find("illegal read") != std::string::npos);
     ASSERT_TRUE(msg.find("aiv(0-1)") != std::string::npos);
@@ -460,17 +460,17 @@ TEST(AddressSanitizer, record_with_aicore_blocks_expect_get_reduced_errors)
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     std::vector<SanEvent> events;
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     // load same addr on blockIdx 1
     record.payload.kernelRecord.payload.broadcastRecord.location.blockId = 1;
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     // report finish to reduce error msgs
     record.payload.kernelRecord.recordType = RecordType::FINISH;
     ASSERT_TRUE(asan->CheckRecordBeforeProcess(record));
     RecordPreProcess::GetInstance().Process(record, events);
-    asan->Do(events);
+    asan->Do(record, events);
     asan->Exit();
     ASSERT_TRUE(msg.find("illegal read") != std::string::npos);
     ASSERT_TRUE(msg.find("illegal write") != std::string::npos);

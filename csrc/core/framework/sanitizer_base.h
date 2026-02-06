@@ -39,7 +39,7 @@ public:
     using MSG_FUNC = std::function<void(const LogLv &lv, MSG_GEN &&gen)>;
     virtual bool SetDeviceInfo(DeviceInfoSummary const &deviceInfo, Config const &config) = 0;
     virtual bool SetKernelInfo(KernelSummary const &kernelInfo) = 0;
-    virtual void Do(const std::vector<SanEvent> &events) = 0;
+    virtual void Do(const SanitizerRecord &record, const std::vector<SanEvent> &events) = 0;
     virtual void ParseOnlineError(const KernelErrorRecord &record, BlockType blockType, uint64_t serialNo) = 0;
     virtual bool CheckRecordBeforeProcess(const SanitizerRecord &record) = 0;
     virtual void RegisterNotifyFunc(const MSG_FUNC &func) = 0;
