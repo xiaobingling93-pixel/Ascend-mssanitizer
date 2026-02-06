@@ -25,7 +25,6 @@ endif()
 add_link_options("-Wl,-z,now")
 add_link_options("-Wl,-z,relro")
 add_link_options("-Wl,-z,noexecstack")
-add_link_options("-pie")
 set(CMAKE_SKIP_RPATH TRUE)
 set(CMAKE_CXX_FLAGS "-std=c++11")
 

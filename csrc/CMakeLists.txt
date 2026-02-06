@@ -43,6 +43,7 @@ target_link_libraries(ascend_san_stub c_sec pthread)
 target_link_options(ascend_san_stub PRIVATE "-Wl,-z,defs")
 
 add_executable(mssanitizer ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+target_link_options(mssanitizer PRIVATE "-pie")
 target_link_libraries(mssanitizer ascend_san)
 
 set_target_properties(mssanitizer PROPERTIES OUTPUT_NAME "mssanitizer.bin")
