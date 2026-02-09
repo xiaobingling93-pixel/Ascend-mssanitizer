@@ -173,7 +173,7 @@ inline bool IsTargetBlockIdx(DeviceType deviceType, int16_t checkBlockId, uint64
 
 bool Checker::SupportSimt() const
 {
-    return this->deviceType_ > DeviceType::ASCEND_910_95_START && this->deviceType_ < DeviceType::ASCEND_910_95_END;
+    return this->deviceType_ > DeviceType::ASCEND_950_START && this->deviceType_ < DeviceType::ASCEND_950_END;
 }
 
 bool Checker::IsTargetBlock(uint64_t blockIdx) const

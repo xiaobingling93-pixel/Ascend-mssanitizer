@@ -197,7 +197,7 @@ bool IsSpecialAlign(MemOpInfo &memInfo, uint16_t &alignSize, RecordType recordTy
         // VMRGSORT4_OP指令，在310P芯片取决于数据类型，float类型为32字节，half类型为16字节；
         alignSize = memInfo.dataBits;
     } else if (recordType == RecordType::VMRGSORT4_OP_C220 || recordType == RecordType::VMRGSORT4_OP_C310) {
-        // VMRGSORT4_OP指令，在910B/910_95芯片上读和写不同，读要求8B对齐，写要求32B对齐
+        // VMRGSORT4_OP指令，在910B/950芯片上读和写不同，读要求8B对齐，写要求32B对齐
         alignSize = memInfo.opType == AccessType::READ ? 8U : 32U;
     } else if (recordType == RecordType::LOAD || recordType == RecordType::STORE ||
                recordType == RecordType::CMPMASK_OP) {
