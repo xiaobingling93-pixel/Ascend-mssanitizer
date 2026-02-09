@@ -50,7 +50,7 @@ MindStudio-Sanitizer
 
 
 ## 快速入门
-以一个简单样例介绍如何使用msSanitizer工具进行算子异常检测，具体内容请参见[MindStudio Sanitizer快速入门](./docs/zh/mssanitizer_quick_start.md)。
+详细操作步骤请参见[快速入门](./docs/zh/quick_start/mssanitizer_quick_start.md)。
 
 ## 工具限制与注意事项
 - msSanitizer工具不支持对多线程算子及使用了掩码的向量类计算指令进行检测。
