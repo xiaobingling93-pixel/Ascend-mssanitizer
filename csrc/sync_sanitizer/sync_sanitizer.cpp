@@ -29,6 +29,7 @@ bool SyncSanitizer::SetDeviceInfo(DeviceInfoSummary const &deviceInfo, Config co
 
 bool SyncSanitizer::SetKernelInfo(KernelSummary const &kernelInfo)
 {
+    Init();
     if (kernelInfo.kernelType == KernelType::AICPU) {
         return false;
     }
@@ -36,6 +37,12 @@ bool SyncSanitizer::SetKernelInfo(KernelSummary const &kernelInfo)
         return false;
     }
     return true;
+}
+
+void SyncSanitizer::Init()
+{
+    syncEvents_.clear();
+    isFinished_ = false;
 }
 
 bool SyncSanitizer::CheckRecordBeforeProcess(const SanitizerRecord &record)

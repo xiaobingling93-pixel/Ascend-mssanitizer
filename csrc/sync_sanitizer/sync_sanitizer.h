@@ -36,6 +36,7 @@ public:
     void Exit() override;
 
 private:
+    void Init();
     inline bool IsTargetBlockId(uint32_t blockId);
     uint64_t CalcSetFlagSyncID(SanEvent const &event);
     uint64_t CalcWaitFlagSyncID(SanEvent const &event);
