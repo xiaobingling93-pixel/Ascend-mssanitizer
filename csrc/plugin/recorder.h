@@ -117,14 +117,14 @@ __aicore__ inline bool MemInfoIsInvalid(__gm__ uint8_t *memInfo)
 #endif
 }
 
-/// 无效的meminfo或者仅开启synccheck时，不再解析该条record
-__aicore__ inline bool InvalidMemInfoOrOnlySynccheck(__gm__ uint8_t *memInfo)
+/// 无效的meminfo不再解析该条record
+__aicore__ inline bool InvalidMemInfo(__gm__ uint8_t *memInfo)
 {
     if (MemInfoIsInvalid(memInfo)) {
         return true;
     }
-    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
-    return head->checkParms.synccheck && !head->checkParms.defaultcheck && !head->checkParms.racecheck;
+
+    return false;
 }
 
 __aicore__ inline uint64_t GetRecordHeadSize(uint32_t hostMemoryNum)

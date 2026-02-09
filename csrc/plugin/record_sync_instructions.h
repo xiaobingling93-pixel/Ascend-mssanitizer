@@ -85,7 +85,7 @@ __aicore__ inline void RecordSoftSyncEvent(EXTRA_PARAMS_DEC, int32_t waitBlockId
         return;
     }
 
-    if (!DoRaceCheck(memInfo)) {
+    if (!DoRaceCheck(memInfo) && !DoSyncCheck(memInfo)) {
         return;
     }
 
@@ -114,7 +114,7 @@ __aicore__ inline void RecordHardSyncEvent(EXTRA_PARAMS_DEC,
         return;
     }
 
-    if (!DoRaceCheck(memInfo)) {
+    if (!DoRaceCheck(memInfo) && !DoSyncCheck(memInfo)) {
         return;
     }
 
@@ -142,7 +142,7 @@ __aicore__ inline void RecordPipeBarrierEvent(EXTRA_PARAMS_DEC, pipe_t pipe)
         return;
     }
 
-    if (!DoRaceCheck(memInfo)) {
+    if (!DoRaceCheck(memInfo) && !DoSyncCheck(memInfo)) {
         return;
     }
 
@@ -167,7 +167,7 @@ __aicore__ inline void RecordFftsSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, uint64
         return;
     }
 
-    if (!(DoRaceCheck(memInfo))) {
+    if (!(DoRaceCheck(memInfo)) && !DoSyncCheck(memInfo)) {
         return;
     }
  
@@ -194,7 +194,7 @@ __aicore__ inline void RecordWaitFlagDevEvent(EXTRA_PARAMS_DEC, int64_t flagID)
         return;
     }
 
-    if (!(DoRaceCheck(memInfo))) {
+    if (!(DoRaceCheck(memInfo)) && !DoSyncCheck(memInfo)) {
         return;
     }
 
@@ -219,7 +219,7 @@ __aicore__ inline void RecordWaitFlagDevEventWithPipe(EXTRA_PARAMS_DEC, pipe_t p
         return;
     }
 
-    if (!(DoRaceCheck(memInfo))) {
+    if (!(DoRaceCheck(memInfo)) && !DoSyncCheck(memInfo)) {
         return;
     }
 
@@ -245,7 +245,7 @@ __aicore__ inline void RecordIntraBlockSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, 
         return;
     }
 
-    if (!(DoRaceCheck(memInfo))) {
+    if (!(DoRaceCheck(memInfo)) && !DoSyncCheck(memInfo)) {
         return;
     }
  
@@ -265,7 +265,7 @@ __aicore__ inline void RecordIntraBlockSyncEvent(EXTRA_PARAMS_DEC, pipe_t pipe, 
 
 __aicore__ inline void RecordSetAtomicEvent(EXTRA_PARAMS_DEC, AtomicMode mode)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 

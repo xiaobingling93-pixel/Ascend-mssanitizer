@@ -131,7 +131,7 @@ __aicore__ inline void ProcessMstxVecMask(Recorder &recorder, uint32_t bufferLen
 
 __aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, uint32_t bufferLens, void *buffer)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) { return;}
+    if (InvalidMemInfo(memInfo)) { return;}
 
     uint64_t blockIdx = GetBlockIdx();
     Recorder recorder(memInfo, blockIdx);

@@ -34,7 +34,7 @@ __aicore__ inline void RecordRegister(EXTRA_PARAMS_DEC, T Register::*reg, T valu
     (void)lineNo;
 #endif
     (void)pc;
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 
@@ -62,7 +62,7 @@ __aicore__ inline void RecordNdPara(EXTRA_PARAMS_DEC, uint64_t reg_value)
 
 __aicore__ inline void RecordCmpMask(EXTRA_PARAMS_DEC, __ubuf__ void *addr, AccessType accessType, uint64_t size)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -127,7 +127,7 @@ __aicore__ inline uint64_t ExtractVaBits(uint64_t value)
 __aicore__ inline void UpdateVaRegister(EXTRA_PARAMS_DEC, VaRegister Register::*reg,
                                         uint32_t bitOffset, uint64_t xn, uint64_t xm)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -185,7 +185,7 @@ __aicore__ inline void RecordLdva(EXTRA_PARAMS_DEC, ub_addr8_t dst, uint64_t src
     }
 #endif
 
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();

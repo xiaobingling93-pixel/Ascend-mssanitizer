@@ -42,6 +42,8 @@ bool SyncSanitizer::SetKernelInfo(KernelSummary const &kernelInfo)
 void SyncSanitizer::Init()
 {
     syncEvents_.clear();
+    pipeRedundancyEvents_.clear();
+    redundancyInfo_.clear();
     isFinished_ = false;
 }
 

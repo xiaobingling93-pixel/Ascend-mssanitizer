@@ -133,7 +133,7 @@ __aicore__ inline void RecordUnaryOpFunc(EXTRA_PARAMS_DEC,
     uint16_t dstRepeatStride, uint16_t srcRepeatStride, uint8_t dstBlockNum, uint8_t srcBlockNum,
     uint64_t dstBlockSize, uint64_t srcBlockSize, bool useMask = true)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -169,7 +169,7 @@ template <typename T,
 __aicore__ inline void RecordVecDupEvent(EXTRA_PARAMS_DEC, __ubuf__ T *dst,
                                          uint8_t repeat, uint16_t dstBlockStride, uint16_t dstRepeatStride)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     constexpr uint8_t dataBitsForB16 = 16;
@@ -220,7 +220,7 @@ __aicore__ inline void RecordBinaryOpFunc(EXTRA_PARAMS_DEC,
     uint16_t src1RepeatStride, uint8_t dstBlockNum, uint8_t src0BlockNum, uint8_t src1BlockNum,
     uint16_t dstBlockSize, uint16_t src0BlockSize, uint16_t src1BlockSize, bool useMask = true)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -269,7 +269,7 @@ __aicore__ inline void RecordReduceOpFunc(EXTRA_PARAMS_DEC,
     uint16_t srcRepeatStride, uint16_t dstRepeatLength, uint8_t dstBlockNum, uint8_t srcBlockNum,
     uint8_t dstBlockSize, uint8_t srcBlockSize, uint16_t dstAlignSize = 32, uint8_t dstDataBitsFactor = 1)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -317,7 +317,7 @@ template <RecordType recordType, DataType dataType, typename T>
 __aicore__ inline void RecordVRegPropCoorOpFunc(EXTRA_PARAMS_DEC, __ubuf__ T *dst, __ubuf__ T *src, uint8_t repeat,
                                                 uint8_t regionRange, bool isExtract)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -472,7 +472,7 @@ __aicore__ inline void RecordVreducev2Func(EXTRA_PARAMS_DEC, __ubuf__ T *dst, __
                                            uint16_t repeat, uint8_t src0BlockStride, uint8_t patternMode,
                                            uint16_t src0RepeatStride, uint8_t src1RepeatStride)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -522,7 +522,7 @@ __aicore__ inline void RecordVmrgsort4OpFunc(EXTRA_PARAMS_DEC, __ubuf__ T *dst, 
     uint16_t regionProposalLi0, uint16_t regionProposalLi1, uint16_t regionProposalLi2, uint16_t regionProposalLi3,
     bool isAllStored, uint8_t maskSignal)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo) || repeat == 0) {
+    if (InvalidMemInfo(memInfo) || repeat == 0) {
         return;
     }
 
@@ -622,7 +622,7 @@ __aicore__ inline void RecordVmrgsort4M200Config(EXTRA_PARAMS_DEC, __ubuf__ T *d
 template<DetailedDataType detailedDataType>
 __aicore__ inline void RecordVmrgsort4C310(EXTRA_PARAMS_DEC, uint64_t dst, uint64_t src, uint64_t xm, uint64_t xt)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 
@@ -857,7 +857,7 @@ __aicore__ inline void RecordVgatherOpFunc(EXTRA_PARAMS_DEC, __ubuf__ T *dst, __
                                            uint32_t offsetAddr, uint16_t dstRepeatStride, uint8_t dstBlockStride,
                                            uint8_t repeat, uint8_t sizeN, bool useMask)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) { return;}
+    if (InvalidMemInfo(memInfo)) { return;}
     uint64_t blockIdx = GetBlockIdx();
     Recorder recorder(memInfo, blockIdx);
     auto record = VgatherRecord();
@@ -952,7 +952,7 @@ __aicore__ inline void RecordMatrixMulOpFunc(EXTRA_PARAMS_DEC,
     uint16_t dstBlockSize, uint16_t src0BlockSize, uint16_t src1BlockSize, bool cmatrixSource, bool cmatrixInitVal,
     uint16_t dstAlignSize, uint16_t src0AlignSize, uint16_t src1AlignSize, bool enUnitFlag)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -1093,7 +1093,7 @@ template<DetailedDataType src0Dtype, DetailedDataType src1Dtype>
 __aicore__ inline void RecordMmadA5(EXTRA_PARAMS_DEC, __cc__ void *dst, __ca__ void *src0, __cb__ void *src1,
                                     uint64_t config, uint16_t srcAlign = 512)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
     uint64_t blockIdx = GetBlockIdx();
@@ -1183,7 +1183,7 @@ __aicore__ inline void RecordScatterVnchwconvEvent(EXTRA_PARAMS_DEC, ub_addr8_t 
                                                    uint8_t dstStride, uint8_t srcStride, DataType dataType,
                                                    bool dstHighHalf = false, bool srcHighHalf = false)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 
@@ -1222,7 +1222,7 @@ __aicore__ inline void RecordScatterVnchwconvA5(EXTRA_PARAMS_DEC, ub_addr8_t dst
                                                 uint64_t config, DataType dataType,
                                                 bool dstHighHalf = false, bool srcHighHalf = false)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 
@@ -1249,7 +1249,7 @@ __aicore__ inline void RecordScatterVnchwconvA5(EXTRA_PARAMS_DEC, ub_addr8_t dst
 template<DataType dataType>
 __aicore__ inline void RecordVbs32A5(EXTRA_PARAMS_DEC, uint64_t dst, uint64_t src0, uint64_t src1, uint64_t config)
 {
-    if (InvalidMemInfoOrOnlySynccheck(memInfo)) {
+    if (InvalidMemInfo(memInfo)) {
         return;
     }
 
