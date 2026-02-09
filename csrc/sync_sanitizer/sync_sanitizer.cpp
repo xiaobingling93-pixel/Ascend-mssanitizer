@@ -156,6 +156,11 @@ void SyncSanitizer::DoRedundancyCheck(SanEvent const &event)
         return;
     }
 
+    // 工具预处理时插入的同步事件不做判断
+    if (event.eventInfo.syncInfo.isGenerated) {
+        return;
+    }
+
     bool redundantFlag = false;
     SyncDispInfo selfSyncInfo = getSyncDispInfoFromEvent(event);
 

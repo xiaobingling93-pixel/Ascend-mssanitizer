@@ -74,6 +74,7 @@ SanEvent CreateCrossPipeSyncEvent(const SyncType syncType, const PipeType pipeSr
     event.eventInfo.syncInfo.eventId = eventID11;
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
+    event.eventInfo.syncInfo.isGenerated = true;
     return event;
 }
 
@@ -87,6 +88,7 @@ SanEvent CreateInnerPipeSyncEvent(const KernelRecord &record, const PipeType pip
     event.eventInfo.syncInfo.opType = SyncType::PIPE_BARRIER;
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
+    event.eventInfo.syncInfo.isGenerated = true;
     return event;
 }
 
@@ -3100,6 +3102,7 @@ static void ParseRecordHsetFlag(const KernelRecord &record, std::vector<SanEvent
     event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.hardSyncRecord.eventID);
     event.eventInfo.syncInfo.memType = record.payload.hardSyncRecord.memory;
     event.eventInfo.syncInfo.isRetrogress = true;
+    event.eventInfo.syncInfo.isGenerated = true;
     events.emplace_back(event);
 }
 
@@ -3119,6 +3122,7 @@ static void ParseRecordHwaitFlag(const KernelRecord &record, std::vector<SanEven
     event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.hardSyncRecord.eventID);
     event.eventInfo.syncInfo.memType = record.payload.hardSyncRecord.memory;
     event.eventInfo.syncInfo.isRetrogress = true;
+    event.eventInfo.syncInfo.isGenerated = true;
     events.emplace_back(event);
 }
 

@@ -99,6 +99,7 @@ struct SyncOpInfo {
     uint32_t eventId;
     MemType memType;
     bool isRetrogress;  // 是否由HSet/HWait退化，避免混用导致解析顺序混乱
+    bool isGenerated;  // 是否是生成的非原生指令
 };
 
 struct FftsSyncInfo {
