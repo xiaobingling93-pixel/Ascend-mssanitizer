@@ -159,7 +159,9 @@ bool RaceSanitizer::CheckRecordBeforeProcess(const SanitizerRecord &record)
 
 void RaceSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
-    (void)record;
+    if (IsMstxRecordWithTensor(record)) {
+        return;
+    }
 
     if (events.empty()) {
         return;

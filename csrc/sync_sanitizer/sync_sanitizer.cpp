@@ -172,7 +172,9 @@ void SyncSanitizer::DoRedundancyCheck(SanEvent const &event)
 
 void SyncSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
-    (void)record;
+    if (IsMstxRecordWithTensor(record)) {
+        return;
+    }
 
     if (events.empty()) {
         return;

@@ -166,6 +166,10 @@ __aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, u
     } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_VEC_BINARY_OP) {
         ProcessMstxVecMask<MstxVecBinaryDesc>(recorder, bufferLens, buffer);
         RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxVecBinaryDesc, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_DATA_COPY) {
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxDataCopyDesc, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_DATA_COPY_PAD) {
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxDataCopyPadDesc, bufferLens, buffer);
     } else {
         mstxRecord.error = true;
         recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);

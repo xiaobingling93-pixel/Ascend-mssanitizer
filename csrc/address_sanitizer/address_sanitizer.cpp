@@ -441,16 +441,22 @@ void AddressSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEv
     }
 
     MergeRecords(records);
+
+    if (IsMstxRecordWithTensor(record)) {
+        DoWithLocalTensor(record.payload.kernelRecord.payload.mstxRecord, records);
+        return;
+    }
+
     for (MemOpRecord const& r : records) {
         this->DoMemOpRecord(r, true);
-    }
-    if (record.version == RecordVersion::KERNEL_RECORD && record.payload.kernelRecord.recordType == RecordType::MSTX_STUB) {
-        DoWithLocalTensor(record.payload.kernelRecord.payload.mstxRecord, records);
     }
 }
 
 inline void AddLocalTensorBound(BoundsCheck &boundsCheck, MstxTensorDesc const &tensor)
 {
+    if (tensor.space == AddressSpace::GM) {
+        return;
+    }
     boundsCheck.Add(tensor.space, tensor.addr, tensor.size * tensor.dataBits / BITS_EACH_BYTE);
 }
 
@@ -466,9 +472,24 @@ void AddressSanitizer::DoWithLocalTensor(const MstxRecord &record, const std::ve
         AddLocalTensorBound(boundsCheckR, record.interface.mstxVecBinaryDesc.src0);
         AddLocalTensorBound(boundsCheckR, record.interface.mstxVecBinaryDesc.src1);
         AddLocalTensorBound(boundsCheckW, record.interface.mstxVecBinaryDesc.dst);
+    } else if (record.interfaceType == InterfaceType::MSTX_DATA_COPY) {
+        AddLocalTensorBound(boundsCheckR, record.interface.mstxDataCopyDesc.src);
+        AddLocalTensorBound(boundsCheckW, record.interface.mstxDataCopyDesc.dst);
+    } else if (record.interfaceType == InterfaceType::MSTX_DATA_COPY_PAD) {
+        AddLocalTensorBound(boundsCheckR, record.interface.mstxDataCopyPadDesc.src);
+        AddLocalTensorBound(boundsCheckW, record.interface.mstxDataCopyPadDesc.dst);
     }
 
     for (MemOpRecord const& r : records) {
+        if (r.type != MemOpType::LOAD && r.type != MemOpType::STORE) {
+            SAN_WARN_LOG("Invalid MemOpType %s in local tensor address sanitizer", ToString(r.type).c_str());
+            continue;
+        }
+        if (r.dstSpace == AddressSpace::GM) {
+            // GlobalTensor 当前长度不准确，不做 tensor 越界检测
+            continue;
+        }
+
         auto action = AsanActionFactory::CreateAsanAction(r);
         if (action == nullptr) {
             SAN_WARN_LOG("Failed to create action");

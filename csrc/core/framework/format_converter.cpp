@@ -125,6 +125,22 @@ bool FormatConverter::GetDataBitSizeByType(DataType dataType, uint16_t &dataBitS
     return false;
 }
 
+bool FormatConverter::GetDataTypeByDataBits(uint8_t dataBits, DataType &dataType)
+{
+    static const std::map<uint8_t, DataType> BIT_SIZE_DATA_TYPE_MAP = {
+        {4U,  DataType::DATA_B4},
+        {8U,  DataType::DATA_B8},
+        {16U, DataType::DATA_B16},
+        {32U, DataType::DATA_B32},
+    };
+    auto it = BIT_SIZE_DATA_TYPE_MAP.find(dataBits);
+    if (it != BIT_SIZE_DATA_TYPE_MAP.cend()) {
+        dataType = it->second;
+        return true;
+    }
+    return false;
+}
+
 uint16_t FindAlignMap(const std::string& key)
 {
     auto it = ALIGN_MAP.find(key);

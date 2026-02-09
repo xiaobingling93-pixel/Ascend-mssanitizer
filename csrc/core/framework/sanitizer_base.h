@@ -75,5 +75,14 @@ public:
     RegisteSanitizer& operator=(const RegisteSanitizer&)& = delete;
 };
 
+inline bool IsMstxRecordWithTensor(SanitizerRecord const &record)
+{
+    return
+        record.version == RecordVersion::KERNEL_RECORD &&
+        record.payload.kernelRecord.recordType == RecordType::MSTX_STUB &&
+        record.payload.kernelRecord.payload.mstxRecord.interfaceType >= InterfaceType::MSTX_VEC_UNARY_OP &&
+        record.payload.kernelRecord.payload.mstxRecord.interfaceType < InterfaceType::MSTX_WITH_TENSOR;
+}
+
 }
 #endif

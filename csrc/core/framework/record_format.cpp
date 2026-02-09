@@ -188,6 +188,8 @@ std::ostream &operator<<(std::ostream &os, InterfaceType interfaceType)
         {InterfaceType::MSTX_HCCLV,            "HCCLV"},
         {InterfaceType::MSTX_VEC_UNARY_OP,     "VEC_UNARY"},
         {InterfaceType::MSTX_VEC_BINARY_OP,    "VEC_BINARY"},
+        {InterfaceType::MSTX_DATA_COPY,        "DATA_COPY"},
+        {InterfaceType::MSTX_DATA_COPY_PAD,    "DATA_COPY_PAD"},
     };
 
     return FormatEnum(os, INTERFACE_TYPE_MAP, interfaceType, "InterfaceType");
@@ -496,6 +498,30 @@ std::ostream &operator<<(std::ostream &os, MstxVecBinaryDesc const &record)
               << ", " << "name:" << NonEmptyString{record.name};
 }
 
+std::ostream &operator<<(std::ostream &os, MstxDataCopyDesc const &record)
+{
+    return os << ", " << "dst:" << record.dst
+              << ", " << "src:" << record.src
+              << ", " << "lenBurst:" << record.lenBurst
+              << ", " << "nBurst:" << record.nBurst
+              << ", " << "srcGap:" << record.srcGap
+              << ", " << "dstGap:" << record.dstGap
+              << ", " << "name:" << NonEmptyString{record.name};
+}
+
+std::ostream &operator<<(std::ostream &os, MstxDataCopyPadDesc const &record)
+{
+    return os << ", " << "dst:" << record.dst
+              << ", " << "src:" << record.src
+              << ", " << "lenBurst:" << record.lenBurst
+              << ", " << "nBurst:" << record.nBurst
+              << ", " << "srcGap:" << record.srcGap
+              << ", " << "dstGap:" << record.dstGap
+              << ", " << "leftPad:" << record.leftPad
+              << ", " << "rightPad:" << record.rightPad
+              << ", " << "name:" << NonEmptyString{record.name};
+}
+
 std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
 {
     os << record.location
@@ -517,6 +543,10 @@ std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecUnaryDesc; }},
         {InterfaceType::MSTX_VEC_BINARY_OP,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecBinaryDesc; }},
+        {InterfaceType::MSTX_DATA_COPY,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxDataCopyDesc; }},
+        {InterfaceType::MSTX_DATA_COPY_PAD,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxDataCopyPadDesc; }},
     };
 
     typename decltype(MSTX_RECORD_FORMAT_MAP)::const_iterator it = MSTX_RECORD_FORMAT_MAP.find(record.interfaceType);

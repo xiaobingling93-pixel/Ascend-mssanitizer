@@ -32,6 +32,7 @@ public:
     static MemOpType AccessTypeToMemOpType(AccessType type);
     static uint64_t GetDataSizeByType(DataType dataType);
     static bool GetDataBitSizeByType(DataType dataType, uint16_t &dataBitSize);
+    static bool GetDataTypeByDataBits(uint8_t dataBits, DataType &dataType);
     static uint16_t GetAlignSize(
         MemOpInfo &memInfo, AddressSpace space, RecordType recordType, DeviceType deviceType);
     static uint64_t GetPadModeScaleValue(PadMode padMode);

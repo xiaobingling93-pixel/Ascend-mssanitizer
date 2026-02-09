@@ -764,6 +764,10 @@ enum class InterfaceType : uint32_t {
 
     MSTX_VEC_UNARY_OP = 3000,
     MSTX_VEC_BINARY_OP,
+
+    MSTX_DATA_COPY = 4001,
+    MSTX_DATA_COPY_PAD,
+    MSTX_WITH_TENSOR,
 };
 
 struct MstxTensorDesc {
@@ -809,6 +813,28 @@ struct MstxVecBinaryDesc {
     char name[MSTX_API_NAME_LENGTH];
 };
 
+struct MstxDataCopyDesc {
+    MstxTensorDesc dst;
+    MstxTensorDesc src;
+    uint32_t lenBurst;
+    uint32_t nBurst;
+    uint32_t srcGap;
+    uint32_t dstGap;
+    char name[MSTX_API_NAME_LENGTH];
+};
+
+struct MstxDataCopyPadDesc {
+    MstxTensorDesc dst;
+    MstxTensorDesc src;
+    uint32_t lenBurst;
+    uint32_t nBurst;
+    uint32_t srcGap;
+    uint32_t dstGap;
+    uint32_t leftPad;
+    uint32_t rightPad;
+    char name[MSTX_API_NAME_LENGTH];
+};
+
 struct MstxRecord {
     InterfaceType interfaceType;
     uint32_t bufferLens;
@@ -820,6 +846,8 @@ struct MstxRecord {
         MstxHcclCoreRecord mstxHcclCoreRecord; // 一条MstxHcclRecordV会转换为多条MstxHcclCoreRecord
         MstxVecUnaryDesc mstxVecUnaryDesc;
         MstxVecBinaryDesc mstxVecBinaryDesc;
+        MstxDataCopyDesc mstxDataCopyDesc;
+        MstxDataCopyPadDesc mstxDataCopyPadDesc;
     } interface;
 };
 

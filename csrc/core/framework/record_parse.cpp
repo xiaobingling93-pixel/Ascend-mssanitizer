@@ -3292,6 +3292,58 @@ static void ParseRecordMstxVecBinary(const KernelRecord &record, std::vector<San
     MaskModeProcess(events, event, RecordType::BINARY_OP);
 }
 
+static void ParseRecordMstxDataCopy(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxDataCopy = mstxRecord.interface.mstxDataCopyDesc;
+
+    KernelRecord equivalence;
+    equivalence.recordType = RecordType::DMA_MOV;
+    equivalence.blockType = record.blockType;
+    equivalence.serialNo = record.serialNo;
+    DmaMovRecord &dmaMovRecord = equivalence.payload.dmaMovRecord;
+    dmaMovRecord.dst = mstxDataCopy.dst.addr;
+    dmaMovRecord.src = mstxDataCopy.src.addr;
+    dmaMovRecord.location = mstxRecord.location;
+    dmaMovRecord.nBurst = mstxDataCopy.nBurst;
+    dmaMovRecord.lenBurst = mstxDataCopy.lenBurst;
+    dmaMovRecord.srcStride = mstxDataCopy.srcGap;
+    dmaMovRecord.dstStride = mstxDataCopy.dstGap;
+    dmaMovRecord.dstMemType = FormatConverter::AddrSpaceToMemType(mstxDataCopy.dst.space);
+    dmaMovRecord.srcMemType = FormatConverter::AddrSpaceToMemType(mstxDataCopy.src.space);
+    dmaMovRecord.padMode = PadMode::PAD_NONE;
+    dmaMovRecord.byteMode = ByteMode::BM_DISABLE;
+    ParseRecordDmaMov(equivalence, events);
+}
+
+static void ParseRecordMstxDataCopyPad(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxDataCopyPad = mstxRecord.interface.mstxDataCopyPadDesc;
+
+    KernelRecord equivalence;
+    equivalence.recordType = RecordType::MOV_ALIGN;
+    equivalence.blockType = record.blockType;
+    equivalence.serialNo = record.serialNo;
+    MovAlignRecord &movAlignRecord = equivalence.payload.movAlignRecord;
+    movAlignRecord.dst = mstxDataCopyPad.dst.addr;
+    movAlignRecord.src = mstxDataCopyPad.src.addr;
+    movAlignRecord.location = mstxRecord.location;
+    movAlignRecord.srcGap = mstxDataCopyPad.srcGap;
+    movAlignRecord.dstGap = mstxDataCopyPad.dstGap;
+    movAlignRecord.lenBurst = mstxDataCopyPad.lenBurst;
+    movAlignRecord.nBurst = mstxDataCopyPad.nBurst;
+    movAlignRecord.dstMemType = FormatConverter::AddrSpaceToMemType(mstxDataCopyPad.dst.space);
+    movAlignRecord.srcMemType = FormatConverter::AddrSpaceToMemType(mstxDataCopyPad.src.space);
+    if (!FormatConverter::GetDataTypeByDataBits(mstxDataCopyPad.dst.dataBits, movAlignRecord.dataType)) {
+        SAN_ERROR_LOG("Get data type by data bits failed. dataBits: %d\n",
+                      static_cast<int>(mstxDataCopyPad.dst.dataBits));
+    }
+    movAlignRecord.leftPaddingNum = mstxDataCopyPad.leftPad;
+    movAlignRecord.rightPaddingNum = mstxDataCopyPad.rightPad;
+    ParseRecordMovAlign(equivalence, events);
+}
+
 static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3346,6 +3398,10 @@ static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent
         ParseRecordMstxVecUnary(record, events);
     } else if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_BINARY_OP) {
         ParseRecordMstxVecBinary(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_DATA_COPY) {
+        ParseRecordMstxDataCopy(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_DATA_COPY_PAD) {
+        ParseRecordMstxDataCopyPad(record, events);
     }
 }
 
