@@ -55,6 +55,121 @@ inline bool SyncSanitizer::IsTargetBlockId(uint32_t blockId)
     return false;
 }
 
+// set_flag匹配检测
+void SyncSanitizer::DoMatchCheck(SanEvent const &event)
+{
+    uint64_t selfSyncID {}; // 当前指令
+    uint64_t peerSyncID {}; // 与之配对的指令
+
+    if (event.type == EventType::SYNC_EVENT && event.eventInfo.syncInfo.opType == SyncType::SET_FLAG) {
+        selfSyncID = CalcSetFlagSyncID(event);
+        peerSyncID = CalcWaitFlagSyncID(event);
+    } else if (event.type == EventType::SYNC_EVENT && event.eventInfo.syncInfo.opType == SyncType::WAIT_FLAG) {
+        selfSyncID = CalcWaitFlagSyncID(event);
+        peerSyncID = CalcSetFlagSyncID(event);
+    } else {
+        return;
+    }
+
+    if (syncEvents_.find(peerSyncID) != syncEvents_.end()) {
+        // 如果找到配对指令，就删除配对指令
+        if (syncEvents_[peerSyncID].size() > 1) {
+            syncEvents_[peerSyncID].pop_back();
+        } else {
+            syncEvents_.erase(peerSyncID);
+        }
+    } else {
+        // 如果找不到，就插入当前指令
+        auto selfSyncInfo = SyncDispInfo {};
+        selfSyncInfo.baseEvent.Init(MemEvent(event));
+        selfSyncInfo.srcPipe = event.eventInfo.syncInfo.srcPipe;
+        selfSyncInfo.dstPipe = event.eventInfo.syncInfo.dstPipe;
+        selfSyncInfo.eventId = event.eventInfo.syncInfo.eventId;
+        selfSyncInfo.opType = event.eventInfo.syncInfo.opType;
+        selfSyncInfo.checkType = SyncCheckType::MATCH_CHECK;
+        syncEvents_[selfSyncID].push_back(selfSyncInfo);
+    }
+}
+
+SyncDispInfo getSyncDispInfoFromEvent(SanEvent const &event)
+{
+    SyncDispInfo info = SyncDispInfo {};
+    
+    info.baseEvent.Init(MemEvent(event));
+    info.srcPipe = event.eventInfo.syncInfo.srcPipe;
+    info.dstPipe = event.eventInfo.syncInfo.dstPipe;
+    info.eventId = event.eventInfo.syncInfo.eventId;
+    info.opType = event.eventInfo.syncInfo.opType;
+    info.checkType = SyncCheckType::REDUMTAMCY_CHECK;
+
+    return info;
+}
+
+// 获取冗余判断时用于分发指令的pipetype
+PipeType getPipeTypeFromSanEvent(SanEvent const &event)
+{
+    switch (event.type) {
+        case EventType::MEM_EVENT:
+        case EventType::TIME_EVENT:
+            return event.pipe;
+        case EventType::SYNC_EVENT:
+            switch (event.eventInfo.syncInfo.opType) {
+                case SyncType::RLS_BUF:     // 冗余检测只涉及A2/A3，A5相关特性直接返回
+                    return PipeType::SIZE;
+                case SyncType::WAIT_FLAG:   // wait_falg使用srcPipe
+                    return event.eventInfo.syncInfo.dstPipe;
+                default:                    // set_flag和其它sync事件使用srcPipe
+                    return event.eventInfo.syncInfo.srcPipe;
+            }
+        case EventType::CROSS_CORE_SYNC_EVENT:
+            return event.eventInfo.fftsSyncInfo.dstPipe;
+        case EventType::CROSS_CORE_SOFT_SYNC_EVENT:
+            return PipeType::PIPE_S;    // SOFT_SYNC固定为PIPE_S
+        case EventType::MSTX_CROSS_SYNC_EVENT:
+            return event.eventInfo.mstxCrossInfo.pipe;
+        default:
+            return PipeType::SIZE;
+    }
+}
+
+// set_flag/wait_falg冗余检测
+void SyncSanitizer::DoRedundancyCheck(SanEvent const &event)
+{
+    PipeType pipe = getPipeTypeFromSanEvent(event);
+    // 不需要检测的事件直接返回
+    if (pipe == PipeType::SIZE) {
+        return;
+    }
+
+    // 出现非sync事件时，当前pipe保存的上一条指令必定不冗余，清除指令表中该pipe保存的上一条指令
+    if (event.type != EventType::SYNC_EVENT) {
+        pipeRedundancyEvents_.erase(pipe);
+        return;
+    }
+
+    bool redundantFlag = false;
+    SyncDispInfo selfSyncInfo = getSyncDispInfoFromEvent(event);
+
+    switch (event.eventInfo.syncInfo.opType) {
+        case SyncType::SET_FLAG:    // 出现 SET_FLAG/WAIT_FLAG 时，与保存的上一条指令比较看是否完全一致
+        case SyncType::WAIT_FLAG:
+            redundantFlag = selfSyncInfo == pipeRedundancyEvents_[pipe];
+            break;
+        case SyncType::PIPE_BARRIER: // PIPE_BARRIER 忽略不处理，不记录指令表
+            return;
+        default:    // 其他的sync事件直接记表
+            break;
+    }
+
+    // 将冗余的两个事件记录下来，后续输出
+    if (redundantFlag) {
+        redundancyInfo_.push_back(pipeRedundancyEvents_[pipe]);
+        redundancyInfo_.push_back(selfSyncInfo);
+    }
+
+    pipeRedundancyEvents_[pipe] = selfSyncInfo;
+}
+
 void SyncSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent> &events)
 {
     (void)record;
@@ -62,8 +177,7 @@ void SyncSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent
     if (events.empty()) {
         return;
     }
-    uint64_t selfSyncID {}; // 当前指令
-    uint64_t peerSyncID {}; // 与之配对的指令
+
     for (auto& event : events) {
         if (event.isEndFrame) {
             isFinished_ = true;
@@ -72,34 +186,18 @@ void SyncSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent
         if (!IsTargetBlockId(event.loc.coreId)) {
             continue;
         }
-        if (event.type == EventType::SYNC_EVENT && event.eventInfo.syncInfo.opType == SyncType::SET_FLAG) {
-            selfSyncID = CalcSetFlagSyncID(event);
-            peerSyncID = CalcWaitFlagSyncID(event);
-        } else if (event.type == EventType::SYNC_EVENT && event.eventInfo.syncInfo.opType == SyncType::WAIT_FLAG) {
-            selfSyncID = CalcWaitFlagSyncID(event);
-            peerSyncID = CalcSetFlagSyncID(event);
-        } else {
-            continue;
-        }
 
-        if (syncEvents_.find(peerSyncID) != syncEvents_.end()) {
-            // 如果找到配对指令，就删除配对指令
-            if (syncEvents_[peerSyncID].size() > 1) {
-                syncEvents_[peerSyncID].pop_back();
-            } else {
-                syncEvents_.erase(peerSyncID);
-            }
-        } else {
-            // 如果找不到，就插入当前指令
-            auto selfSyncInfo = SyncDispInfo {};
-            selfSyncInfo.baseEvent.Init(MemEvent(event));
-            selfSyncInfo.srcPipe = event.eventInfo.syncInfo.srcPipe;
-            selfSyncInfo.dstPipe = event.eventInfo.syncInfo.dstPipe;
-            syncEvents_[selfSyncID].push_back(selfSyncInfo);
-        }
+        DoMatchCheck(event);
+        DoRedundancyCheck(event);
     }
-    if (isFinished_ && !syncEvents_.empty()) {
-        ReportUnpairedInfo();
+
+    if (isFinished_) {
+        if (!syncEvents_.empty()) {
+            ReportUnpairedInfo();
+        }
+        if (!redundancyInfo_.empty()) {
+            ReportRedundancyInfo();
+        }
     }
 }
 
@@ -131,6 +229,23 @@ void SyncSanitizer::ReportUnpairedInfo()
     CallStack::Instance().CachePcOffsets(pcOffsets);
     for (SyncDispInfo const &it : dispEvents) {
         msgFunc_(LogLv::WARN, [&it](void) {
+            std::stringstream ss;
+            ss << it << std::endl;
+            return DetectionInfo{ToolType::SYNCCHECK, ss.str()};
+        });
+    }
+}
+
+void SyncSanitizer::ReportRedundancyInfo()
+{
+    std::set<uint64_t> pcOffsets;
+    for (SyncDispInfo &info : redundancyInfo_) {
+        pcOffsets.insert(info.baseEvent.pc);
+    }
+
+    CallStack::Instance().CachePcOffsets(pcOffsets);
+    for (SyncDispInfo const &it : redundancyInfo_) {
+        msgFunc_(LogLv::ERROR, [&it](void) {
             std::stringstream ss;
             ss << it << std::endl;
             return DetectionInfo{ToolType::SYNCCHECK, ss.str()};

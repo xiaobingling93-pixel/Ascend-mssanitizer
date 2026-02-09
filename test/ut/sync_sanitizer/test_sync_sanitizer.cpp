@@ -159,4 +159,486 @@ TEST(SyncSanitizer, multi_instructions_with_one_paired_flag)
     ASSERT_TRUE(msg.find("Unpaired set_flag instructions detected") == std::string::npos);
 }
 
+void syncSanitizerTestClear(std::vector<SanEvent> &events, SyncSanitizer &syncSan, std::string &msg)
+{
+    events.clear();
+    syncSan.syncEvents_.clear();
+    syncSan.pipeRedundancyEvents_.clear();
+    syncSan.redundancyInfo_.clear();
+    msg = "";
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_instruction_expect_return_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 2U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 2U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_continuous_set_flag_wait_flag_instruction_expect_return_multiple_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 4U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 4U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_with_pipe_barrier_instruction_expect_return_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::PIPE_BARRIER);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 2U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::PIPE_BARRIER);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 2U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") != std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_with_sync_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_MTE1, PipeType::PIPE_V);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_MTE1, PipeType::PIPE_V);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_with_mem_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    KernelRecord loadStoreRecord{};
+    loadStoreRecord.recordType = RecordType::DMA_MOV_CONV_RELU;
+    loadStoreRecord.payload.dmaMovConvReluRecord.dst = 0xaa;
+    loadStoreRecord.payload.dmaMovConvReluRecord.src = 0x55;
+    loadStoreRecord.payload.dmaMovConvReluRecord.nBurst = 100;
+    loadStoreRecord.payload.dmaMovConvReluRecord.lenBurst = 8;
+    loadStoreRecord.payload.dmaMovConvReluRecord.srcStride = 8;
+    loadStoreRecord.payload.dmaMovConvReluRecord.dstStride = 8;
+    loadStoreRecord.payload.dmaMovConvReluRecord.location.blockId = 7;
+    loadStoreRecord.payload.dmaMovConvReluRecord.crMode = ConvRelu::CRMODE_NONE;
+    loadStoreRecord.payload.dmaMovConvReluRecord.srcMemType = MemType::L0C;
+    loadStoreRecord.payload.dmaMovConvReluRecord.dstMemType = MemType::UB;
+    loadStoreRecord.payload.dmaMovConvReluRecord.srcDataType = DataType::DATA_B16;
+    loadStoreRecord.payload.dmaMovConvReluRecord.dstDataType = DataType::DATA_B16;
+    SanitizerRecord sanitizerRecord;
+    sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
+    sanitizerRecord.payload.kernelRecord = loadStoreRecord;
+
+    RecordPreProcess::GetInstance().Process(sanitizerRecord, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 0U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_MTE1, PipeType::PIPE_V);
+    RecordPreProcess::GetInstance().Process(record, events);
+    RecordPreProcess::GetInstance().Process(sanitizerRecord, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 0U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_dst_pipe_diff_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE2);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE2);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 2U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_src_pipe_diff_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_MTE2, PipeType::PIPE_MTE1);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 2U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_MTE2, PipeType::PIPE_MTE1);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_src_pipe_diff_dst_pipe_diff_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_MTE2, PipeType::PIPE_MTE3);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 2U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_MTE2, PipeType::PIPE_MTE3);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 2U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_blockid_diff_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 1U);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 1U, RecordType::WAIT_FLAG);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
+TEST(SyncSanitizer, redundancy_set_flag_wait_flag_eventid_diff_instruction_expect_no_synccheck_detection)
+{
+    SanitizerRecord record {};
+    std::vector<SanEvent> events {};
+    SyncSanitizer syncSan {};
+    std::string msg {};
+    syncSan.RegisterNotifyFunc([&msg](LogLv const&, SanitizerBase::MSG_GEN &&gen) { msg += gen().message; });
+    SanEvent event {};
+
+    // set_flag
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID0);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID1);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::SET_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID0);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant set_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+
+    // wait_flag
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID0);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID1);
+    RecordPreProcess::GetInstance().Process(record, events);
+    g_fillSyncRecord(record, 0U, RecordType::WAIT_FLAG, PipeType::PIPE_V, PipeType::PIPE_MTE1, EventID::EVENT_ID0);
+    RecordPreProcess::GetInstance().Process(record, events);
+
+    event.isEndFrame = true;
+    events.emplace_back(event);
+    syncSan.Do(record, events);
+    std::cout << msg << std::endl;
+
+    ASSERT_EQ(syncSan.pipeRedundancyEvents_.size(), 1U);
+    ASSERT_EQ(syncSan.redundancyInfo_.size(), 0U);
+
+    ASSERT_TRUE(msg.find("Redundant wait_flag instructions detected") == std::string::npos);
+    syncSanitizerTestClear(events, syncSan, msg);
+}
+
 }

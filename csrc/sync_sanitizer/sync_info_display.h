@@ -62,7 +62,13 @@ inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &format
 
 inline std::ostream &operator << (std::ostream &os, SyncDispInfo const &info)
 {
-    os << "====== WARNING: Unpaired set_flag instructions detected" << std::endl
+    std::string checkTypeStr(info.checkType == SyncCheckType::MATCH_CHECK ? "Unpaired" : 
+        info.checkType == SyncCheckType::REDUMTAMCY_CHECK ? "Redundant" : "UNKNOWN_ERRTYPE");
+    std::string instrStr(info.checkType == SyncCheckType::MATCH_CHECK ? "set_flag" : 
+        info.opType == SyncType::SET_FLAG ? "set_flag" : "wait_flag");
+    std::string alarmLevel(info.checkType == SyncCheckType::MATCH_CHECK ? "WARNING" : "ERROR");
+
+    os << "====== " << alarmLevel << ": "<< checkTypeStr << " " << instrStr << " instructions detected" << std::endl
        << "======    from " << static_cast<PipeType>(info.srcPipe) << " to "
        << static_cast<PipeType>(info.dstPipe) << FormatKernelName{} << std::endl
        << "======    in block " << info.baseEvent.blockType << "(" << info.baseEvent.coreId << ")"

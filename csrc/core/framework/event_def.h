@@ -60,6 +60,12 @@ enum class RaceCheckType: uint8_t {
     CROSS_BLOCK_CHECK,
 };
 
+enum class SyncCheckType : uint8_t {
+    MATCH_CHECK = 0U,    // set_flag 匹配检测
+    REDUMTAMCY_CHECK,   // set_flag/wait_flag 冗余检测
+    SIZE,
+};
+
 enum class FftsSyncMode : uint8_t {
     MODE0 = 0U,
     MODE1,
@@ -226,6 +232,20 @@ struct SyncDispInfo {
     BaseEvent baseEvent;
     PipeType srcPipe;
     PipeType dstPipe;
+    uint32_t eventId;
+    SyncType opType;
+    SyncCheckType checkType;
+
+    bool operator == (const SyncDispInfo &other) const
+    {
+        return (baseEvent.coreId == other.baseEvent.coreId &&
+                baseEvent.blockType == other.baseEvent.blockType &&
+                srcPipe == other.srcPipe &&
+                dstPipe == other.dstPipe &&
+                eventId == other.eventId &&
+                opType == other.opType &&
+                checkType == other.checkType);
+    }
 };
 
 struct RaceEventHash {

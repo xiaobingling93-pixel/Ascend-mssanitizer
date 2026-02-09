@@ -28,7 +28,7 @@ __aicore__ inline bool DoRaceCheck(__gm__ uint8_t *memInfo)
     return head->checkParms.racecheck;
 }
 
-/// 同步检测只保留set_flag/wait_flag
+/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
 __aicore__ inline bool DoSyncCheck(__gm__ uint8_t *memInfo)
 {
     auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
