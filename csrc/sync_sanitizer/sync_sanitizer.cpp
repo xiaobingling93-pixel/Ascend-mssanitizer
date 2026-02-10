@@ -261,7 +261,7 @@ void SyncSanitizer::ReportRedundancyInfo()
 
     CallStack::Instance().CachePcOffsets(pcOffsets);
     for (SyncDispInfo const &it : redundancyInfo_) {
-        msgFunc_(LogLv::ERROR, [&it](void) {
+        msgFunc_(LogLv::WARN, [&it](void) {
             std::stringstream ss;
             ss << it << std::endl;
             return DetectionInfo{ToolType::SYNCCHECK, ss.str()};
