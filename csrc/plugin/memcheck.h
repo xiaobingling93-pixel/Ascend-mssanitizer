@@ -237,7 +237,7 @@ __aicore__ inline void Memcheck::OnlineCheck(AddrInfo const &addrInfo, Record co
     GetThreadDim(errorDesc.threadDim.idX, errorDesc.threadDim.idY, errorDesc.threadDim.idZ);
 
     /// 1. 越界读写检测，后续拓展其他检测能力
-    uint64_t illegalSize{};
+    uint64_t illegalSize = 0U;
     if (GmReadWriteCheck(addrInfo, illegalSize) || UbReadWriteCheck(addrInfo, illegalSize)) {
         errorDesc.nBadBytes = illegalSize;
         /// 如果是MEMCPY_BLOCKS，则应有读写2个错误类型，否则为1个

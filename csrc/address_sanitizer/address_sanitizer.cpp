@@ -532,9 +532,17 @@ void AddressSanitizer::ParseOnlineError(const KernelErrorRecord &record, BlockTy
     };
     for (size_t errorIdx = 0; errorIdx < record.errorNum; ++errorIdx) {
         const KernelErrorDesc &kernelErrorDesc = record.kernelErrorDesc[errorIdx];
-        SAN_INFO_LOG("shadow memory thread(%u,%u,%u) l1StartAddr=0x%lx l2StartAddr=0x%lx l2MemStatusAddr=0x%lx",
-            error.auxData.threadLoc.idX, error.auxData.threadLoc.idY, error.auxData.threadLoc.idZ,
-            kernelErrorDesc.l1StartAddr, kernelErrorDesc.l2StartAddr, kernelErrorDesc.l2MemStatusAddr);
+        if (kernelErrorDesc.errorType == KernelErrorType::THREADWISE_OVERLAP) {
+            SAN_INFO_LOG("shadow memory thread(%u,%u,%u) l1StartAddr=0x%lx l2StartAddr=0x%lx l2MemStatusAddr=0x%lx(maxAddr)",
+                error.auxData.threadLoc.idX, error.auxData.threadLoc.idY, error.auxData.threadLoc.idZ,
+                kernelErrorDesc.l1StartAddr, kernelErrorDesc.l2StartAddr, kernelErrorDesc.l2MemStatusAddr);
+            if (kernelErrorDesc.l2StartAddr >= kernelErrorDesc.l2MemStatusAddr || kernelErrorDesc.l2StartAddr < kernelErrorDesc.l1StartAddr) {
+                SAN_INFO_LOG("====== invalid l2StartAddr=0x%lu", kernelErrorDesc.l2StartAddr);
+            }
+            if (kernelErrorDesc.l2StartAddr % 8 != 0) {
+                SAN_INFO_LOG("====== unaligned l2StartAddr=0x%lu", kernelErrorDesc.l2StartAddr);
+            }
+        }
         error.auxData.nBadBytes = kernelErrorDesc.nBadBytes;
         error.auxData.conflictedThreadLoc = kernelErrorDesc.conflictedThreadLoc;
         error.auxData.threadDim = kernelErrorDesc.threadDim;

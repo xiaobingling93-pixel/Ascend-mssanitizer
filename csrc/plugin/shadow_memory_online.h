@@ -24,6 +24,23 @@ namespace Sanitizer {
 
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
 
+enum class ErrorCode : uint64_t {
+    // for MultiLayerTable
+    UNALLOCATABLE_FOR_L0 = 0x100U,
+    INVALID_L0_IDX_ADDR,
+    INVALID_L1_START_ADDR,
+    UNALLOCATABLE_FOR_L1,
+    INVALID_L1_IDX_ADDR,
+    WAIT_FOR_L0_UNLOCK_TIMEOUT,
+    WAIT_FOR_L1_UNLOCK_TIMEOUT,
+
+    // for ShadowMemoryHeapAllocator
+    ALLOCATOR_NOT_READY = 0x200,
+    ALLOCATOR_REMAINING_MEM_NOT_ENOUGH,
+    ALLOCATED_ADDR_ILLEGAL,
+
+};
+
 class ShadowMemoryHeapAllocator {
 public:
     __aicore__ __attribute__((always_inline)) ShadowMemoryHeapAllocator(): heapHeadPtr_(nullptr), isReady_(false) {}
@@ -40,42 +57,32 @@ public:
             return false;
         }
 
+        maxAddr_ = heapHeadPtr_->startAddr + heapHeadPtr_->size;
         isReady_ = true;
         return true;
     }
 
-    __aicore__ inline uint64_t AllocHeap(uint64_t allocSize)
+    __aicore__ inline uint64_t AllocHeap(uint64_t allocSize, uint64_t &addr)
     {
         if (!isReady_) {
-            return 0U;
+            return static_cast<uint64_t>(ErrorCode::ALLOCATOR_NOT_READY);
         }
 
-        uint64_t rest = heapHeadPtr_->size - (heapHeadPtr_->current - heapHeadPtr_->startAddr);
-        if (rest < allocSize) {
-            // 不够分配，返回0地址
-            return 0U;
+        if (AtomicAdd(&(heapHeadPtr_->current), 0U) > maxAddr_) {
+            // 已无内存可分配
+            return static_cast<uint64_t>(ErrorCode::ALLOCATOR_REMAINING_MEM_NOT_ENOUGH);
         }
 
-        uint64_t addr = heapHeadPtr_->current;
-        heapHeadPtr_->current += allocSize;
+        addr = AtomicAdd(&(heapHeadPtr_->current), allocSize);
 
-        return addr;
-    }
-
-    __aicore__ inline uint64_t AllocHeapForOneThread(uint64_t allocSize)
-    {
-        uint64_t newHeap = 0U;
-        SyncThreads();
-        uint64_t lock = AtomicCAS(&(heapHeadPtr_->lock), 0U, 1U);
-        SyncThreads();
-        if (lock == 0U) {
-            // 获取到锁的线程
-            newHeap = AllocHeap(allocSize);
-            heapHeadPtr_->lock = 0U;
+        // 检查是否超过范围
+        if (AtomicAdd(&(heapHeadPtr_->current), 0U) > maxAddr_) {
+            // 本次不够分配
+            addr = static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE);
+            return static_cast<uint64_t>(ErrorCode::ALLOCATED_ADDR_ILLEGAL);
         }
-        SyncThreads();
 
-        return newHeap;
+        return 0U;
     }
 
     __aicore__ inline uint64_t FreeHeap(uint64_t size)
@@ -92,14 +99,23 @@ public:
         return heapHeadPtr_->startAddr;
     }
 
+    __aicore__ inline uint64_t GetHeapEndAddr()
+    {
+        if (!isReady_) {
+            return 0U;
+        }
+        return heapHeadPtr_->startAddr + heapHeadPtr_->size;
+    }
+
     __aicore__ inline bool IsHeapFreshNew()
     {
-        return heapHeadPtr_->startAddr == heapHeadPtr_->current;
+        return (AtomicAdd(&(heapHeadPtr_->startAddr), 0U)) == (AtomicAdd(&(heapHeadPtr_->current), 0U));
     }
 
 private:
-    __gm__ ShadowMemoryHeapHead *heapHeadPtr_;
     bool isReady_;
+    uint64_t maxAddr_;
+    __gm__ ShadowMemoryHeapHead *heapHeadPtr_;
 };
 
 template <typename ByteStatus_t>
@@ -143,11 +159,6 @@ struct TableLayout {
 
 template <typename ByteStatus_t>
 class MultiLayerTable {
-    enum class AddrStatus : uint64_t {
-        LOCKED_BY_OTHER_THREADS = 1U,
-        UNALLOCATABLE = UINT64_MAX, // 内存异常，无法再分配
-    };
-
 public:
     __aicore__ inline MultiLayerTable(): heapAllocator_()
     {
@@ -173,11 +184,8 @@ public:
             return false;
         }
 
-        // 判断是否需要申请L0，全局仅需申请一次
-        if (heapAllocator_.IsHeapFreshNew()) {
-            heapAllocator_.AllocHeapForOneThread(l0Tbl_.blockNum * sizeof(uint64_t));
-        }
-
+        // Host已预分配了L0级表空间，每个节点占8字节，节点数：
+        // 节点数 = (ONLINE_GLOBAL_MEM_MASK + ONLINE_LOCAL_MEM_MASK - 1U) / ONLINE_LOCAL_MEM_MASK) * sizeof(uint64_t)
         // L0层起始地址，始终与heap起始地址一致
         l0Tbl_.listPtr = heapAllocator_.GetHeapStartAddr();
 
@@ -187,105 +195,135 @@ public:
     __aicore__ inline uint64_t LookUp(const uint64_t addr,
         uint64_t &l1StartAddr, uint64_t &l2StartAddr, uint64_t &l2MemStatusAddr)
     {
-        l1StartAddr = LookUpInL0(addr);
-        if (l1StartAddr == 0U) {
-            return 0U;
+        uint64_t ret = 0U;
+        ret = LookUpInL0(addr, l1StartAddr);
+        if (ret != 0U) {
+            l2StartAddr = ret; // 承载错误码
+            return ret;
         }
-        l2StartAddr = LookUpInL1(l1StartAddr, addr);
-        if (l2StartAddr == 0U) {
-            return 0U;
+
+        ret = LookUpInL1(addr, l1StartAddr, l2StartAddr);
+        if (ret != 0U) {
+            l2StartAddr = ret; // 承载错误码
+            return ret;
         }
-        l2MemStatusAddr = LookUpInL2(l2StartAddr, addr);
-        return l2MemStatusAddr;
+
+        l2MemStatusAddr = LookUpInL2(addr, l2StartAddr);
+        return ret;
     }
 
 private:
-    __aicore__ inline uint64_t LookUpInL0(uint64_t addr)
+    __aicore__ inline uint64_t LookUpInL0(uint64_t addr, uint64_t &l1StartAddr)
     {
+        uint64_t ret = 0U;
         uint64_t l0Idx = (addr & l0Tbl_.mask) / l0Tbl_.blockSize;
 
         __gm__ uint64_t *l0Ptr = reinterpret_cast<__gm__ uint64_t *>(l0Tbl_.listPtr) + l0Idx;
 
-        if (*l0Ptr == static_cast<uint64_t>(AddrStatus::UNALLOCATABLE)) {
+        if (reinterpret_cast<uint64_t>(l0Ptr) < heapAllocator_.GetHeapStartAddr() ||
+            reinterpret_cast<uint64_t>(l0Ptr) > heapAllocator_.GetHeapEndAddr()) {
+            return static_cast<uint64_t>(ErrorCode::INVALID_L0_IDX_ADDR);
+        }
+        if (*l0Ptr == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) {
             // 内存耗尽
-            return 0U;
+            return static_cast<uint64_t>(ErrorCode::UNALLOCATABLE_FOR_L0);
         }
 
-        SyncThreads();
-
-        uint64_t l1StartAddr = AtomicCAS(l0Ptr, 0U, static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS));
-        if (l1StartAddr == 0) {
-            // 获取到锁的线程
-            uint64_t newHeap = heapAllocator_.AllocHeapForOneThread(l1Tbl_.blockNum * sizeof(uint64_t));
-            // 赋值并解锁
-            if (newHeap == 0U) {
-                *l0Ptr = static_cast<uint64_t>(AddrStatus::UNALLOCATABLE);
+        uint64_t newHeap = 0U;
+        uint64_t lock = AtomicCAS(l0Ptr, 0U, static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS));
+        if (lock == 0) {
+            // 获取锁的线程
+            ret = heapAllocator_.AllocHeap(l1Tbl_.blockNum * sizeof(uint64_t), newHeap);
+            if (ret == 0U) {
+                AtomicExch(l0Ptr, newHeap);
             } else {
-                *l0Ptr = newHeap;
+                AtomicExch(l0Ptr, static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE));
+            }
+        } else {
+            // 未获取锁的线程，等待锁释放
+            uint64_t count = 0;
+            constexpr uint64_t max_count = 2000;
+            while ((lock == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS)) &&
+                (count < max_count)) {
+                lock = AtomicAdd(l0Ptr, 0);
+                count++;
             }
         }
-
-        SyncThreads(); // warp间同步，等待l0Ptr赋值完成
-
-        // 所有线程再读一次l0Ptr
-        l1StartAddr = *l0Ptr;
-        if (l1StartAddr == static_cast<uint64_t>(AddrStatus::UNALLOCATABLE)) {
-            l1StartAddr = 0U;
-        } else if (l1StartAddr == static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS)) {
-            // 异常
-            l1StartAddr = 0U;
+        l1StartAddr = AtomicAdd(l0Ptr, 0);
+        if (l1StartAddr == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) {
+            // 无内存可分配
+            ret = static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE);
+        } else if (l1StartAddr == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS)) {
+            // 状态异常
+            ret = static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS);
+        } else if (l1StartAddr == 0) {
+            ret = static_cast<uint64_t>(ErrorCode::WAIT_FOR_L0_UNLOCK_TIMEOUT);
         } else {
             // 正常地址
-            l1StartAddr = *l0Ptr;
+            ret = 0U;
         }
 
-        return l1StartAddr;
+        return ret;
     }
 
-    __aicore__ inline uint64_t LookUpInL1(uint64_t l1StartAddr, uint64_t addr)
+    __aicore__ inline uint64_t LookUpInL1(uint64_t addr, uint64_t l1StartAddr, uint64_t &l2StartAddr)
     {
+        uint64_t ret = 0U;
+        if (l1StartAddr == 0U) {
+            return static_cast<uint64_t>(ErrorCode::INVALID_L1_START_ADDR);
+        }
         l1Tbl_.listPtr = l1StartAddr;
         uint64_t l1Idx = (addr & l1Tbl_.mask) / l1Tbl_.blockSize;
 
         __gm__ uint64_t *l1Ptr = reinterpret_cast<__gm__ uint64_t *>(l1Tbl_.listPtr) + l1Idx;
 
-        if (*l1Ptr == static_cast<uint64_t>(AddrStatus::UNALLOCATABLE)) {
+        if (reinterpret_cast<uint64_t>(l1Ptr) < heapAllocator_.GetHeapStartAddr() ||
+            reinterpret_cast<uint64_t>(l1Ptr) > heapAllocator_.GetHeapEndAddr()) {
+            return static_cast<uint64_t>(ErrorCode::INVALID_L1_IDX_ADDR);
+        }
+        if (*l1Ptr == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) {
             // 内存耗尽
-            return 0U;
+            return static_cast<uint64_t>(ErrorCode::UNALLOCATABLE_FOR_L1);
         }
 
-        SyncThreads();
-
-        uint64_t l2StartAddr = AtomicCAS(l1Ptr, 0U, static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS));
-        if (l2StartAddr == 0) {
-            // 获取到锁的线程
-            uint64_t newHeap = heapAllocator_.AllocHeapForOneThread(l1Tbl_.blockSize * sizeof(uint32_t));
-            // 赋值并解锁
-            if (newHeap == 0U) {
-                *l1Ptr = static_cast<uint64_t>(AddrStatus::UNALLOCATABLE);
+        uint64_t newHeap = 0U;
+        uint64_t lock = AtomicCAS(l1Ptr, 0U, static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS));
+        if (lock == 0) {
+            // 获取锁的线程
+            ret = heapAllocator_.AllocHeap(l2Tbl_.blockNum * sizeof(ByteStatus_t), newHeap);
+            if (ret == 0U) {
+                AtomicExch(l1Ptr, newHeap);
             } else {
-                *l1Ptr = newHeap;
+                AtomicExch(l1Ptr, static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE));
+            }
+        } else {
+            // 未获取锁的线程，等待锁释放
+            uint64_t count = 0;
+            constexpr uint64_t max_count = 2000;
+            while (lock == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS) &&
+                (count < max_count)) {
+                lock = AtomicAdd(l1Ptr, 0);
+                count++;
             }
         }
 
-        SyncThreads(); // warp间同步，等待l1Ptr赋值完成
-
-        // 所有线程再读一次l0Ptr
-        l2StartAddr = *l1Ptr;
-        if (l2StartAddr == static_cast<uint64_t>(AddrStatus::UNALLOCATABLE)) {
-            l2StartAddr = 0U;
-        } else if (l2StartAddr == static_cast<uint64_t>(AddrStatus::LOCKED_BY_OTHER_THREADS)) {
+        l2StartAddr = AtomicAdd(l1Ptr, 0);
+        if (l2StartAddr == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) {
+            ret = static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE);
+        } else if (l2StartAddr == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS)) {
             // 异常
-            l2StartAddr = 0U;
+            ret = static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS);
+        } else if (l2StartAddr == 0) {
+            ret = static_cast<uint64_t>(ErrorCode::WAIT_FOR_L1_UNLOCK_TIMEOUT);
         } else {
             // 正常地址
-            l2StartAddr = *l1Ptr;
+            ret = 0U;
         }
 
-        return l2StartAddr;
+        return ret;
     }
 
-    __aicore__ inline uint64_t LookUpInL2(uint64_t l2StartAddr, uint64_t addr)
+    __aicore__ inline uint64_t LookUpInL2(uint64_t addr, uint64_t l2StartAddr)
     {
         l2Tbl_.listPtr = l2StartAddr;
         __gm__ ByteStatus_t *l2StartPtr = reinterpret_cast<__gm__ ByteStatus_t *>(l2StartAddr);
@@ -349,18 +387,24 @@ public:
     __aicore__ inline uint64_t StoreNBytes(AddrInfo const &addrInfo, AuxInfo &auxInfo)
     {
         uint64_t nBadBytesForOverlap = 0U;
+        uint64_t ret = 0U;
 
         if (!IsReady()) {
-            return nBadBytesForOverlap;
+            return 0U;
         }
 
         for (uint64_t i = 0U; i < addrInfo.size; ++i) {
             uint64_t addr = addrInfo.addr + i;
-            uint64_t memStatusAddr = tables_.LookUp(addr, auxInfo.l1StartAddr,
+            ret = tables_.LookUp(addr, auxInfo.l1StartAddr,
                 auxInfo.l2StartAddr, auxInfo.l2MemStatusAddr);
 
+            if (ret != 0U) {
+                // shadow memory内存不够，地址查询失败，中断后续的地址访问
+                return 0U;
+            }
+
             uint16_t threadId = GetThreadId();
-            ByteStatus_t oldValue = ExchangeMemStatus(memStatusAddr,
+            ByteStatus_t oldValue = ExchangeMemStatus(auxInfo.l2MemStatusAddr,
                 static_cast<uint16_t>(MemoryByteStatus::WRITTEN), threadId, addrInfo.location.pc);
             if ((MemoryByteStatusParser<ByteStatus_t>::ExtractStatus(oldValue) ==
                 static_cast<uint16_t>(MemoryByteStatus::WRITTEN)) &&
@@ -369,8 +413,6 @@ public:
                     auxInfo.conflictedThreadLoc.idY, auxInfo.conflictedThreadLoc.idZ);
                 nBadBytesForOverlap++;
             }
-            
-            SyncThreads(); // warp间同步
         }
 
         return nBadBytesForOverlap;

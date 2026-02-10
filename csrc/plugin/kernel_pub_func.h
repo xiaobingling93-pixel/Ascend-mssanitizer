@@ -198,6 +198,16 @@ __aicore__ inline uint64_t AtomicExch(__gm__ uint64_t *gmAddr, uint64_t val)
     return 0U;
 }
 
+__aicore__ inline uint64_t AtomicAdd(__gm__ uint64_t *gmAddr, uint64_t val)
+{
+#if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
+#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(SIMT_MODE)
+    return atomicAdd(gmAddr, val);
+#endif // AICORE
+#endif // SIMT_MODE
+    return 0U;
+}
+
 template<uint32_t alignSize>
 __aicore__ inline uint32_t CeilByAlignSize(uint32_t v)
 {
