@@ -27,7 +27,7 @@ RaceAlgImpl::RaceAlgImpl(KernelType kernelType, DeviceType deviceType, uint32_t 
         it.resize(totalBlockNum * static_cast<uint8_t>(PipeType::SIZE), 1);
     }
     eventContainer_.Init(totalBlockNum);
-    crossCoreSyncInfoContainer_.Init(totalBlockNum);
+    crossCoreSyncInfoContainer_.Init(totalBlockNum, kernelType);
     memChecker_.Init(kernelType, deviceType, RaceCheckType::SINGLE_BLOCK_CHECK);
 }
 
@@ -36,7 +36,7 @@ void RaceAlgImpl::Do(const SanEvent& event)
     // 阶段一 所有事件推入PIPE_S(标量流水)待执行
     if (!event.isEndFrame) {
         CacheMstxCrossSet(event);
-        auto blockIndex = GetEventBlockIndex<RaceCheckType::SINGLE_BLOCK_CHECK>(event, kernelType_, deviceType_);
+        auto blockIndex = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::SINGLE_BLOCK_CHECK);
         eventContainer_.Push(event, PipeType::PIPE_S, blockIndex);
         return;
     }
@@ -77,7 +77,7 @@ ReturnType RaceAlgImpl::ProcessEvent(const SanEvent& event)
         e.type = EventType::TIME_EVENT;
         e.pipe = event.pipe;
         e.timeInfo = vc_[curPipeIdx];
-        auto blockIndex = GetEventBlockIndex<RaceCheckType::SINGLE_BLOCK_CHECK>(event, kernelType_, deviceType_);
+        auto blockIndex = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::SINGLE_BLOCK_CHECK);
         eventContainer_.Push(e, e.pipe, blockIndex);
         eventContainer_.Push(event, event.pipe, blockIndex);
         return ReturnType::PROCESS_OK;
@@ -91,7 +91,7 @@ ReturnType RaceAlgImpl::ProcessEvent(const SanEvent& event)
         case EventType::TIME_EVENT:
             return ProcessTimeEvent(event);
         case EventType::CROSS_CORE_SYNC_EVENT:
-            return ProcessBlockSyncEvent(event);
+            return ProcessBlockSyncEvent(event, RaceCheckType::SINGLE_BLOCK_CHECK);
         case EventType::MSTX_CROSS_SYNC_EVENT:
             return ProcessMstxCrossSyncEvent(event);
         default:

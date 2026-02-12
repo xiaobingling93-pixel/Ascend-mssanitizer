@@ -2739,11 +2739,12 @@ TEST(AddressSanitizer, parse_sync_all_records_with_two_times_expect_get_correct_
 
     /// 事件序列为：load -> SYNC_ALL_STUB -> load -> ...... -> load -> SYNC_ALL_STUB -> load
     /// 合并之后的记录为： load-> SYNC_ALL_STUB -> load
-    ASSERT_EQ(events.size(), 4);
+    ASSERT_EQ(events.size(), 5);
     ASSERT_EQ(events[0].type, EventType::MEM_EVENT);
     ASSERT_EQ(events[1].type, EventType::SYNC_EVENT);
-    ASSERT_EQ(events[2].type, EventType::CROSS_CORE_SOFT_SYNC_EVENT);
-    ASSERT_EQ(events[3].type, EventType::MEM_EVENT);
+    ASSERT_EQ(events[2].type, EventType::CROSS_CORE_SYNC_EVENT);
+    ASSERT_EQ(events[3].type, EventType::CROSS_CORE_SYNC_EVENT);
+    ASSERT_EQ(events[4].type, EventType::MEM_EVENT);
 }
 
 TEST(AddressSanitizer, parse_blockstride_equal_0_record_expect_get_correct_memory_records)

@@ -3078,11 +3078,17 @@ static void ParseRecordSyncAllStub(const KernelRecord &record, std::vector<SanEv
 {
     SanEvent event;
     SetLocationInfo(event, record.payload.softSyncRecord, record.blockType, record.serialNo);
-    event.type = EventType::CROSS_CORE_SOFT_SYNC_EVENT;
+    event.type = EventType::CROSS_CORE_SYNC_EVENT;
     event.pipe = PipeType::PIPE_S;
-    event.eventInfo.softSyncInfo.opType = SyncType::SYNC_ALL;
-    event.eventInfo.softSyncInfo.usedCores = record.payload.softSyncRecord.usedCores;
-    event.eventInfo.softSyncInfo.isAIVOnly = record.payload.softSyncRecord.isAIVOnly;
+    event.eventInfo.fftsSyncInfo.opType = SyncType::FFTS_SYNC;
+    event.eventInfo.fftsSyncInfo.dstPipe = PipeType::PIPE_S;
+    constexpr uint8_t virtualFlagId = 31;
+    event.eventInfo.fftsSyncInfo.flagId = virtualFlagId;
+    event.eventInfo.fftsSyncInfo.mode = 0;
+    event.eventInfo.fftsSyncInfo.vecSubBlockDim = 2;
+    events.emplace_back(event);
+
+    event.eventInfo.fftsSyncInfo.opType = SyncType::WAIT_FLAG_DEV;
     events.emplace_back(event);
 }
 

@@ -28,7 +28,7 @@ CrossCoreRaceAlgImpl::CrossCoreRaceAlgImpl(KernelType kernelType, DeviceType dev
     }
     eventContainer_.Init(totalBlockNum);
     syncDB_.resize(totalBlockNum);
-    crossCoreSyncInfoContainer_.Init(totalBlockNum);
+    crossCoreSyncInfoContainer_.Init(totalBlockNum, kernelType);
     memChecker_.Init(kernelType, deviceType, RaceCheckType::CROSS_BLOCK_CHECK);
 }
 
@@ -36,7 +36,7 @@ void CrossCoreRaceAlgImpl::Do(const SanEvent &event)
 {
     if (!event.isEndFrame) {
         CacheMstxCrossSet(event);
-        auto blockIndex = GetEventBlockIndex<RaceCheckType::CROSS_BLOCK_CHECK>(event, kernelType_, deviceType_);
+        auto blockIndex = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::CROSS_BLOCK_CHECK);
         eventContainer_.Push(event, PipeType::PIPE_S, blockIndex);
         return;
     }
@@ -72,7 +72,7 @@ ReturnType CrossCoreRaceAlgImpl::ProcessEvent(const SanEvent &event)
         e.pipe = event.pipe;
         e.loc.blockType = event.loc.blockType;
         e.timeInfo = vc_[curPipe];
-        auto blockIdx = GetEventBlockIndex<RaceCheckType::CROSS_BLOCK_CHECK>(event, kernelType_, deviceType_);
+        auto blockIdx = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::CROSS_BLOCK_CHECK);
         eventContainer_.Push(e, e.pipe, blockIdx);
         eventContainer_.Push(event, event.pipe, blockIdx);
         return ReturnType::PROCESS_OK;
@@ -85,7 +85,7 @@ ReturnType CrossCoreRaceAlgImpl::ProcessEvent(const SanEvent &event)
         case EventType::TIME_EVENT:
             return ProcessTimeEvent(event);
         case EventType::CROSS_CORE_SYNC_EVENT:
-            return ProcessBlockSyncEvent(event);
+            return ProcessBlockSyncEvent(event, RaceCheckType::CROSS_BLOCK_CHECK);
         case EventType::CROSS_CORE_SOFT_SYNC_EVENT:
             return ProcessBlockSoftSyncEvent(event);
         case EventType::MSTX_CROSS_SYNC_EVENT:
@@ -98,7 +98,7 @@ ReturnType CrossCoreRaceAlgImpl::ProcessEvent(const SanEvent &event)
 
 ReturnType CrossCoreRaceAlgImpl::ProcessBlockSoftSyncEvent(const SanEvent& event)
 {
-    uint32_t blockIndex = GetEventBlockIndex<RaceCheckType::CROSS_BLOCK_CHECK>(event, kernelType_, deviceType_);
+    uint32_t blockIndex = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::CROSS_BLOCK_CHECK);
     uint32_t curPipe = eventContainer_.GetQueIndex();
     auto softSyncInfo = event.eventInfo.softSyncInfo;
     if (softSyncInfo.opType == SyncType::SYNC_ALL) {
@@ -144,7 +144,7 @@ ReturnType CrossCoreRaceAlgImpl::ProcessSyncEvent(const SanEvent &event)
     e.info.eventId = static_cast<uint8_t>(event.eventInfo.syncInfo.eventId);
     e.info.memType = static_cast<uint8_t>(event.eventInfo.syncInfo.memType);
     e.info.isRetrogress = event.eventInfo.syncInfo.isRetrogress;
-    uint32_t blockIdx = GetEventBlockIndex<RaceCheckType::CROSS_BLOCK_CHECK>(event, kernelType_, deviceType_);
+    uint32_t blockIdx = GetEventBlockIndex(event, kernelType_, deviceType_, RaceCheckType::CROSS_BLOCK_CHECK);
     uint32_t dstPipe = blockIdx * static_cast<uint32_t>(PipeType::SIZE) + static_cast<uint32_t>(event.pipe);
     // set事件，更新向量时间，设置同步标志
     if (event.eventInfo.syncInfo.opType == SyncType::SET_FLAG) {

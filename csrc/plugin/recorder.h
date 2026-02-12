@@ -98,7 +98,7 @@ __aicore__ inline bool IsTargetIntrinsic(__gm__ uint8_t *memInfo, int16_t blockI
 __aicore__ inline bool IsInMstxFuseScope(__gm__ uint8_t *memInfoBlock)
 {
     auto memInfoBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoBlock);
-    return memInfoBlockHead->inMstxFuseScope;
+    return memInfoBlockHead->mstxFuseScopeDepth > 0;
 }
 
 /// 入参为gm指针，该函数主要功能为检测传入的gm指针是否为空;以及不为空时，该指针是否由__sanitizer_init接口申请得到
@@ -440,7 +440,13 @@ __aicore__ inline void Recorder::SetMstxFuseScope(bool inMstxFuseScope) const
     }
 
     __gm__ RecordBlockHead *recordBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
-    recordBlockHead->inMstxFuseScope = inMstxFuseScope;
+    if (inMstxFuseScope) {
+        ++recordBlockHead->mstxFuseScopeDepth;
+    } else {
+        if (recordBlockHead->mstxFuseScopeDepth > 0) {
+            --recordBlockHead->mstxFuseScopeDepth;
+        }
+    }
 }
 
 template<RecordType recordType, typename Record, typename Check>

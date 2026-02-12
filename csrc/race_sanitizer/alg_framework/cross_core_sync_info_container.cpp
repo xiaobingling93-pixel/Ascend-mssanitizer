@@ -18,25 +18,38 @@
 #include "vector_clock.h"
 #include "core/framework/utility/log.h"
 namespace Sanitizer {
-void CrossCoreSyncInfoContainer::Init(uint32_t blockNum)
+void CrossCoreSyncInfoContainer::Init(uint32_t blockNum, KernelType kernelType)
 {
     maxBlockNum_ = blockNum;
+    kernelType_ = kernelType;
     blockSyncEvent_.resize(blockNum);
     blockSoftSyncInfo_.resize(blockNum);
 }
-bool IsAIC(uint32_t blockIndex)
+
+bool IsAIC(uint32_t blockIndex, KernelType kernelType)
 {
-    return blockIndex % C220_MIX_SUB_BLOCKDIM == C220_VEC_SUB_BLOCKDIM;
+    if (kernelType == KernelType::AICUBE) {
+        return true;
+    } else if (kernelType == KernelType::MIX) {
+        return blockIndex % C220_MIX_SUB_BLOCKDIM == C220_VEC_SUB_BLOCKDIM;
+    }
+    return false;
 }
 
 uint32_t CrossCoreSyncInfoContainer::GetAIVCount()
 {
-    return maxBlockNum_ / C220_MIX_SUB_BLOCKDIM * C220_VEC_SUB_BLOCKDIM;
+    if (kernelType_ == KernelType::MIX) {
+        return maxBlockNum_ / C220_MIX_SUB_BLOCKDIM * C220_VEC_SUB_BLOCKDIM;
+    }
+    return maxBlockNum_;
 }
 
 uint32_t CrossCoreSyncInfoContainer::GetAICCount()
 {
-    return maxBlockNum_ / C220_MIX_SUB_BLOCKDIM;
+    if (kernelType_ == KernelType::MIX) {
+        return maxBlockNum_ / C220_MIX_SUB_BLOCKDIM;
+    }
+    return maxBlockNum_;
 }
 
 template <BlockType blockType>
@@ -47,13 +60,13 @@ void CrossCoreSyncInfoContainer::UpdateSyncInfoInMode0(uint8_t flagId)
     if (blockType == BlockType::AIVEC) {
         // 先获取最新向量时钟，再更新到所有block
         for (uint32_t i = 0; i < maxBlockNum_; i++) {
-            if (!IsAIC(i) && !blockSyncEvent_[i][flagId].setVec0.empty()) {
+            if (!IsAIC(i, kernelType_) && !blockSyncEvent_[i][flagId].setVec0.empty()) {
                 VectorClock::UpdateVectorTime(blockSyncEvent_[i][flagId].setVec0.front(), vt);
                 blockSyncEvent_[i][flagId].setVec0.pop();
             }
         }
         for (uint32_t i = 0; i < maxBlockNum_; i++) {
-            if (!IsAIC(i)) {
+            if (!IsAIC(i, kernelType_)) {
                 blockSyncEvent_[i][flagId].waitVec.push(vt);
             }
         }
@@ -75,7 +88,7 @@ void CrossCoreSyncInfoContainer::SetMode0SyncInfo(uint8_t flagId, uint32_t block
     blockSyncEvent_[blockIdx][flagId].setVec0.push(vectorTime);
     uint32_t setCount = 0;
     // AIC
-    if (IsAIC(blockIdx)) {
+    if (IsAIC(blockIdx, kernelType_)) {
         for (uint32_t i = 2; i < maxBlockNum_; i += C220_MIX_SUB_BLOCKDIM) {
             setCount += blockSyncEvent_[i][flagId].setVec0.empty() ? 0 : 1;
         }
@@ -84,7 +97,7 @@ void CrossCoreSyncInfoContainer::SetMode0SyncInfo(uint8_t flagId, uint32_t block
         }
     } else {
         for (uint32_t i = 0; i < maxBlockNum_; i++) {
-            if (!IsAIC(i)) {
+            if (!IsAIC(i, kernelType_)) {
                 setCount += blockSyncEvent_[i][flagId].setVec0.empty() ? 0 : 1;
             }
         }
@@ -96,7 +109,7 @@ void CrossCoreSyncInfoContainer::SetMode0SyncInfo(uint8_t flagId, uint32_t block
 // mode1:group内AIV->AIV
 void CrossCoreSyncInfoContainer::SetMode1SyncInfo(uint8_t flagId, uint32_t blockIdx, const VectorTime &vectorTime)
 {
-    if (IsAIC(blockIdx)) {
+    if (IsAIC(blockIdx, kernelType_)) {
         return;
     }
     // 同group对端AIV blockIdx
@@ -125,7 +138,7 @@ void CrossCoreSyncInfoContainer::SetMode2SyncInfo(uint8_t flagId, uint32_t block
 
     if (vecSubBlockDim == 1) {
         // vec:cube = 1:1
-        if (IsAIC(blockIdx)) {
+        if (IsAIC(blockIdx, kernelType_)) {
             // cube核
             uint32_t aivInGroup = blockIdx / C220_MIX_SUB_BLOCKDIM / C220_VEC_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM +
                                   blockIdx / C220_MIX_SUB_BLOCKDIM % C220_VEC_SUB_BLOCKDIM;
@@ -140,7 +153,7 @@ void CrossCoreSyncInfoContainer::SetMode2SyncInfo(uint8_t flagId, uint32_t block
         }
     } else {
         // vec:cube = 2:1
-        if (IsAIC(blockIdx)) {
+        if (IsAIC(blockIdx, kernelType_)) {
             // cube核
             blockSyncEvent_[blockIdx - 1U][flagId].waitVec.push(vectorTime);
             blockSyncEvent_[blockIdx - 2U][flagId].waitVec.push(vectorTime);
@@ -165,6 +178,7 @@ void CrossCoreSyncInfoContainer::SetMode2SyncInfo(uint8_t flagId, uint32_t block
 void CrossCoreSyncInfoContainer::SetBlockSyncInfo(uint8_t flagId, FftsSyncMode mode, uint32_t blockIdx,
     const VectorTime &vectorTime, uint8_t vecSubBlockDim)
 {
+
     if (flagId > MAX_FLAG_ID) {
         SAN_WARN_LOG("FlagId [%u] exceeds the valid scope.", static_cast<uint32_t>(flagId));
         return;

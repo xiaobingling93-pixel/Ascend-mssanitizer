@@ -83,14 +83,14 @@ struct BlockSoftSyncInfo {
     bool syncAll = false;
     uint32_t pipeIdx;
 };
-constexpr uint8_t MAX_FLAG_ID = 16;
+constexpr uint8_t MAX_FLAG_ID = 32;
 using BlockSyncEvent = std::array<BlockSyncInfo, MAX_FLAG_ID>;
 
 // 该类用于维护核间同步指令产生的核间同步信息
 // setVec用于储存ffts_cross_core_sync指定mode、flag的向量时钟, waitVec用于存储block收到的指定mode、flag的同步向量时钟
 class CrossCoreSyncInfoContainer {
 public:
-    void Init(uint32_t blockNum);
+    void Init(uint32_t blockNum, KernelType kernelType);
     // 设置同步向量时钟
     void SetBlockSyncInfo(uint8_t flagId, FftsSyncMode mode, uint32_t blockIdx, const VectorTime &vectorTime,
                           uint8_t vecSubBlockDim = 2);
@@ -121,6 +121,7 @@ private:
     void UpdateSyncInfoInMode0(uint8_t flagId);
 private:
     uint32_t maxBlockNum_ = 0;
+    KernelType kernelType_{};
     std::vector<BlockSyncEvent> blockSyncEvent_;
     std::vector<BlockSoftSyncInfo> blockSoftSyncInfo_;
     /// map-key: std::pair<addr, flagId>，key为addr和flagId

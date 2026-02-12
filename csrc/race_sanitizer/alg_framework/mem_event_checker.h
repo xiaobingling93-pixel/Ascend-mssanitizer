@@ -43,8 +43,7 @@ inline bool NeedExpandBlockDim(KernelType kernelType, DeviceType deviceType)
     return kernelType == KernelType::MIX && HasSubBlocks(deviceType);
 }
 
-template <RaceCheckType checkType>
-inline uint32_t GetEventBlockIndex(const SanEvent &event, KernelType kernelType, DeviceType deviceType)
+inline uint32_t GetEventBlockIndex(const SanEvent &event, KernelType kernelType, DeviceType deviceType, RaceCheckType checkType)
 {
     if (!NeedExpandBlockDim(kernelType, deviceType)) {
         if (checkType == RaceCheckType::SINGLE_BLOCK_CHECK) {
@@ -64,7 +63,7 @@ inline uint32_t GetPipeIdxByMemEvent(const MemEvent &event, KernelType kernelTyp
 {
     SanEvent sanEvent{};
     sanEvent.loc = event.loc;
-    uint32_t blockIdx = GetEventBlockIndex<checkType>(sanEvent, kernelType, deviceType);
+    uint32_t blockIdx = GetEventBlockIndex(sanEvent, kernelType, deviceType, checkType);
     return (blockIdx * static_cast<uint16_t>(PipeType::SIZE)) + static_cast<uint16_t>(event.pipe);
 }
 

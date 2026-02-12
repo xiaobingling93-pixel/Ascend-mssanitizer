@@ -39,7 +39,7 @@ public:
     virtual std::shared_ptr<std::vector<RaceDispInfo>> GetResult() const = 0;
     virtual ~RaceAlgBase() = default;
 
-    virtual ReturnType ProcessBlockSyncEvent(const SanEvent& event) final;
+    virtual ReturnType ProcessBlockSyncEvent(const SanEvent& event, RaceCheckType checkType) final;
     virtual void CacheMstxCrossSet(const SanEvent& event) final;
     virtual ReturnType ProcessMstxCrossSyncEvent(const SanEvent& event) final;
 

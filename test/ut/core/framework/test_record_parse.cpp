@@ -2580,13 +2580,13 @@ TEST_F(TestRecordParse, parse_sync_all_record_expect_success_and_correct)
     sanitizerRecord.payload.kernelRecord = record;
 
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 1);
+    ASSERT_EQ(events.size(), 2);
     ASSERT_EQ(events[0].loc.coreId, 7);
-    ASSERT_EQ(events[0].type, EventType::CROSS_CORE_SOFT_SYNC_EVENT);
+    ASSERT_EQ(events[0].type, EventType::CROSS_CORE_SYNC_EVENT);
     ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
-    ASSERT_EQ(events[0].eventInfo.softSyncInfo.opType, SyncType::SYNC_ALL);
-    ASSERT_EQ(events[0].eventInfo.softSyncInfo.usedCores, 2);
-    ASSERT_EQ(events[0].eventInfo.softSyncInfo.isAIVOnly, true);
+    ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.opType, SyncType::FFTS_SYNC);
+    ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.dstPipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.mode, 0);
 }
 
 TEST_F(TestRecordParse, parse_wait_flag_dev_record_expect_success_and_correct)

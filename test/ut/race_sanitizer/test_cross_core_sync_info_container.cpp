@@ -25,7 +25,7 @@ namespace SanitizerTest {
 TEST(CrossCoreSyncInfoContainer, set_ffts_mode0_and_wait_flag_dev_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetBlockSyncInfo(0, FftsSyncMode::MODE0, 0, vt);
@@ -44,7 +44,7 @@ TEST(CrossCoreSyncInfoContainer, set_ffts_mode0_and_wait_flag_dev_expect_success
 TEST(CrossCoreSyncInfoContainer, set_ffts_mode1_and_wait_flag_dev_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetBlockSyncInfo(0, FftsSyncMode::MODE1, 0, vt);
@@ -59,7 +59,7 @@ TEST(CrossCoreSyncInfoContainer, set_ffts_mode1_and_wait_flag_dev_expect_success
 TEST(CrossCoreSyncInfoContainer, aiv_set_ffts_mode2_and_wait_flag_dev_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetBlockSyncInfo(0, FftsSyncMode::MODE2, 0, vt);
@@ -74,7 +74,7 @@ TEST(CrossCoreSyncInfoContainer, aiv_set_ffts_mode2_and_wait_flag_dev_expect_suc
 TEST(CrossCoreSyncInfoContainer, aic_set_ffts_mode2_and_wait_flag_dev_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetBlockSyncInfo(0, FftsSyncMode::MODE2, 2, vt);
@@ -91,7 +91,7 @@ TEST(CrossCoreSyncInfoContainer, aic_set_ffts_mode2_and_wait_flag_dev_expect_suc
 TEST(CrossCoreSyncInfoContainer, aiv_ib_set_and_ib_wait_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetBlockSoftSyncInfo(0, 0, vt);
@@ -109,7 +109,7 @@ TEST(CrossCoreSyncInfoContainer, aiv_ib_set_and_ib_wait_expect_success)
 TEST(CrossCoreSyncInfoContainer, aiv_sync_all_expect_success)
 {
     CrossCoreSyncInfoContainer syncContainer;
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt0, vt1;
     vt0.resize(66, 1);
     vt1.resize(66, 1);
@@ -137,7 +137,7 @@ TEST(CrossCoreSyncInfoContainer, mstx_cross_set_wait_expect_success)
         .isMerge = false,
         .opType = SyncType::MSTX_SET_CROSS,
     };
-    syncContainer.Init(6);
+    syncContainer.Init(6, KernelType::MIX);
     VectorTime vt;
     vt.resize(66, 1);
     syncContainer.SetMstxCrossInfo(crossInfo, vt);

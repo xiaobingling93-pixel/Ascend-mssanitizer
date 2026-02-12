@@ -22,9 +22,9 @@ namespace Sanitizer {
 RaceAlgBase::RaceAlgBase(KernelType kernelType, DeviceType deviceType, uint32_t blockDim)
     : kernelType_(kernelType), deviceType_(deviceType), blockDim_(blockDim) {}
 
-ReturnType RaceAlgBase::ProcessBlockSyncEvent(const SanEvent &event)
+ReturnType RaceAlgBase::ProcessBlockSyncEvent(const SanEvent &event, RaceCheckType checkType)
 {
-    uint32_t blockIndex = GetEventBlockIndex<RaceCheckType::SINGLE_BLOCK_CHECK>(event, kernelType_, deviceType_);
+    uint32_t blockIndex = GetEventBlockIndex(event, kernelType_, deviceType_, checkType);
     uint32_t curPipe = eventContainer_.GetQueIndex();
     if (event.eventInfo.fftsSyncInfo.opType == SyncType::FFTS_SYNC) {
         VectorClock::UpdateLogicTime(vc_[curPipe], curPipe);
