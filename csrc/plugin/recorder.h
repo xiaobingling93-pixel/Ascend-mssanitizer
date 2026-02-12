@@ -326,8 +326,8 @@ private:
 template<RecordType recordType, typename Record, typename Check>
 __aicore__ inline void Recorder::DumpRecord(Record const &record)
 {
-// 目前大概确认8.1-8.4, 9.1-9.4版本有问题，因此这些版本暂时去除检查
-#if defined(__GNUC__) && (__GNUC__ == 8 || __GNUC__ == 9) && (__GNUC_MINOR__ <= 4)
+// 目前大概确认8.1-8.4, 9.1-9.4，11.1-11.4版本有问题，因此这些版本暂时去除检查
+#if defined(__GNUC__) && (__GNUC__ == 8 || __GNUC__ == 9 || __GNUC__ == 11) && (__GNUC_MINOR__ <= 4)
 #else
     // 在DumpRecord的开始添加编译期检查
     // 相比于放到模板参数里，放在这里可以实现更好的编译错误提示。
@@ -446,8 +446,8 @@ __aicore__ inline void Recorder::SetMstxFuseScope(bool inMstxFuseScope) const
 template<RecordType recordType, typename Record, typename Check>
 __aicore__ inline void Recorder::MemCheck(Record const &record)
 {
-    // 目前大概确认8.1-8.4, 9.1-9.4版本有问题，因此这些版本暂时去除检查
-#if defined(__GNUC__) && (__GNUC__ == 8 || __GNUC__ == 9) && (__GNUC_MINOR__ <= 4)
+    // 目前大概确认8.1-8.4, 9.1-9.4，11.1-11.4版本有问题，因此这些版本暂时去除检查
+#if defined(__GNUC__) && (__GNUC__ == 8 || __GNUC__ == 9|| __GNUC__ == 11) && (__GNUC_MINOR__ <= 4)
 #else
     // 在MemCheck的开始添加编译期检查
     // 相比于放到模板参数里，放在这里可以实现更好的编译错误提示。

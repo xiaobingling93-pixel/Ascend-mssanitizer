@@ -16,12 +16,15 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include "record_pre_process.h"
 #include "alg_framework/race_alg_impl.h"
 #include "alg_framework/single_pipe_race_alg_impl.h"
 #include "rand_data.h"
 #define private public
 #include "race_sanitizer.h"
+#undef private
 
 namespace {
 using namespace Sanitizer;

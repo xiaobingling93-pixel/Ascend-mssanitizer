@@ -18,6 +18,8 @@
 #include <vector>
 #include <string>
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 
 #include "utility/elf_loader.h"
 #include "utility/serializer.h"

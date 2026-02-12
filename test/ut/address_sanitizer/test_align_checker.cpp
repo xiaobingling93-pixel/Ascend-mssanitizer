@@ -15,6 +15,8 @@
  * ------------------------------------------------------------------------- */
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include <vector>
 #include <string>
 

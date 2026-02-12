@@ -17,6 +17,8 @@
 
 #include <gtest/gtest.h>
 #include <gtest/internal/gtest-port.h>
+#include <any>
+#include <mutex>
 #include <string>
 #include <vector>
 

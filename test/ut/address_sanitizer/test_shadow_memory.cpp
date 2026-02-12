@@ -178,12 +178,7 @@ TEST(ShadowMemory, malloc_mems_far_away_expect_no_interaction)
     ErrorMsg error = sm.FreeHeapBlock(record, size);
     ASSERT_FALSE(error.isError);
 
-    Sanitizer::MemOpRecordForShadow readMemOp {
-        .dstSpace = AddressSpace::GM,
-        .dstAddr = record.dstAddr,
-        .memSize = record.memSize,
-        .coreId = 1,
-        };
+    Sanitizer::MemOpRecordForShadow readMemOp(AddressSpace::GM, record.dstAddr, record.memSize, 1);
 
     errorMsgs = sm.StoreNBytes(readMemOp, true);
     ASSERT_EQ(errorMsgs.size(), 0);

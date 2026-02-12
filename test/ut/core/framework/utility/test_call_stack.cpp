@@ -16,11 +16,14 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 
 #include "constant.h"
 #define private public
 #include "call_stack.h"
 #include "utility/file_system.h"
+#undef private
 
 using namespace Sanitizer;
 

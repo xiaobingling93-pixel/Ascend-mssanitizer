@@ -16,10 +16,13 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include "sanitizer_base.h"
 #include "record_pre_process.h"
 #define private public
 #include "sync_sanitizer.h"
+#undef private
 
 namespace {
 using namespace Sanitizer;

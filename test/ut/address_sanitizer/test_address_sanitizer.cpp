@@ -16,6 +16,8 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include <memory>
 #include <random>
 
@@ -33,6 +35,7 @@
 #include "core/framework/file_mapping.h"
 #include "core/framework/utility/ustring.h"
 #include "core/framework/utility/path.h"
+#undef private
 
 namespace {
 using namespace Sanitizer;

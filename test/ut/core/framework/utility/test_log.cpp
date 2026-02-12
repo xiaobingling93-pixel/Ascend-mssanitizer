@@ -18,6 +18,8 @@
 #include <cstdlib>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 
 /// 暴露私有成员用于单元测试
 #define private public

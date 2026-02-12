@@ -16,6 +16,8 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include <vector>
 #include <string>
 
@@ -23,6 +25,7 @@
 #include "constant.h"
 #include "address_sanitizer/align_checker.h"
 #include "core/framework/record_parse.h"
+#undef private
 
 namespace Sanitizer {
 inline bool operator==(MemOpInfo const &lhs, MemOpInfo const &rhs)

@@ -16,6 +16,8 @@
 
  
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 
 #define private public
 #include "address_sanitizer.h"

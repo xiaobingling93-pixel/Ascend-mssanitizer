@@ -54,9 +54,9 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, BaseEvent const & event
     return CallStack::Instance().FormatCallStack(os, stack);
 }
 
-struct FormatKernelName {};
+struct RaceFormatKernelName {};
 
-inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &formatKernelName)
+inline std::ostream &operator<<(std::ostream &os, RaceFormatKernelName const &formatKernelName)
 {
     // 竞争异常一定是 kernel 上发生的，因此打印 kernel name
     return os << " in " << RuntimeContext::Instance().kernelNameDisplay;
@@ -74,7 +74,7 @@ inline std::ostream &operator << (std::ostream &os, RaceDispInfo const &raceInfo
         raceEvent2.accessType == static_cast<uint8_t>(AccessType::WRITE) ? " Write" : " Read";
     std::string errType = accessType2.substr(1, 1) + "A" + accessType1.substr(1, 1);  // 有空格，取"W"和"R"
     os << "====== ERROR: Potential " << errType << " hazard detected at " <<static_cast<MemType>(raceEvent2.memType) <<
-        FormatKernelName{} << " on device " << RuntimeContext::Instance().GetDeviceId() << ":" << std::endl;
+        RaceFormatKernelName{} << " on device " << RuntimeContext::Instance().GetDeviceId() << ":" << std::endl;
     os << "======    " << static_cast<PipeType>(raceEvent1.pipeType) << accessType1 << " at " << errType <<
         "()+0x" << std::hex << raceEvent1.addr << std::dec << " in block " << raceEvent1.coreId <<
         " (" << raceEvent1.blockType << ") " <<"on device "<<RuntimeContext::Instance().GetDeviceId()<<" ";

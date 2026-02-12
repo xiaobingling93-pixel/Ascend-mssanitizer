@@ -16,6 +16,8 @@
 
 
 #include <gtest/gtest.h>
+#include <any>
+#include <mutex>
 #include "ccec_defs.h"
 #define private public
 #include "plugin/recorder.h"
