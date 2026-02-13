@@ -764,6 +764,9 @@ enum class InterfaceType : uint32_t {
     MSTX_WAIT_CROSS_SYNC,
     MSTX_HCCL,
     MSTX_HCCLV,
+    MSTX_CROSS_CORE_BARRIER = 4,
+    MSTX_CROSS_CORE_SET_FLAG,
+    MSTX_CROSS_CORE_WAIT_FLAG,
 
     MSTX_FUSE_SCOPE_START = 1000,  // 融合语义范围开始标记，范围内的指令记录会被忽略
     MSTX_FUSE_SCOPE_END,           // 融合语义范围结束标记
@@ -774,6 +777,19 @@ enum class InterfaceType : uint32_t {
     MSTX_DATA_COPY = 4001,
     MSTX_DATA_COPY_PAD,
     MSTX_WITH_TENSOR,
+};
+
+struct MstxCrossCoreBarrier {
+    uint32_t usedCoreNum;
+    uint32_t *usedCoreId;
+    bool isAIVOnly;
+    bool pipeBarrierAll;
+};
+
+struct MstxCrossCoreSetWaitFlag {
+    int32_t eventId;
+    int32_t peerCoreId;
+    bool pipeBarrierAll;
 };
 
 struct MstxTensorDesc {
@@ -854,6 +870,8 @@ struct MstxRecord {
         MstxVecBinaryDesc mstxVecBinaryDesc;
         MstxDataCopyDesc mstxDataCopyDesc;
         MstxDataCopyPadDesc mstxDataCopyPadDesc;
+        MstxCrossCoreBarrier mstxCrossCoreBarrier;
+        MstxCrossCoreSetWaitFlag mstxCrossCoreSetWaitFlag;
     } interface;
 };
 

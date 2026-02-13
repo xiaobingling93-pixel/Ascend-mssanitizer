@@ -3233,6 +3233,83 @@ static void ParseRecordMstxHCCL(const KernelRecord &record, std::vector<SanEvent
     }
 }
 
+static void ParseMstxCrossCoreBarrier(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxCrossCoreBarrier = mstxRecord.interface.mstxCrossCoreBarrier;
+    if (mstxCrossCoreBarrier.usedCoreNum != 0) {
+        SAN_WARN_LOG("MstxCrossCoreBarrier using some cores is unsupported yet. Barrier all cores as default.");
+    }
+    if (mstxCrossCoreBarrier.usedCoreId != nullptr) {
+        SAN_WARN_LOG("MstxCrossCoreBarrier using certain core ids is unsupported yet. Barrier all cores as default.");
+    }
+    if (!mstxCrossCoreBarrier.isAIVOnly) {
+        SAN_WARN_LOG("MstxCrossCoreBarrier barring both AIV and AIC cores is unsupported yet. Use AIV only as default.");
+    }
+
+    if (mstxCrossCoreBarrier.pipeBarrierAll) {
+        CreatePipeAllSyncEvent(record, events, mstxRecord);
+    }
+
+    SanEvent event;
+    SetLocationInfo(event, record.payload.mstxRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SYNC_EVENT;
+    event.pipe = PipeType::PIPE_S;
+    event.eventInfo.fftsSyncInfo.opType = SyncType::FFTS_SYNC;
+    event.eventInfo.fftsSyncInfo.dstPipe = PipeType::PIPE_S;
+    constexpr uint8_t virtualFlagId = 31;
+    event.eventInfo.fftsSyncInfo.flagId = virtualFlagId;
+    event.eventInfo.fftsSyncInfo.mode = 0;
+    event.eventInfo.fftsSyncInfo.vecSubBlockDim = 2;
+    events.emplace_back(event);
+
+    event.eventInfo.fftsSyncInfo.opType = SyncType::WAIT_FLAG_DEV;
+    events.emplace_back(event);
+}
+
+static void ParseMstxCrossCoreSetFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxCrossCoreSetFlag = mstxRecord.interface.mstxCrossCoreSetWaitFlag;
+    if (mstxCrossCoreSetFlag.peerCoreId >= 0) {
+        SAN_WARN_LOG("MstxCrossCoreSetFlag emits signal to certain core is unsupported.");
+    }
+
+    if (mstxCrossCoreSetFlag.pipeBarrierAll) {
+        CreatePipeAllSyncEvent(record, events, mstxRecord);
+    }
+
+    SanEvent event;
+    SetLocationInfo(event, record.payload.mstxRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SOFT_SYNC_EVENT;
+    event.pipe = PipeType::PIPE_S;
+    event.eventInfo.softSyncInfo.opType = SyncType::IB_SET;
+    event.eventInfo.softSyncInfo.eventID = mstxCrossCoreSetFlag.eventId;
+    event.eventInfo.softSyncInfo.waitCoreID = mstxCrossCoreSetFlag.peerCoreId;
+    event.eventInfo.softSyncInfo.isAIVOnly = true;
+    events.emplace_back(event);
+}
+
+static void ParseMstxCrossCoreWaitFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    auto &mstxRecord = record.payload.mstxRecord;
+    auto &mstxCrossCoreWaitFlag = mstxRecord.interface.mstxCrossCoreSetWaitFlag;
+
+    if (mstxCrossCoreWaitFlag.pipeBarrierAll) {
+        CreatePipeAllSyncEvent(record, events, mstxRecord);
+    }
+
+    SanEvent event;
+    SetLocationInfo(event, record.payload.mstxRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SOFT_SYNC_EVENT;
+    event.pipe = PipeType::PIPE_S;
+    event.eventInfo.softSyncInfo.opType = SyncType::IB_WAIT;
+    event.eventInfo.softSyncInfo.eventID = mstxCrossCoreWaitFlag.eventId;
+    event.eventInfo.softSyncInfo.waitCoreID = mstxCrossCoreWaitFlag.peerCoreId;
+    event.eventInfo.softSyncInfo.isAIVOnly = true;
+    events.emplace_back(event);
+}
+
 static void ParseRecordMstxVecUnary(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3404,7 +3481,13 @@ static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent
         eventMemInfo.opType =  AccessType::WRITE;
         events.emplace_back(event);
     }
-    if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_UNARY_OP) {
+    if (mstxRecord.interfaceType == InterfaceType::MSTX_CROSS_CORE_BARRIER) {
+        ParseMstxCrossCoreBarrier(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_CROSS_CORE_SET_FLAG) {
+        ParseMstxCrossCoreSetFlag(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_CROSS_CORE_WAIT_FLAG) {
+        ParseMstxCrossCoreWaitFlag(record, events);
+    } else if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_UNARY_OP) {
         ParseRecordMstxVecUnary(record, events);
     } else if (mstxRecord.interfaceType == InterfaceType::MSTX_VEC_BINARY_OP) {
         ParseRecordMstxVecBinary(record, events);

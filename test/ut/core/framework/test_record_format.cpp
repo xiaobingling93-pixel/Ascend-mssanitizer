@@ -1237,6 +1237,38 @@ TEST(RecordFormat, format_mstx_hccl_record_expect_correct_result)
     ASSERT_NE(mstxHcclFormat.find("rankDim:8"), std::string::npos);
 }
 
+TEST(RecordFormat, format_mstx_cross_core_barrier_record_expect_correct_result)
+{
+    MstxCrossCoreBarrier record;
+    record.usedCoreNum = 10;
+    record.usedCoreId = nullptr;
+    record.isAIVOnly = true;
+    record.pipeBarrierAll = true;
+
+    std::stringstream ss;
+    ss << record;
+    std::string result = ss.str();
+    ASSERT_NE(result.find("usedCoreNum:10"), std::string::npos);
+    ASSERT_NE(result.find("usedCoreId:0"), std::string::npos);
+    ASSERT_NE(result.find("isAIVOnly:true"), std::string::npos);
+    ASSERT_NE(result.find("pipeBarrierAll:true"), std::string::npos);
+}
+
+TEST(RecordFormat, format_mstx_cross_core_set_wait_flag_record_expect_correct_result)
+{
+    MstxCrossCoreSetWaitFlag record;
+    record.eventId = 10;
+    record.peerCoreId = -1;
+    record.pipeBarrierAll = true;
+
+    std::stringstream ss;
+    ss << record;
+    std::string result = ss.str();
+    ASSERT_NE(result.find("eventId:10"), std::string::npos);
+    ASSERT_NE(result.find("peerCoreId:-1"), std::string::npos);
+    ASSERT_NE(result.find("pipeBarrierAll:true"), std::string::npos);
+}
+
 TEST(RecordFormat, format_mstx_tensor_desc_expect_correct_result)
 {
     MstxTensorDesc tensorDesc = {

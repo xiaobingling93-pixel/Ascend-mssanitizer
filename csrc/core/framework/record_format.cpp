@@ -20,6 +20,7 @@
 #include "record_defs.h"
 
 #include <functional>
+#include <ios>
 
 namespace {
 
@@ -182,14 +183,17 @@ std::ostream &operator<<(std::ostream &os, RecordType recordType)
 std::ostream &operator<<(std::ostream &os, InterfaceType interfaceType)
 {
     static const std::map<InterfaceType, std::string> INTERFACE_TYPE_MAP = {
-        {InterfaceType::MSTX_SET_CROSS_SYNC,   "SET_CROSS"},
-        {InterfaceType::MSTX_WAIT_CROSS_SYNC,  "WAIT_CROSS"},
-        {InterfaceType::MSTX_HCCL,             "HCCL"},
-        {InterfaceType::MSTX_HCCLV,            "HCCLV"},
-        {InterfaceType::MSTX_VEC_UNARY_OP,     "VEC_UNARY"},
-        {InterfaceType::MSTX_VEC_BINARY_OP,    "VEC_BINARY"},
-        {InterfaceType::MSTX_DATA_COPY,        "DATA_COPY"},
-        {InterfaceType::MSTX_DATA_COPY_PAD,    "DATA_COPY_PAD"},
+        {InterfaceType::MSTX_SET_CROSS_SYNC,       "SET_CROSS"},
+        {InterfaceType::MSTX_WAIT_CROSS_SYNC,      "WAIT_CROSS"},
+        {InterfaceType::MSTX_HCCL,                 "HCCL"},
+        {InterfaceType::MSTX_HCCLV,                "HCCLV"},
+        {InterfaceType::MSTX_CROSS_CORE_BARRIER,   "CROSS_CORE_BARRIER"},
+        {InterfaceType::MSTX_CROSS_CORE_SET_FLAG,  "CROSS_CORE_SET_FLAG"},
+        {InterfaceType::MSTX_CROSS_CORE_WAIT_FLAG, "CROSS_CORE_WAIT_FLAG"},
+        {InterfaceType::MSTX_VEC_UNARY_OP,         "VEC_UNARY"},
+        {InterfaceType::MSTX_VEC_BINARY_OP,        "VEC_BINARY"},
+        {InterfaceType::MSTX_DATA_COPY,            "DATA_COPY"},
+        {InterfaceType::MSTX_DATA_COPY_PAD,        "DATA_COPY_PAD"},
     };
 
     return FormatEnum(os, INTERFACE_TYPE_MAP, interfaceType, "InterfaceType");
@@ -451,6 +455,21 @@ std::ostream &operator<<(std::ostream &os, MstxHcclCoreRecord const &record)
               << ", " << "repeat:" << record.repeat;
 }
 
+std::ostream &operator<<(std::ostream &os, MstxCrossCoreBarrier const &record)
+{
+    return os << ", " << "usedCoreNum:" << record.usedCoreNum
+              << ", " << "usedCoreId:" << record.usedCoreId
+              << ", " << "isAIVOnly:" << std::boolalpha << record.isAIVOnly
+              << ", " << "pipeBarrierAll:" << std::boolalpha << record.pipeBarrierAll;
+}
+
+std::ostream &operator<<(std::ostream &os, MstxCrossCoreSetWaitFlag const &record)
+{
+    return os << ", " << "eventId:" << record.eventId
+              << ", " << "peerCoreId:" << record.peerCoreId
+              << ", " << "pipeBarrierAll:" << std::boolalpha << record.pipeBarrierAll;
+}
+
 std::ostream &operator<<(std::ostream &os, MstxTensorDesc const &tensor)
 {
   return os << "(addr:0x" << std::hex << tensor.addr << std::dec
@@ -539,6 +558,12 @@ std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxHcclRecord; }},
         {InterfaceType::MSTX_HCCLV,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxHcclCoreRecord; }},
+        {InterfaceType::MSTX_CROSS_CORE_BARRIER,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreBarrier; }},
+        {InterfaceType::MSTX_CROSS_CORE_SET_FLAG,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreSetWaitFlag; }},
+        {InterfaceType::MSTX_CROSS_CORE_WAIT_FLAG,
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreSetWaitFlag; }},
         {InterfaceType::MSTX_VEC_UNARY_OP,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecUnaryDesc; }},
         {InterfaceType::MSTX_VEC_BINARY_OP,

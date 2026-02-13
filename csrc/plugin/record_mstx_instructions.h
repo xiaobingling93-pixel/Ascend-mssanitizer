@@ -170,6 +170,11 @@ __aicore__ inline void RecordMstxEvent(EXTRA_PARAMS_DEC, uint32_t interfaceId, u
         RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxDataCopyDesc, bufferLens, buffer);
     } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_DATA_COPY_PAD) {
         RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxDataCopyPadDesc, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_CROSS_CORE_BARRIER) {
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxCrossCoreBarrier, bufferLens, buffer);
+    } else if (static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_CROSS_CORE_SET_FLAG ||
+               static_cast<InterfaceType>(interfaceId) == InterfaceType::MSTX_CROSS_CORE_WAIT_FLAG) {
+        RecordMstxPlainRecord(recorder, mstxRecord, &MstxRecord::Interface::mstxCrossCoreSetWaitFlag, bufferLens, buffer);
     } else {
         mstxRecord.error = true;
         recorder.DumpRecord<RecordType::MSTX_STUB>(mstxRecord);
