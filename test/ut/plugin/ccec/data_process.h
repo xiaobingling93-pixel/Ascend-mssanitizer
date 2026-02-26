@@ -17,6 +17,7 @@
 #ifndef TEST_PLUGIN_CCEC_CCEC_DATA_PROCESS_H
 #define TEST_PLUGIN_CCEC_CCEC_DATA_PROCESS_H
 
+#include <array>
 #include <random>
 #include <vector>
 #include <algorithm>
