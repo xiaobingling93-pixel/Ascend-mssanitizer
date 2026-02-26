@@ -173,6 +173,14 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::MOV_CBUF_TO_BT,              "MOV_CBUF_TO_BT"},
     {RecordType::MOV_CBUF_TO_FB,              "MOV_CBUF_TO_FB"},
     {RecordType::SHADOW_MEMORY,               "SHADOW_MEMORY"},
+    {RecordType::SET_VECTOR_MASK_0,           "SET_VECTOR_MASK_0"},
+    {RecordType::SET_VECTOR_MASK_1,           "SET_VECTOR_MASK_1"},
+    {RecordType::SET_CTRL,                    "SET_CTRL"},
+    {RecordType::SET_FFTS_BASE_ADDR,          "SET_FFTS_BASE_ADDR"},
+    {RecordType::SET_FPC,                     "SET_FPC"},
+    {RecordType::SET_QUANT_PRE,               "SET_QUANT_PRE"},
+    {RecordType::SET_QUANT_POST,              "SET_QUANT_POST"},
+    {RecordType::SET_LRELU_ALPHA,             "SET_LRELU_ALPHA"},
 };
 
 std::ostream &operator<<(std::ostream &os, RecordType recordType)
@@ -1583,7 +1591,15 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::MOV_UB_TO_UB,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1UbRecord; }},
     {RecordType::MOV_CBUF_TO_BT,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1BtRecord; }},
     {RecordType::MOV_CBUF_TO_FB,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.movL1FbRecord; }},
-    {RecordType::SHADOW_MEMORY,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.shadowMemoryRecord; }}
+    {RecordType::SHADOW_MEMORY,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.shadowMemoryRecord; }},
+    {RecordType::SET_VECTOR_MASK_0, [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_VECTOR_MASK_1, [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_CTRL,        [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_FFTS_BASE_ADDR,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_FPC,         [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_QUANT_PRE,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_QUANT_POST,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::SET_LRELU_ALPHA, [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
 };
 
 std::ostream &operator<<(std::ostream &os, KernelRecord const &record)
@@ -1759,6 +1775,13 @@ std::ostream &operator<<(std::ostream &os, ShadowMemoryRecord const &record)
               << ";" << "addr:0x" << std::hex << record.addr << std::dec
               << ";" << "size:" << record.size
               << ";" << "type:" << record.opType;
+}
+
+std::ostream &operator<<(std::ostream &os, RegisterSetRecord const &record)
+{
+    return os << record.location << ", "
+              << "regValType:" << static_cast<uint32_t>(record.regPayLoad.regValType) << ", "
+              << "regVal:" << record.regPayLoad.regVal;
 }
 
 }  // namespace Sanitizer

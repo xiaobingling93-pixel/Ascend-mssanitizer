@@ -18,6 +18,7 @@
 #define TEST_PLUGIN_CCEC_CCEC_DATA_PROCESS_H
 
 #include <array>
+#include <iostream>
 #include <random>
 #include <vector>
 #include <algorithm>
@@ -111,6 +112,7 @@ bool IsEqual(DmaMovNd2nzDavRecord const& lhs, DmaMovNd2nzDavRecord const& rhs);
 bool IsEqual(MovL1UBRecord const& lhs, MovL1UBRecord const& rhs);
 bool IsEqual(MovL1BtRecord const& lhs, MovL1BtRecord const& rhs);
 bool IsEqual(MovL1FbRecord const& lhs, MovL1FbRecord const& rhs);
+bool IsEqual(RegisterSetRecord const& lhs, RegisterSetRecord const& rhs);
 bool BlockSizeNumIsEqual(CheckBinaryOpBlockInfo &blockInfo, BinaryOpRecord const &rhs);
 bool BlockSizeNumIsEqual(CheckUnaryOpBlockInfo &blockInfo, UnaryOpRecord const &rhs);
 bool BlockSizeNumIsEqual(CheckReduceOpBlockInfo &blockInfo, ReduceOpRecord const &rhs);

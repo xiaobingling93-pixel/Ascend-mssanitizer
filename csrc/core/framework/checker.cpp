@@ -111,6 +111,7 @@ Checker::Checker(Config const &config) : config_(config)
     createCheckerAndThread(ToolType::MEMCHECK, 0, config.defaultCheck);
     createCheckerAndThread(ToolType::RACECHECK, 1, config.raceCheck);
     createCheckerAndThread(ToolType::SYNCCHECK, 2, config.syncCheck);
+    createCheckerAndThread(ToolType::REGISTERCHECK, 3, config.registerCheck);
 }
 
 Checker::~Checker()

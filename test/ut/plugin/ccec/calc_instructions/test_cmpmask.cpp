@@ -41,10 +41,11 @@ TEST(VcmpmaskCalcInstructions, dump_get_cmpmask_type_records_and_parse_expect_su
 TEST(VcmpmaskCalcInstructions, dump_set_cmpmask_type_records_and_parse_expect_success)
 {
     std::vector<uint8_t> memInfo = CreateMemInfo();
-    __gm__  RecordBlockHead* recordHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfo.data() + sizeof(RecordGlobalHead));
+    __gm__  RecordGlobalHead* globalHead = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo.data());
     auto record = CreateRandomCmpMaskRecord();
     __sanitizer_report_set_cmpmask(memInfo.data(), record.location.fileNo, record.location.lineNo, record.location.pc,
         reinterpret_cast<__ubuf__ half *>(record.addr));
 
-    ASSERT_EQ(recordHead->registers.cmpMaskAddr, record.addr);
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_EQ(globalHead->registers[regIdx].cmpMaskAddr, record.addr);
 }

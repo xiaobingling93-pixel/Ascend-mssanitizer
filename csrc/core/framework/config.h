@@ -32,6 +32,7 @@ enum class ToolType : uint8_t {
     MEMCHECK = 0,    // 内存检测
     RACECHECK,       // 竞争检测
     SYNCCHECK,       // 同步检测
+    REGISTERCHECK,   // 寄存器默认值检测
     SIZE,
 };
 
@@ -58,6 +59,7 @@ struct Config {
     bool raceCheck;
     bool initCheck;
     bool syncCheck;
+    bool registerCheck;
     bool checkDeviceHeap;
     bool checkCannHeap;
     bool leakCheck;

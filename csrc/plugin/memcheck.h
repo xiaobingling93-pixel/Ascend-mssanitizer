@@ -376,6 +376,39 @@ __aicore__ inline void Memcheck::DumpErrorInfo(KernelErrorRecord &errorRecord, K
     Flush(memInfoSimt_);
 }
 
+__aicore__ inline bool CheckRegIdxValid(int64_t regIdx)
+{
+    return (regIdx >= 0) && (regIdx <= C220_A2_OR_A3_EVEN_DEVICE_VEC_PHYS_CORE_END_IDS);
+}
+
+// 获取跟当前 coreid 匹配的寄存器状态保存结构
+__aicore__ inline int64_t GetRegisterIdx()
+{
+    int64_t coreId{};
+
+#if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
+#if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
+    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+#ifdef SIMT_MODE
+    coreId = bisheng::cce::simt::get_coreid();
+#else
+    coreId = get_coreid();
+#endif // SIMT_MODE
+#endif // DAV
+
+    // A2/A3偶数卡：vec核编号范围：[25, 74]，cube核范围：[0, 24]，获取到后可以直接当索引使用
+    if (coreId >= 0 && coreId <= C220_A2_OR_A3_EVEN_DEVICE_VEC_PHYS_CORE_END_IDS) {
+        return coreId;
+    }
+
+    // A3奇数卡：vec核编号范围：[32793, 32842]，cube核范围：[32768, 32792]，需要转换一下把范围限制到0-74
+    if (coreId >= C220_A3_ODD_DEVICE_VEC_CUBE_CORE_START_IDS && coreId <= C220_A3_ODD_DEVICE_VEC_PHYS_CORE_END_IDS) {
+        return coreId - C220_A3_ODD_DEVICE_VEC_CUBE_CORE_START_IDS;
+    }
+#endif // __CCE_IS_AICORE__
+    return coreId;
+}
+
 __aicore__ inline bool Memcheck::WriteParaBaseAddr()
 {
     /// 如果开启单核检测，则只有目标核会写入extra地址
@@ -385,7 +418,11 @@ __aicore__ inline bool Memcheck::WriteParaBaseAddr()
     if (simdBlockHead_->extraWriteSuccess) {
         return false;
     }
-    uint64_t *addrInfo = reinterpret_cast<uint64_t *>(simdBlockHead_->registers.paraBase.addr);
+    int64_t regIdx = GetRegisterIdx();
+    if (!CheckRegIdxValid(regIdx)) {
+        return false;
+    }
+    uint64_t *addrInfo = reinterpret_cast<uint64_t *>(globalHead_->registers[regIdx].paraBase.addr);
     uint32_t extraIndex = 0;
     for (uint32_t i = 0; i < simdBlockHead_->hostMemoryNum; ++i) {
         if (simdBlockHead_->hostMemoryInfoPtr[i].addr == 0x0) {

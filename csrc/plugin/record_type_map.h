@@ -162,7 +162,15 @@ using RecordTypeMap = TypeMap<
     TypePair<RecordType::MOV_UB_TO_UB, MovL1UBRecord>,
     TypePair<RecordType::MMAD_A5, MmadA5Record>,
     TypePair<RecordType::MOV_CBUF_TO_BT, MovL1BtRecord>,
-    TypePair<RecordType::MOV_CBUF_TO_FB, MovL1FbRecord>
+    TypePair<RecordType::MOV_CBUF_TO_FB, MovL1FbRecord>,
+    TypePair<RecordType::SET_VECTOR_MASK_0, RegisterSetRecord>,
+    TypePair<RecordType::SET_VECTOR_MASK_1, RegisterSetRecord>,
+    TypePair<RecordType::SET_CTRL, RegisterSetRecord>,
+    TypePair<RecordType::SET_FFTS_BASE_ADDR, RegisterSetRecord>,
+    TypePair<RecordType::SET_FPC, RegisterSetRecord>,
+    TypePair<RecordType::SET_QUANT_PRE, RegisterSetRecord>,
+    TypePair<RecordType::SET_QUANT_POST, RegisterSetRecord>,
+    TypePair<RecordType::SET_LRELU_ALPHA, RegisterSetRecord>
 >;
 
 template<RecordType recordType>

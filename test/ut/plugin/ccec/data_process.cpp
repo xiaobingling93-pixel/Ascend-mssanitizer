@@ -855,4 +855,12 @@ bool IsEqual(IntraBlockSyncRecord const& lhs, IntraBlockSyncRecord const& rhs)
         lhs.syncID == rhs.syncID;
 }
 
+bool IsEqual(RegisterSetRecord const& lhs, RegisterSetRecord const& rhs)
+{
+    return
+        lhs.location == rhs.location &&
+        lhs.regPayLoad.regValType == rhs.regPayLoad.regValType &&
+        lhs.regPayLoad.regVal == rhs.regPayLoad.regVal;
+}
+
 }  // namespace Sanitizer

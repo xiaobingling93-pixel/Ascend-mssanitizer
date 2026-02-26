@@ -105,6 +105,7 @@ void ParseTool(const std::string &param, UserCommand &userCommand)
     if (param == "memcheck") {
         userCommand.config.memCheck = true;
         userCommand.config.defaultCheck = true;
+        userCommand.config.registerCheck = true;
         SAN_BUFF_INFO_LOG("Set mode param: memcheck");
     } else if (param == "racecheck") {
         userCommand.config.raceCheck = true;
@@ -798,6 +799,7 @@ UserCommand CliParser::Parse(int32_t argc, char **argv)
         (!userCommand.config.defaultCheck && !userCommand.config.raceCheck && !userCommand.config.syncCheck)) {
         userCommand.config.defaultCheck = true;
         userCommand.config.memCheck = true;
+        userCommand.config.registerCheck = true;
         SAN_BUFF_INFO_LOG("Set mode param: memcheck");
     }
 

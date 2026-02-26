@@ -24,6 +24,25 @@
 
 namespace Sanitizer {
 
+template <RecordType recordType>
+__aicore__ inline void DumpRegisterSetRecord(EXTRA_PARAMS_DEC, RegisterSetRecord &record)
+{
+    if (!DoRegisterCheck(memInfo)) {
+        return;
+    }
+
+    uint64_t blockIdx = GetBlockIdx();
+#if !defined(BUILD_DYNAMIC_PROBE)
+    record.location.fileNo = fileNo;
+    record.location.lineNo = lineNo;
+#endif
+    record.location.pc = static_cast<uint64_t>(pc);
+    record.location.blockId = blockIdx;
+
+    Recorder recorder(memInfo, blockIdx);
+    recorder.DumpRecord<recordType>(record);
+}
+
 template <typename T>
 __aicore__ inline void RecordRegister(EXTRA_PARAMS_DEC, T Register::*reg, T value)
 {
@@ -43,15 +62,60 @@ __aicore__ inline void RecordRegister(EXTRA_PARAMS_DEC, T Register::*reg, T valu
     recorder.SetRegister(reg, value);
 }
 
+template <RecordType recordType, typename T>
+__aicore__ inline void RecordSetRegister(EXTRA_PARAMS_DEC, T Register::*reg, T value, RegisterValueType regValType)
+{
+    RegisterSetRecord record {};
+    record.regPayLoad.regValType = regValType;
+    record.regPayLoad.regVal = value;
+
+    RecordRegister(EXTRA_PARAMS, reg, value);
+    DumpRegisterSetRecord<recordType>(EXTRA_PARAMS, record);
+}
+
 __aicore__ inline void RecordVectorMask(EXTRA_PARAMS_DEC, uint64_t reg_idx, uint64_t reg_value)
 {
+    RegisterSetRecord record {};
+    record.regPayLoad.regValType = RegisterValueType::VAL_UINT64;
+    record.regPayLoad.regVal = reg_value;
+
     static constexpr uint64_t vectorMaskIdx0 = 0UL;
     static constexpr uint64_t vectorMaskIdx1 = 1UL;
     if (reg_idx == vectorMaskIdx0) {
         RecordRegister(EXTRA_PARAMS, &Register::vectorMask0, reg_value);
+        DumpRegisterSetRecord<RecordType::SET_VECTOR_MASK_0>(EXTRA_PARAMS, record);
     } else if (reg_idx == vectorMaskIdx1) {
         RecordRegister(EXTRA_PARAMS, &Register::vectorMask1, reg_value);
+        DumpRegisterSetRecord<RecordType::SET_VECTOR_MASK_1>(EXTRA_PARAMS, record);
     }
+}
+
+template <typename T>
+__aicore__ inline void RecordLreluAlpha(EXTRA_PARAMS_DEC, T value, RegisterValueType valType)
+{
+    RegisterPayload lreluReg {};
+    lreluReg.regValType = valType;
+
+    // 按对应类型长度保存寄存器原始二进制值
+    switch (valType) {
+        case RegisterValueType::VAL_UINT64:
+            lreluReg.regVal = *(static_cast<uint64_t *>(static_cast<void *>(&value)));
+            break;
+        case RegisterValueType::VAL_HALF:
+            lreluReg.regVal = static_cast<uint64_t>(*(static_cast<uint16_t *>(static_cast<void *>(&value))));
+            break;
+        case RegisterValueType::VAL_FLOAT:
+            lreluReg.regVal = static_cast<uint64_t>(*(static_cast<uint32_t *>(static_cast<void *>(&value))));
+            break;
+        default:
+            break;
+    }
+    RecordRegister(EXTRA_PARAMS, &Register::lreluAlpha, lreluReg);
+
+    RegisterSetRecord record {};
+    record.regPayLoad.regValType = lreluReg.regValType;
+    record.regPayLoad.regVal = lreluReg.regVal;
+    DumpRegisterSetRecord<RecordType::SET_LRELU_ALPHA>(EXTRA_PARAMS, record);
 }
 
 __aicore__ inline void RecordNdPara(EXTRA_PARAMS_DEC, uint64_t reg_value)

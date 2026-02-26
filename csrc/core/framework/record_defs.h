@@ -55,9 +55,12 @@ constexpr uint16_t SINGLE_CHECK_OTHER_BLOCK_CACHE_SIZE = 1;
 /// c220芯片架构，
 /// A2芯片： vec核对应的物理核编号范围：[25, 74]，cube核编号范围：[0, 24]
 /// A3芯片： 偶数卡：和A2芯片一致;奇数卡: vec核对应的物理核编号范围:[32793,32842],cube核编号范围:[32768,32792]
+constexpr int64_t C220_A2_A3_MAXCORE_NUM = 75;
 constexpr int64_t C220_A2_OR_A3_EVEN_DEVICE_VEC_PHYS_CORE_START_IDS = 25;
 constexpr int64_t C220_A2_OR_A3_EVEN_DEVICE_VEC_PHYS_CORE_END_IDS = 74;
 constexpr int64_t C220_A3_ODD_DEVICE_VEC_PHYS_CORE_START_IDS = 32793;
+constexpr int64_t C220_A3_ODD_DEVICE_VEC_PHYS_CORE_END_IDS = 32842;
+constexpr int64_t C220_A3_ODD_DEVICE_VEC_CUBE_CORE_START_IDS = 32768;
 
 /// c310架构A5芯片：vec核对应的物理核编号范围:[18, 51]和>= 72
 constexpr int64_t C310_A5_DEVICE_VEC_PHYS_SMALL_BOUND_CORE_START_IDS = 18;
@@ -261,6 +264,17 @@ enum class RecordType : uint32_t {
 
    /// online检测对应的错误类型
     MEM_ERROR = 60000,
+
+    // 寄存器
+    REGISTER_START = 70000,
+    SET_VECTOR_MASK_0,
+    SET_VECTOR_MASK_1,
+    SET_CTRL,
+    SET_FFTS_BASE_ADDR,
+    SET_FPC,
+    SET_QUANT_PRE,
+    SET_QUANT_POST,
+    SET_LRELU_ALPHA,
 
     /// BLOCK_FINISH 类型是虚拟出的记录类型，表明单个逻辑核的记录类型已经上报完毕，
     /// 用来通知检测算法重置片上内存状态
@@ -538,6 +552,35 @@ struct ParaBaseRegister {
     uint64_t size;
 };
 
+// 寄存器类型
+enum class RegisterType {
+    VECTOR_MASK_0,
+    VECTOR_MASK_1,
+    CTRL,
+    FFTS_BASE_ADDR,
+    FPC,
+    QUANT_PRE,
+    QUANT_POST,
+    LRELU_ALPHA,
+    MAX,
+};
+
+enum class RegisterValueType : uint64_t {
+    VAL_UINT64 = 0,
+    VAL_HALF,
+    VAL_FLOAT,
+};
+
+struct RegisterPayload {
+    RegisterValueType regValType;
+    uint64_t regVal;    // 动态插桩场景无法感知具体类型，统一使用uint64_保存和打印寄存器值，使用时根据 regValType 取值按对应格式解析
+};
+
+struct RegisterSetRecord {
+    Location location;
+    RegisterPayload regPayLoad;
+};
+
 struct Register {
     uint64_t fmatrix;
     uint64_t fmatrixB;
@@ -583,6 +626,13 @@ struct Register {
     uint64_t sprL3dRptB;
     uint64_t sprPadding;
     uint64_t sprPaddingB;
+    uint64_t ctrl = 0x08ULL;
+    uint64_t fftsBaseAddr;
+    uint64_t fpc;
+    uint64_t quantPre;
+    uint64_t quantPost;
+    RegisterPayload lreluAlpha;
+    uint64_t rsv[4];    // 64字节对齐
 };
 
 /// 该结构体主要包含当前kernel包含的信息
@@ -611,6 +661,7 @@ struct CheckParmsInfo {
     bool racecheck{};                                 // 是否开启竞争检测
     bool initcheck{};                                 // 是否开启未初始化检测
     bool synccheck{};                                 // 是否开启同步检测
+    bool registerCheck{};                             // 是否开启寄存器检测
 };
 
 struct HostMemoryInfo {
@@ -649,9 +700,12 @@ struct RecordGlobalHeadImpl {
     KernelInfo kernelInfo{};
     SimtInfo simtInfo{};
     bool supportSimt{false};                // 当前芯片类型是否支持simt
+
+    Register registers[C220_A2_A3_MAXCORE_NUM]; // 保存核上寄存器状态，数组下标对应coreID
 };
 
 using RecordGlobalHead = StructAlignBy<RecordGlobalHeadImpl, 64UL>;
+static_assert(sizeof(Register) % 64UL == 0UL, "Register size should aligned by 64 bytes");
 static_assert(sizeof(RecordGlobalHead) % 64UL == 0UL, "RecordGlobalHead size should aligned by 64 bytes");
 
 /// 后续更改该结构体需保证securityVal位于结构体的第一个元素
@@ -663,7 +717,6 @@ struct RecordBlockHeadImpl {
     uint64_t recordWriteCount{};            // 已经写入的记录数量
     uint64_t offset{};                      // 所有记录对应的offset
     uint64_t writeOffset{};                 // 已经写入的记录对应的offset
-    Register registers{};
     BlockInfo blockInfo{};
     uint32_t hostMemoryNum{};               // 算子host侧memory输入个数
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
@@ -1950,6 +2003,7 @@ struct KernelRecord {
         Vbs32Record vbs32Record;
         Vms4v2RecordA5 vms4V2RecordA5;
         ShadowMemoryRecord shadowMemoryRecord;
+        RegisterSetRecord registerSetRecord;
     } payload;
 };
 

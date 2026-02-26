@@ -85,25 +85,25 @@ TEST(DbiMovAlignInstructions, dump_mov_align_v2_ub2gm_expect_get_correct_records
 
     __sanitizer_report_set_loop_size_ubtoout(memInfo.data(),
         record.location.pc, 0, loopSizeUbToOut);
-    ptr += sizeof(RecordGlobalHead);
-    Sanitizer::RecordBlockHead &recordBlockHead = *reinterpret_cast<Sanitizer::RecordBlockHead*>(ptr);
-    uint64_t regVal = GetUintFromConf<20, 0>(recordBlockHead.registers.sprLoopSizeUb2Out);
+    Sanitizer::RecordGlobalHead &recordGlobalHead = *reinterpret_cast<Sanitizer::RecordGlobalHead*>(ptr);
+    int64_t regIdx = GetRegisterIdx();
+    uint64_t regVal = GetUintFromConf<20, 0>(recordGlobalHead.registers[regIdx].sprLoopSizeUb2Out);
     ASSERT_TRUE(regVal == record.loop1Size);
-    regVal = GetUintFromConf<42, 21>(recordBlockHead.registers.sprLoopSizeUb2Out);
+    regVal = GetUintFromConf<42, 21>(recordGlobalHead.registers[regIdx].sprLoopSizeUb2Out);
     ASSERT_TRUE(regVal == record.loop2Size);
 
     __sanitizer_report_set_loop1_stride_ubtoout(memInfo.data(),
         record.location.pc, 0, loop1StrideUbToOut);
-    regVal = GetUintFromConf<39, 0>(recordBlockHead.registers.sprLoop1StrideUb2Out);
+    regVal = GetUintFromConf<39, 0>(recordGlobalHead.registers[regIdx].sprLoop1StrideUb2Out);
     ASSERT_TRUE(regVal == record.loop1DstStride);
-    regVal = GetUintFromConf<60, 40>(recordBlockHead.registers.sprLoop1StrideUb2Out);
+    regVal = GetUintFromConf<60, 40>(recordGlobalHead.registers[regIdx].sprLoop1StrideUb2Out);
     ASSERT_TRUE(regVal == record.loop1SrcStride);
 
     __sanitizer_report_set_loop2_stride_ubtoout(memInfo.data(),
         record.location.pc, 0, loop2StrideUbToOut);
-    regVal = GetUintFromConf<39, 0>(recordBlockHead.registers.sprLoop2StrideUb2Out);
+    regVal = GetUintFromConf<39, 0>(recordGlobalHead.registers[regIdx].sprLoop2StrideUb2Out);
     ASSERT_TRUE(regVal == record.loop2DstStride);
-    regVal = GetUintFromConf<60, 40>(recordBlockHead.registers.sprLoop2StrideUb2Out);
+    regVal = GetUintFromConf<60, 40>(recordGlobalHead.registers[regIdx].sprLoop2StrideUb2Out);
     ASSERT_TRUE(regVal == record.loop2SrcStride);
 
     __sanitizer_report_copy_ubuf_to_gm_align_v2(memInfo.data(),
@@ -114,7 +114,7 @@ TEST(DbiMovAlignInstructions, dump_mov_align_v2_ub2gm_expect_get_correct_records
         config0,
         config1);
 
-    ptr += sizeof(RecordBlockHead);
+    ptr += sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
     auto x = reinterpret_cast<Sanitizer::MovAlignRecordV2 *>(ptr + sizeof(RecordType));
     record.location = x->location;
     ASSERT_TRUE(CheckRecordEqual<RecordType::MOV_ALIGN_V2>(ptr, record));
@@ -143,25 +143,25 @@ TEST(DbiMovAlignInstructions, dump_mov_align_v2_gm2ub__expect_get_correct_record
 
     __sanitizer_report_set_loop_size_outtoub(memInfo.data(),
         record.location.pc, 0, loopSizeOut2Ub);
-    ptr += sizeof(RecordGlobalHead);
-    Sanitizer::RecordBlockHead &recordBlockHead = *reinterpret_cast<Sanitizer::RecordBlockHead*>(ptr);
-    uint64_t regVal = GetUintFromConf<20, 0>(recordBlockHead.registers.sprLoopSizeOut2Ub);
+    Sanitizer::RecordGlobalHead &recordGlobalHead = *reinterpret_cast<Sanitizer::RecordGlobalHead*>(ptr);
+    int64_t regIdx = GetRegisterIdx();
+    uint64_t regVal = GetUintFromConf<20, 0>(recordGlobalHead.registers[regIdx].sprLoopSizeOut2Ub);
     ASSERT_TRUE(regVal == record.loop1Size);
-    regVal = GetUintFromConf<42, 21>(recordBlockHead.registers.sprLoopSizeOut2Ub);
+    regVal = GetUintFromConf<42, 21>(recordGlobalHead.registers[regIdx].sprLoopSizeOut2Ub);
     ASSERT_TRUE(regVal == record.loop2Size);
 
     __sanitizer_report_set_loop1_stride_outtoub(memInfo.data(),
         record.location.pc, 0, loop1StrideOut2Ub);
-    regVal = GetUintFromConf<39, 0>(recordBlockHead.registers.sprLoop1StrideOut2Ub);
+    regVal = GetUintFromConf<39, 0>(recordGlobalHead.registers[regIdx].sprLoop1StrideOut2Ub);
     ASSERT_TRUE(regVal == record.loop1SrcStride);
-    regVal = GetUintFromConf<60, 40>(recordBlockHead.registers.sprLoop1StrideOut2Ub);
+    regVal = GetUintFromConf<60, 40>(recordGlobalHead.registers[regIdx].sprLoop1StrideOut2Ub);
     ASSERT_TRUE(regVal == record.loop1DstStride);
 
     __sanitizer_report_set_loop2_stride_outtoub(memInfo.data(),
         record.location.pc, 0, loop2StrideOut2Ub);
-    regVal = GetUintFromConf<39, 0>(recordBlockHead.registers.sprLoop2StrideOut2Ub);
+    regVal = GetUintFromConf<39, 0>(recordGlobalHead.registers[regIdx].sprLoop2StrideOut2Ub);
     ASSERT_TRUE(regVal == record.loop2SrcStride);
-    regVal = GetUintFromConf<60, 40>(recordBlockHead.registers.sprLoop2StrideOut2Ub);
+    regVal = GetUintFromConf<60, 40>(recordGlobalHead.registers[regIdx].sprLoop2StrideOut2Ub);
     ASSERT_TRUE(regVal == record.loop2DstStride);
 
     __sanitizer_report_copy_gm_to_ubuf_align_v2_b32(memInfo.data(),
@@ -172,7 +172,7 @@ TEST(DbiMovAlignInstructions, dump_mov_align_v2_gm2ub__expect_get_correct_record
         config0,
         config1);
 
-    ptr += sizeof(RecordBlockHead);
+    ptr += sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
     auto x = reinterpret_cast<Sanitizer::MovAlignRecordV2 *>(ptr + sizeof(RecordType));
     record.location = x->location;
     ASSERT_TRUE(CheckRecordEqual<RecordType::MOV_ALIGN_V2>(ptr, record));

@@ -137,6 +137,7 @@ bool HookReport::InitClient(void)
     checkParms_.racecheck = config.raceCheck;
     checkParms_.initcheck = config.initCheck;
     checkParms_.synccheck = config.syncCheck;
+    checkParms_.registerCheck = config.registerCheck;
     return true;
 }
 

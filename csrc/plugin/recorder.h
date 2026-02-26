@@ -35,6 +35,13 @@ __aicore__ inline bool DoSyncCheck(__gm__ uint8_t *memInfo)
     return head->checkParms.synccheck;
 }
 
+/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
+__aicore__ inline bool DoRegisterCheck(__gm__ uint8_t *memInfo)
+{
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    return head->checkParms.registerCheck;
+}
+
 /// 只做内存检测
 __aicore__ inline bool OnlyDoMemCheck(__gm__ uint8_t *memInfo)
 {
@@ -404,7 +411,7 @@ __aicore__ inline void Recorder::DumpSimtRecord(Record const &record)
 template<typename T>
 __aicore__ inline void Recorder::SetRegister(T Register::*reg, T value) const
 {
-    if (memInfoSimdBlock_ == nullptr) {
+    if (memInfo_ == nullptr) {
         return;
     }
 
@@ -412,16 +419,20 @@ __aicore__ inline void Recorder::SetRegister(T Register::*reg, T value) const
         return;
     }
 
-    __gm__ RecordBlockHead *recordBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
-    recordBlockHead->registers.*reg = value;
+    __gm__ RecordGlobalHead *globalHead = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo_);
+    int64_t regIdx = GetRegisterIdx();
+    if (!CheckRegIdxValid(regIdx)) {
+        return;
+    }
+    globalHead->registers[regIdx].*reg = value;
     // 强制刷新 cacheline 数据写回 GM
-    Flush(memInfoSimdBlock_);
+    Flush(memInfo_);
 }
 
 template<typename T>
 __aicore__ inline void Recorder::GetRegister(T Register::*reg, T &value) const
 {
-    if (memInfoSimdBlock_ == nullptr) {
+    if (memInfo_ == nullptr) {
         return;
     }
 
@@ -429,8 +440,12 @@ __aicore__ inline void Recorder::GetRegister(T Register::*reg, T &value) const
         return;
     }
 
-    __gm__ RecordBlockHead *recordBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
-    value = recordBlockHead->registers.*reg;
+    __gm__ RecordGlobalHead *globalHead = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo_);
+    int64_t regIdx = GetRegisterIdx();
+    if (!CheckRegIdxValid(regIdx)) {
+        return;
+    }
+    value = globalHead->registers[regIdx].*reg;
 }
 
 __aicore__ inline void Recorder::SetMstxFuseScope(bool inMstxFuseScope) const

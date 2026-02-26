@@ -51,7 +51,7 @@ git config --global credential.helper store
     ```
     mkdir build_ut
     cd build_ut
-    cmake .. –DBUILD_TEST=on
+    cmake .. -DBUILD_TESTS=ON
     make -j8 mssanitizer_test
     ./test/ut/mssanitizer_test
     ```

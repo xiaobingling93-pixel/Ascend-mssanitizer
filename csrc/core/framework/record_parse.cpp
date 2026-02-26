@@ -3755,6 +3755,57 @@ static void ParseRecordShadowMemory(const KernelRecord &record, std::vector<SanE
     events.emplace_back(event);
 }
 
+static void ParseRecordRegister(const KernelRecord &record, std::vector<SanEvent> &events, RegisterType regType)
+{
+    SanEvent event;
+    SetLocationInfo(event, record.payload.registerSetRecord, record.blockType, record.serialNo);
+    event.type = EventType::REGISTER_EVENT;
+    event.eventInfo.regInfo.regType = regType;
+    event.eventInfo.regInfo.regPayLoad = record.payload.registerSetRecord.regPayLoad;
+    
+    events.emplace_back(event);
+}
+
+static void ParseRecordRegisterVectorMask0(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::VECTOR_MASK_0);
+}
+
+static void ParseRecordRegisterVectorMask1(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::VECTOR_MASK_1);
+}
+
+static void ParseRecordRegisterCtrl(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::CTRL);
+}
+
+static void ParseRecordRegisterFftsBaseAddr(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::FFTS_BASE_ADDR);
+}
+
+static void ParseRecordRegisterFpc(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::FPC);
+}
+
+static void ParseRecordRegisterQuantPre(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::QUANT_PRE);
+}
+
+static void ParseRecordRegisterQuantPost(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::QUANT_POST);
+}
+
+static void ParseRecordRegisterLreluAlpha(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordRegister(record, events, RegisterType::LRELU_ALPHA);
+}
+
 using ParseFunc = std::function<void (const KernelRecord &record, std::vector<SanEvent> &events)>;
 const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::LOAD, ParseScalarOpRecord},
@@ -3864,6 +3915,14 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::MOV_CBUF_TO_BT, ParseRecordMovCbuf2Bt},
     {RecordType::MOV_CBUF_TO_FB, ParseRecordMovCbuf2Fb},
     {RecordType::SHADOW_MEMORY, ParseRecordShadowMemory},
+    {RecordType::SET_VECTOR_MASK_0, ParseRecordRegisterVectorMask0},
+    {RecordType::SET_VECTOR_MASK_1, ParseRecordRegisterVectorMask1},
+    {RecordType::SET_CTRL, ParseRecordRegisterCtrl},
+    {RecordType::SET_FFTS_BASE_ADDR, ParseRecordRegisterFftsBaseAddr},
+    {RecordType::SET_FPC, ParseRecordRegisterFpc},
+    {RecordType::SET_QUANT_PRE, ParseRecordRegisterQuantPre},
+    {RecordType::SET_QUANT_POST, ParseRecordRegisterQuantPost},
+    {RecordType::SET_LRELU_ALPHA, ParseRecordRegisterLreluAlpha},
 };
 
 void RecordParse::DfsSrcGraph(PipeType targetPipe, std::unordered_set<PipeType> &visited)
@@ -3926,8 +3985,8 @@ void RecordParse::UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEv
         }
         return;
     }
-    // 只使用(h)wait_flag更新状态值
-    if (event.eventInfo.syncInfo.opType != SyncType::WAIT_FLAG) {
+    // 只使用sync_event(h)的wait_flag更新状态值
+    if (event.type != EventType::SYNC_EVENT || event.eventInfo.syncInfo.opType != SyncType::WAIT_FLAG) {
         return;
     }
     // 校验数组的两个维度是否超出上限，避免数组越界

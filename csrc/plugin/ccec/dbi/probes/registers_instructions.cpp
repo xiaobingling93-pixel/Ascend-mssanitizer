@@ -14,39 +14,11 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
-
 #include "plugin/utils.h"
 #include "plugin/record_ctrl_instructions.h"
 
 using namespace Sanitizer;
 
-// #2176
-SANITIZER_REPORT(set_mask_count)
-{
-    RecordRegister(EXTRA_PARAMS, &Register::maskMode, MaskMode::MASK_COUNT);
-
-    uint64_t blockIdx = GetBlockIdx();
-    Recorder recorder(memInfo, blockIdx);
-    uint64_t ctrlVal = 0;
-    recorder.GetRegister(&Register::ctrl, ctrlVal);
-    ctrlVal |= (1UL << 56);     // sbitset1
-    RecordSetRegister<RecordType::SET_CTRL>(EXTRA_PARAMS, &Register::ctrl, ctrlVal, RegisterValueType::VAL_UINT64);
-}
-
-// #2177
-SANITIZER_REPORT(set_mask_norm)
-{
-    RecordRegister(EXTRA_PARAMS, &Register::maskMode, MaskMode::MASK_NORM);
-
-    uint64_t blockIdx = GetBlockIdx();
-    Recorder recorder(memInfo, blockIdx);
-    uint64_t ctrlVal = 0;
-    recorder.GetRegister(&Register::ctrl, ctrlVal);
-    ctrlVal &= ~(1UL << 56);    // sbitset0
-    RecordSetRegister<RecordType::SET_CTRL>(EXTRA_PARAMS, &Register::ctrl, ctrlVal, RegisterValueType::VAL_UINT64);
-}
-
-// #2208
 SANITIZER_REPORT(set_vector_mask, uint64_t reg_idx, uint64_t reg_value)
 {
     RecordVectorMask(EXTRA_PARAMS, reg_idx, reg_value);
@@ -93,13 +65,4 @@ SANITIZER_REPORT(set_lrelu_alpha, half config)
 SANITIZER_REPORT(set_lrelu_alpha, float config)
 {
     RecordLreluAlpha(EXTRA_PARAMS, config, RegisterValueType::VAL_FLOAT);
-}
-
-// #3023
-SANITIZER_REPORT(set_nd_para, uint64_t config) {
-    RecordNdPara(EXTRA_PARAMS, config);
-}
-
-SANITIZER_REPORT(MOVEVA, ub_addr8_t addr, uint32_t bitOffset, uint64_t xn, uint64_t xm) {
-    RecordVAdPara(EXTRA_PARAMS, addr, bitOffset, xn, xm);
 }

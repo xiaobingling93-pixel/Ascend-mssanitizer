@@ -20,6 +20,7 @@ add_library(ascend_san_stub SHARED ${FRAMEWORK_INC_DIR}/communication.cpp
 add_subdirectory(address_sanitizer)
 add_subdirectory(race_sanitizer)
 add_subdirectory(sync_sanitizer)
+add_subdirectory(register_sanitizer)
 add_subdirectory(core)
 add_subdirectory(stub_def)
 add_subdirectory(hooks)

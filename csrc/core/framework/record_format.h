@@ -153,7 +153,7 @@ std::ostream &operator<<(std::ostream &os, LoadImageRecord const &record);
 std::ostream &operator<<(std::ostream &os, LoadSmaskRecord const &record);
 std::ostream &operator<<(std::ostream &os, VecRegPropCoordOpRecord const &record);
 std::ostream &operator<<(std::ostream &os, SoftSyncRecord const& record);
-std::ostream &operator<<(std::ostream& os, BufRecord const& record);
+std::ostream &operator<<(std::ostream &os, BufRecord const& record);
 std::ostream &operator<<(std::ostream &os, CmpMaskRecord const &record);
 std::ostream &operator<<(std::ostream &os, MstxCrossCoreBarrier const &record);
 std::ostream &operator<<(std::ostream &os, MstxCrossCoreSetWaitFlag const &record);
@@ -180,6 +180,7 @@ std::ostream &operator<<(std::ostream &os, DetailedDataType type);
 std::ostream &operator<<(std::ostream &os, MovL1BtRecord const &record);
 std::ostream &operator<<(std::ostream &os, MovL1FbRecord const &record);
 std::ostream &operator<<(std::ostream &os, ShadowMemoryRecord const &record);
+std::ostream &operator<<(std::ostream &os, RegisterSetRecord const &record);
 }  // namespace Sanitizer
 
 #endif  // CORE_FRAMEWORK_RECORD_FORMAT_H

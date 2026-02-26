@@ -8,6 +8,7 @@ file(GLOB_RECURSE TEST_SOURCE
   ./address_sanitizer/*.cpp
   ./race_sanitizer/*.cpp
   ./sync_sanitizer/*.cpp
+  ./register_sanitizer/*.cpp
   ./core/framework/*.cpp
   ./core/framework/utility/*.cpp
   ./stub_def/*.cpp

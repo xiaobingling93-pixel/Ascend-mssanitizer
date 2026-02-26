@@ -219,6 +219,30 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::SYNC_ALL_STUB, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.softSyncRecord, offset);
     }},
+    {RecordType::SET_VECTOR_MASK_0, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_VECTOR_MASK_1, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_CTRL, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_FFTS_BASE_ADDR, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_FPC, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_QUANT_PRE, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_QUANT_POST, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
+    {RecordType::SET_LRELU_ALPHA, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
+    }},
 };
 
 bool ParseRecord(RecordType const &recordType, uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset)

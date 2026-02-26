@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <vector>
 #include <functional>
+#include <string>
 #include "arch_def.h"
 #include "record_defs.h"
 
@@ -36,6 +37,7 @@ enum class EventType : uint8_t {
     CROSS_CORE_SYNC_EVENT,
     CROSS_CORE_SOFT_SYNC_EVENT,
     MSTX_CROSS_SYNC_EVENT,
+    REGISTER_EVENT,
 };
 
 // 算法预处理阶段hset_flag/hwait_flag处理成普通的set_flag/wait_flag
@@ -138,6 +140,11 @@ struct AtomicModeInfo {
     AtomicMode mode;
 };
 
+struct RegisterOpInfo {
+    RegisterType regType;
+    RegisterPayload regPayLoad;
+};
+
 using VectorTime = std::vector<uint32_t>;
 
 struct LocInfo {
@@ -161,6 +168,7 @@ struct SanEvent {
         SoftSyncInfo softSyncInfo;
         MstxCrossInfo mstxCrossInfo;
         AtomicModeInfo atomicModeInfo;
+        RegisterOpInfo regInfo;
     } eventInfo{};
     VectorTime timeInfo;
     LocInfo loc{};
@@ -247,6 +255,14 @@ struct SyncDispInfo {
                 opType == other.opType &&
                 checkType == other.checkType);
     }
+};
+
+struct RegisterDispInfo {
+    BaseEvent baseEvent;
+    std::string kernelName = "UNKNOWN KERNEL";
+    RegisterType regType;    // 未重置的寄存器的名称
+    RegisterPayload regExpVal;  // 寄存器预期的默认值
+    RegisterPayload regActVal;  // 寄存器实际值
 };
 
 struct RaceEventHash {
