@@ -526,7 +526,7 @@ mssanitizer <options> -- <user_program> <user_options>
 >-   当用户使用PyTorch等框架接入算子时，框架内部可能会通过内存池管理GM内存，而内存池通常会一次性分配大量GM内存，并在运行过程中复用。此时，若用户对算子进行检测并记录GM上所有内存分配和释放的信息，会因为内存池的内存管理方式导致检测信息不准确。因此检测工具提供了手动上报GM内存分配信息的接口，方便用户在算子调用时手动上报该算子应当使用的GM内存范围，详细接口介绍请参见《[MindStudio Sanitizer对外接口使用说明](./mssanitizer_api_reference)》中的sanitizerReportMalloc和sanitizerReportFree接口。
 >-   msSanitizer工具也支持对Atlas A2 训练系列产品/Atlas A2 推理系列产品的AllReduce、AllGather、ReduceScatter、AlltoAll接口及Atlas A3 训练系列产品/Atlas A3 推理系列产品的AllGather、ReduceScatter、AlltoAllV接口进行非法读写的检测，具体介绍请参见《[Ascend C算子开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/ascendcopapi/atlasascendc_api_07_0869.html)》中的“高阶API \> Hccl \>  Hccl Kernel侧接口”章节
 >-   msSanitizer工具也支持对通算融合类算子的非法读写检测。
->-   当前仅内存检测中GM越界支持昇腾910\_95 AI处理器，其他暂不支持。
+>-   当前昇腾910_95 AI处理器支持内存检测中GM/UB/L1/L0A/L0B/L0C，其他暂不支持。
 
 **内存异常报告解析<a id="内存异常报告解析"></a>**
 
@@ -549,7 +549,7 @@ mssanitizer <options> -- <user_program> <user_options>
 
     以上示例中，对GM上的“0x12c0c0015000“地址存在非法读取，且导致异常发生的指令对应于算子实现文件add\_custom.cpp的第18行。
 
-    > [!NOTE] 说明       
+    > [!NOTE] 说明     
     >不添加编译选项的情况下，异常报告将不会出现以下调用栈信息：
     >```
     >======    #0 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/impl/dav_c220/kernel_operator_data_copy_impl.h:58:9  // 以下为异常发生代码的调用栈，包含文件名、行号和列号
@@ -810,6 +810,8 @@ mssanitizer --tool=initcheck application   // application为用户程序
 
 若存在多余SetFlag指令，不会直接导致当前算子的竞争问题，却会改变硬件计数器的状态，进而可能导致后续算子的同步指令配对错误。若这些后续算子本身不存在竞争，竞争检测也不会报错，但前序算子的计数器变化可能导致实际竞争情况的发生，通过同步检测功能，能够有效识别前序算子中的多余SetFlag指令问题，避免后续算子受影响。
 
+如果存在多余的SetFlag指令，当有两个及两个以上多余的SetFlag指令存在时，同步检测将同时触发匹配异常和冗余异常。
+
 > [!NOTE] 说明       
 >-   同步检测单独启用时不会执行内存检测和竞争检测，因此建议用户先使用[内存检测](#内存检测)和[竞争检测](#竞争检测)，若竞争检测无异常报告，但算子存在竞争现象时，再考虑使用同步检测对前序算子进行检查。
 >-   若存在多余WaitFlag指令，将会导致当前算子的后续指令被阻塞，从而出现算子运行停滞的现象。此时，开发者无需工具提示，便可自行发现问题。
@@ -818,24 +820,10 @@ mssanitizer --tool=initcheck application   // application为用户程序
 
 **表 1**  同步异常类型
 
-<a id="zh-cn_topic_0000001820455825_table1944445964014"></a>
-<table><thead align="left"><tr id="zh-cn_topic_0000001820455825_row444419596409"><th class="cellrowborder" valign="top" width="19.400000000000002%" id="mcps1.2.4.1.1"><p id="zh-cn_topic_0000001820455825_p108671312419"><a id="zh-cn_topic_0000001820455825_p108671312419"></a><a id="zh-cn_topic_0000001820455825_p108671312419"></a>异常名</p>
-</th>
-<th class="cellrowborder" valign="top" width="62.540000000000006%" id="mcps1.2.4.1.2"><p id="zh-cn_topic_0000001820455825_p1886713134116"><a id="zh-cn_topic_0000001820455825_p1886713134116"></a><a id="zh-cn_topic_0000001820455825_p1886713134116"></a>描述</p>
-</th>
-<th class="cellrowborder" valign="top" width="18.060000000000002%" id="mcps1.2.4.1.3"><p id="zh-cn_topic_0000001820455825_p186715119410"><a id="zh-cn_topic_0000001820455825_p186715119410"></a><a id="zh-cn_topic_0000001820455825_p186715119410"></a>位置</p>
-</th>
-</tr>
-</thead>
-<tbody><tr id="row183412266287"><td class="cellrowborder" valign="top" width="19.400000000000002%" headers="mcps1.2.4.1.1 "><p id="p1237965017374"><a id="p1237965017374"></a><a id="p1237965017374"></a>同步检测</p>
-</td>
-<td class="cellrowborder" valign="top" width="62.540000000000006%" headers="mcps1.2.4.1.2 "><p id="p16562138547"><a id="p16562138547"></a><a id="p16562138547"></a>算子中存在未配对的SetFlag同步指令时，虽然对当前算子的功能没有直接影响，却会引发计数器状态错误。可能会扰乱后续算子的同步指令配对，进而影响后续算子的计算精度。</p>
-</td>
-<td class="cellrowborder" valign="top" width="18.060000000000002%" headers="mcps1.2.4.1.3 "><p id="p8380125043712"><a id="p8380125043712"></a><a id="p8380125043712"></a>Kernel</p>
-</td>
-</tr>
-</tbody>
-</table>
+|异常名|描述|位置|
+|--|--|--|
+|同步检测|算子中存在未配对的SetFlag同步指令时，虽然对当前算子的功能没有直接影响，却会引发计数器状态错误。可能会扰乱后续算子的同步指令配对，进而影响后续算子的计算精度。|Kernel|
+|冗余检测|当用户编写了两个参数完全相同的set_flag（即pipe和eventId完全一致），且两者之间未对目标pipe执行任何操作时，将导致后续算子同步指令出现全量不配对，进而引发异常问题。|Kernel|
 
 **启用同步检测<a id="zh-cn_topic_0000001820455825_section1371111444516"></a>**
 
