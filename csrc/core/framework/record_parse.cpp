@@ -148,8 +148,8 @@ static void ParseScalarOpRecord(const KernelRecord &record, std::vector<SanEvent
     event.pipe = PipeType::PIPE_S;
     memInfo.memType = FormatConverter::AddrSpaceToMemType(loadStoreRecord.space);
 
-    if (record.recordType == RecordType::LOAD || record.recordType == RecordType::LDP
-        || record.recordType == RecordType::LD_DEV) {
+    if (record.recordType == RecordType::LOAD || record.recordType == RecordType::LD || record.recordType == RecordType::LD_IO ||
+        record.recordType == RecordType::LDP || record.recordType == RecordType::LD_DEV) {
         memInfo.opType = AccessType::READ;
     } else {
         memInfo.opType = AccessType::WRITE;
@@ -3809,7 +3809,12 @@ static void ParseRecordRegisterLreluAlpha(const KernelRecord &record, std::vecto
 using ParseFunc = std::function<void (const KernelRecord &record, std::vector<SanEvent> &events)>;
 const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::LOAD, ParseScalarOpRecord},
+    {RecordType::LD, ParseScalarOpRecord},
+    {RecordType::LD_IO, ParseScalarOpRecord},
     {RecordType::STORE, ParseScalarOpRecord},
+    {RecordType::ST, ParseScalarOpRecord},
+    {RecordType::ST_IO, ParseScalarOpRecord},
+    {RecordType::STI_IO, ParseScalarOpRecord},
     {RecordType::STP, ParseScalarOpRecord},
     {RecordType::STI, ParseScalarOpRecord},
     {RecordType::LDP, ParseScalarOpRecord},
