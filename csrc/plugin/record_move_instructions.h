@@ -53,10 +53,7 @@ __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space
     Recorder recorder(memInfo, blockIdx);
     /// 记录para_base寄存器的地址，防止load para内存时误报
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-    ParaBaseRegister reg;
-    recorder.GetRegister(&Register::paraBase, reg);
-    reg.addr = get_para_base();
-    recorder.SetRegister(&Register::paraBase, reg);
+    recorder.SetParaBaseAddr(get_para_base());
 // 目前只有c310的动态插桩会启动extra的信息写入
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(BUILD_DYNAMIC_PROBE)
     if (recordType == RecordType::LDP || recordType == RecordType::LD || recordType == RecordType::LD_IO ||

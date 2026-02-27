@@ -315,6 +315,8 @@ public:
      */
     __aicore__ inline void ProcessParaBaseAddr();
 
+    __aicore__ inline void SetParaBaseAddr(uint64_t size);
+
 private:
     template<RecordType recordType, typename Record>
     __aicore__ inline void DumpSimdRecord(Record const &record);
@@ -495,6 +497,13 @@ __aicore__ inline void Recorder::MemCheck(Record const &record)
 __aicore__ inline void Recorder::ProcessParaBaseAddr()
 {
     memcheck_.ProcessParaBaseAddr();
+}
+
+__aicore__ inline void Recorder::SetParaBaseAddr(uint64_t size)
+{
+    __gm__ RecordBlockHead *recordBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
+    recordBlockHead->paraBase.addr = size;
+    Flush(memInfoSimdBlock_);
 }
 
 }  // namespace Sanitizer

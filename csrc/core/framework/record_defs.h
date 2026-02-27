@@ -598,7 +598,6 @@ struct Register {
     VaRegister va5;
     VaRegister va6;
     VaRegister va7;
-    ParaBaseRegister paraBase;
     uint64_t sprLoopSizeUb2Out;
     uint64_t sprLoopSizeOut2Ub;
     uint64_t sprLoop1StrideUb2Out;
@@ -632,7 +631,7 @@ struct Register {
     uint64_t quantPre;
     uint64_t quantPost;
     RegisterPayload lreluAlpha;
-    uint64_t rsv[4];    // 64字节对齐
+    uint64_t rsv[6];    // 64字节对齐
 };
 
 /// 该结构体主要包含当前kernel包含的信息
@@ -726,6 +725,7 @@ struct RecordBlockHeadImpl {
 #endif
     uint32_t mstxFuseScopeDepth{};          // 融合语义深度
     bool extraWriteSuccess{false};          // extra地址信息是否写入成功
+    ParaBaseRegister paraBase;
 };
 
 using RecordBlockHead = StructAlignBy<RecordBlockHeadImpl, 64UL>;

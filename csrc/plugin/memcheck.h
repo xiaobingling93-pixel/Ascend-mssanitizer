@@ -422,7 +422,7 @@ __aicore__ inline bool Memcheck::WriteParaBaseAddr()
     if (!CheckRegIdxValid(regIdx)) {
         return false;
     }
-    uint64_t *addrInfo = reinterpret_cast<uint64_t *>(globalHead_->registers[regIdx].paraBase.addr);
+    uint64_t *addrInfo = reinterpret_cast<uint64_t *>(simdBlockHead_->paraBase.addr);
     uint32_t extraIndex = 0;
     for (uint32_t i = 0; i < simdBlockHead_->hostMemoryNum; ++i) {
         if (simdBlockHead_->hostMemoryInfoPtr[i].addr == 0x0) {

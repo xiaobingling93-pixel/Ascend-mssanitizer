@@ -150,7 +150,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_all_block_check_expe
     paraBase.size = paraBaseAddrs.size() * sizeof(uintptr_t);
     paraBase.addr = reinterpret_cast<uint64_t>(paraBaseAddrs.data());
     int64_t regIdx = GetRegisterIdx();
-    head.registers[regIdx].paraBase = paraBase;
+    blockHead.paraBase = paraBase;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
     std::copy_n(reinterpret_cast<uint8_t const*>(&blockHead), sizeof(RecordBlockHead),
         memInfo.begin() + sizeof(RecordGlobalHead));
@@ -199,7 +199,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_single_check_expect_
     paraBase.size = paraBaseAddrs.size() * sizeof(uintptr_t);
     paraBase.addr = reinterpret_cast<uint64_t>(paraBaseAddrs.data());
     int64_t regIdx = GetRegisterIdx();
-    head.registers[regIdx].paraBase = paraBase;
+    blockHead.paraBase = paraBase;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
     std::copy_n(reinterpret_cast<uint8_t const*>(&blockHead), sizeof(RecordBlockHead),
         memInfo.begin() + sizeof(RecordGlobalHead));
@@ -241,7 +241,7 @@ TEST(Memcheck, check_normal_simt_record_with_zero_extra_info_and_all_block_check
     paraBase.size = paraBaseAddrs.size() * sizeof(uintptr_t);
     paraBase.addr = reinterpret_cast<uint64_t>(paraBaseAddrs.data());
     int64_t regIdx = GetRegisterIdx();
-    head.registers[regIdx].paraBase = paraBase;
+    blockHead.paraBase = paraBase;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
     std::copy_n(reinterpret_cast<uint8_t const*>(&blockHead), sizeof(RecordBlockHead),
         memInfo.begin() + sizeof(RecordGlobalHead));
