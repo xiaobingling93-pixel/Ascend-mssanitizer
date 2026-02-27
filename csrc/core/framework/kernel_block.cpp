@@ -674,7 +674,7 @@ void KernelBlock::PrintCacheSizeLog(uint64_t totalSize)
 
 bool KernelBlock::NextSimd(KernelRecord &kernelRecord)
 {
-    if (this->simdRecordHead_.recordWriteCount == 0U || this->simdOffset_ >= this->simdRecordHead_.offset) {
+    if (this->simdRecordHead_.recordWriteCount == 0U || this->simdOffset_ >= this->simdRecordHead_.writeOffset) {
         return false;
     }
     uint8_t const *currentRecord = this->simdRecords_ + this->simdOffset_;

@@ -407,7 +407,6 @@ void Checker::Do(const SanitizerRecord &record)
     } else {
         finishProduce_ = true;
         workerCv_.notify_all();
-        auto errorCounts = decltype(errorCounts_){};
         for (uint8_t i = 0; i < TOOL_NUM; ++i) {
             if (sanitizerArr_[i] == nullptr) {
                 continue;
@@ -417,9 +416,10 @@ void Checker::Do(const SanitizerRecord &record)
             }
             std::unique_lock<std::mutex> lock(mtx_[i]);
             producerCv_.wait(lock, [this, i] () { return done_[i]; });
-            printMissDebugLine_ = false;
-            std::swap(errorCounts, errorCounts_);
         }
+        printMissDebugLine_ = false;
+        auto errorCounts = decltype(errorCounts_){};
+        std::swap(errorCounts, errorCounts_);
         DisplaySanitizerEnd(errorCounts);
     }
 
