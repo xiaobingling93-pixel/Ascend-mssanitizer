@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "artifact_spec": {
+    "googletest": {
+      "url": "https://gitee.com/mirrors/googletest/repository/archive/release-1.12.1.tar.gz",
+      "path": "thirdparty/googletest",
+      "sha256": "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2"
+    }
+  },
+  "dependency_sets": {
+    "prod": {
+      "submodules": [
+        "thirdparty/json",
+        "thirdparty/securec",
+        "thirdparty/makeself",
+        "thirdparty/llvm-project",
+        "msopscommon"
+      ],
+      "artifacts": []
+    },
+    "test": {
+      "submodules": [
+        "thirdparty/json",
+        "thirdparty/securec",
+        "msopscommon"
+      ],
+      "artifacts": ["googletest"]
+    }
+  }
+}
+
