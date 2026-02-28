@@ -1,19 +1,19 @@
-# **MindStudio Sanitizer对外接口使用说明**<a name="ZH-CN_TOPIC_0000002494527462"></a>
+# **MindStudio Sanitizer对外接口使用说明**
 
 
 ## 接口列表
 
-**接口简介<a name="section97787102421"></a>**
+**接口简介**
 
-msSanitizer工具包含sanitizer接口和mstx扩展接口两种类型。sanitizer接口用于CANN软件栈的检测，与ACL系列接口一一对应。此类接口会在ACL对应接口的功能基础上，额外向工具上报接口调用位置的代码文件和行号信息，使用时需导入sanitizer API头文件和链接动态库，具体请参见《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>导入API头文件和链接动态库”。mstx扩展接口用于用户自定义上报内存池信息，以实现更准确的检测，具体请参见[mstx扩展功能](#mstx扩展功能)。
+msSanitizer工具包含sanitizer接口和mstx扩展接口两种类型。sanitizer接口用于CANN软件栈的检测，与ACL系列接口一一对应。此类接口会在ACL对应接口的功能基础上，额外向工具上报接口调用位置的代码文件和行号信息，使用时需导入sanitizer API头文件和链接动态库，具体请参见《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>导入API头文件和链接动态库”。mstx扩展接口用于用户自定义上报内存池信息，以实现更准确的检测，具体请参见[mstx扩展功能](#mstx扩展功能)。
 
 **表 1**  msSanitizer工具接口列表
 
 |接口名称|功能简介|
 |--|--|
 |[sanitizer接口](#sanitizer接口)|在ACL对应接口的功能基础上，向msSanitizer工具上报sanitizer接口调用位置的代码文件和行号信息。|
-|[sanitizerRtMalloc](#sanitizerRtMalloc)|调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过\*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。|
-|[sanitizerRtMallocCached](#sanitizerRtMallocCached)|调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过\*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。|
+|[sanitizerRtMalloc](#sanitizerRtMalloc)|调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。|
+|[sanitizerRtMallocCached](#sanitizerRtMallocCached)|调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。|
 |[sanitizerRtFree](#sanitizerRtFree)|调用aclrtFree接口释放Device上的内存，并向检测工具上报内存释放信息。实际的内存释放行为和参数含义与aclrtFree一致。|
 |[sanitizerRtMemset](#sanitizerRtMemset)|调用aclrtMemset接口初始化内存，将内存中的内容设置为指定值，并向检测工具上报内存初始化信息。实际的内存初始化行为和参数含义与aclrtMemset一致。|
 |[sanitizerRtMemsetAsync](#sanitizerRtMemsetAsync)|调用aclrtMemsetAsync接口初始化内存，将内存中的内容设置为指定的值，并向检测工具上报内存初始化信息。此接口为异步接口。实际的内存初始化行为和参数含义与aclrtMemsetAsync一致。|
@@ -36,20 +36,20 @@ msSanitizer工具包含sanitizer接口和mstx扩展接口两种类型。sanitize
 
 ### sanitizerRtMalloc
 
-**功能说明<a name="zh-cn_topic_0000001778149144_section618mcpsimp"></a>**
+**功能说明**
 
-调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过\*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。
+调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMalloc的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMalloc的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001778149144_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy policy, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001778149144_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -62,30 +62,30 @@ aclError sanitizerRtMalloc(void **devPtr, size_t size, aclrtMemMallocPolicy poli
 |lineno|输入|内存分配被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001778149144_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001778149144_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMallocCached
 
-**功能说明<a name="zh-cn_topic_0000001824949021_section618mcpsimp"></a>**
+**功能说明**
 
-调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过\*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。
+调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。
 
 > [!NOTE] 说明        
-> 可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节章节查看aclrtMallocCached的详细说明。
+> 可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节章节查看aclrtMallocCached的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001824949021_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMallocCached(void **devPtr, size_t size, aclrtMemMallocPolicy policy, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001824949021_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -98,30 +98,30 @@ aclError sanitizerRtMallocCached(void **devPtr, size_t size, aclrtMemMallocPolic
 |lineno|输入|内存分配被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001824949021_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001824949021_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtFree
 
-**功能说明<a name="zh-cn_topic_0000001777989496_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtFree接口释放Device上的内存，并向检测工具上报内存释放信息。实际的内存释放行为和参数含义与aclrtFree一致。
 
 >[!NOTE] 说明 
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtFree的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtFree的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001777989496_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtFree(void *devPtr, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001777989496_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -132,30 +132,30 @@ aclError sanitizerRtFree(void *devPtr, char const *filename, int lineno);
 |lineno|输入|内存释放被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001777989496_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001777989496_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemset
 
-**功能说明<a name="zh-cn_topic_0000001824828957_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemset接口初始化内存，将内存中的内容设置为指定值，并向检测工具上报内存初始化信息。实际的内存初始化行为和参数含义与aclrtMemset一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemset的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemset的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001824828957_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemset(void *devPtr, size_t maxCount, int32_t value, size_t count, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001824828957_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -169,30 +169,30 @@ aclError sanitizerRtMemset(void *devPtr, size_t maxCount, int32_t value, size_t 
 |lineno|输入|内存初始化被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001824828957_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001824828957_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemsetAsync
 
-**功能说明<a name="zh-cn_topic_0000001778149148_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemsetAsync接口初始化内存，将内存中的内容设置为指定的值，并向检测工具上报内存初始化信息。此接口为异步接口。实际的内存初始化行为和参数含义与aclrtMemsetAsync一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemsetAsync的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemsetAsync的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001778149148_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemsetAsync(void *devPtr, size_t maxCount, int32_t value, size_t count, aclrtStream stream, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001778149148_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -207,30 +207,30 @@ aclError sanitizerRtMemsetAsync(void *devPtr, size_t maxCount, int32_t value, si
 |lineno|输入|内存初始化被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001778149148_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001778149148_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemcpy
 
-**功能说明<a name="zh-cn_topic_0000001824949025_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemcpy接口完成内存复制，并向检测工具上报内存复制信息。实际的内存复制行为和参数含义与aclrtMemcpy一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemcpy的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemcpy的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001824949025_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemcpy(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001824949025_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -245,30 +245,30 @@ aclError sanitizerRtMemcpy(void *dst, size_t destMax, const void *src, size_t co
 |lineno|输入|内存复制被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001824949025_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001824949025_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemcpyAsync
 
-**功能说明<a name="zh-cn_topic_0000001777989500_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemcpyAsync接口完成内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的内存复制行为和参数含义与aclrtMemcpyAsync一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemcpyAsync的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemcpyAsync的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001777989500_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemcpyAsync(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind, aclrtStream stream, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001777989500_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -284,30 +284,30 @@ aclError sanitizerRtMemcpyAsync(void *dst, size_t destMax, const void *src, size
 |lineno|输入|内存复制被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001777989500_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001777989500_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemcpy2d
 
-**功能说明<a name="zh-cn_topic_0000001824828961_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemcpy2d接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2d一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemcpy2d的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemcpy2d的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001824828961_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemcpy2d(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, aclrtMemcpyKind kind, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001824828961_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -324,30 +324,30 @@ aclError sanitizerRtMemcpy2d(void *dst, size_t dpitch, const void *src, size_t s
 |lineno|输入|矩阵数据内存复制被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001824828961_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001824828961_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerRtMemcpy2dAsync
 
-**功能说明<a name="zh-cn_topic_0000001778149152_section618mcpsimp"></a>**
+**功能说明**
 
 调用aclrtMemcpy2dAsync接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2dAsync一致。
 
 >[!NOTE] 说明
->可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） \> 运行时管理 \> 内存管理”章节查看aclrtMemcpy2dAsync的详细说明。
+>可参见《[应用开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/appdevgapi/aclcppdevg_03_0094.html)》手册中“acl API参考（C） > 运行时管理 > 内存管理”章节查看aclrtMemcpy2dAsync的详细说明。
 
-**函数原型<a name="zh-cn_topic_0000001778149152_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 aclError sanitizerRtMemcpy2dAsync(void *dst, size_t dpitch, const void *src, size_t spitch, size_t width, size_t height, aclrtMemcpyKind kind, aclrtStream stream, char const *filename, int lineno);
 ```
 
-**参数说明<a name="zh-cn_topic_0000001778149152_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -365,30 +365,30 @@ aclError sanitizerRtMemcpy2dAsync(void *dst, size_t dpitch, const void *src, siz
 |lineno|输入|矩阵数据内存复制被调用处的行号。|
 
 
-**返回值<a name="zh-cn_topic_0000001778149152_section640mcpsimp"></a>**
+**返回值**
 
 返回0表示成功，返回其它值表示失败。
 
-**调用示例<a name="zh-cn_topic_0000001778149152_section837496171220"></a>**
+**调用示例**
 
-具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](./example.md)》中的“检测CANN软件栈的内存\>排查步骤里的步骤4”。
+具体操作请参见使用示例的《[MindStudio Sanitizer典型案例](../best_practices/basic_cases.md)》中的“检测CANN软件栈的内存>排查步骤里的步骤4”。
 
 ### sanitizerReportMalloc
 
-**功能说明<a name="zh-cn_topic_0000001792156912_section618mcpsimp"></a>**
+**功能说明**
 
 手动上报GM内存分配信息。
 
-**函数原型<a name="zh-cn_topic_0000001792156912_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 void sanitizerReportMalloc(void *ptr, uint64_t size);
 ```
 
 > [!NOTE] 说明      
-> 此接口是\_\_sanitizer\_report\_malloc接口的封装， \_\_sanitizer\_report\_malloc接口为弱函数，只有当用户程序被检测工具拉起时才会生效。
+> 此接口是__sanitizer_report_malloc接口的封装， __sanitizer_report_malloc接口为弱函数，只有当用户程序被检测工具拉起时才会生效。
 
-**参数说明<a name="zh-cn_topic_0000001792156912_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -398,30 +398,30 @@ void sanitizerReportMalloc(void *ptr, uint64_t size);
 |size|输入|分配的内存长度。|
 
 
-**返回值<a name="zh-cn_topic_0000001792156912_section640mcpsimp"></a>**
+**返回值**
 
 无
 
-**调用示例<a name="zh-cn_topic_0000001792156912_section837496171220"></a>**
+**调用示例**
 
 无
 
 ### sanitizerReportFree
 
-**功能说明<a name="zh-cn_topic_0000001791997192_section618mcpsimp"></a>**
+**功能说明**
 
 手动上报GM内存释放信息。
 
-**函数原型<a name="zh-cn_topic_0000001791997192_section620mcpsimp"></a>**
+**函数原型**
 
 ```
 void sanitizerReportFree(void *ptr);
 ```
 
 >[!NOTE] 说明   
->此接口是\_\_sanitizer\_report\_free接口的封装，\_\_sanitizer\_report\_free接口为弱函数，只有当用户程序被检测工具拉起时才会生效。
+>此接口是__sanitizer_report_free接口的封装，__sanitizer_report_free接口为弱函数，只有当用户程序被检测工具拉起时才会生效。
 
-**参数说明<a name="zh-cn_topic_0000001791997192_section622mcpsimp"></a>**
+**参数说明**
 
 **表 1**  参数说明
 
@@ -430,28 +430,28 @@ void sanitizerReportFree(void *ptr);
 |ptr|输入|释放的内存地址。|
 
 
-**返回值<a name="zh-cn_topic_0000001791997192_section640mcpsimp"></a>**
+**返回值**
 
 无
 
-**调用示例<a name="zh-cn_topic_0000001791997192_section837496171220"></a>**
+**调用示例**
 
 无
 
 ## mstx扩展功能
 
-**mstx接口简介<a name="section1538917234337"></a>**
+**mstx接口简介**
 
 mstx接口是MindStudio提供的一套扩展接口，它允许用户在应用程序中插入特定的标记，以便在工具进行内存检测时能够更精确地定位特定算子的内存问题。例如，针对二级指针类算子，在不使能mstx接口的情况下，得到的地址空间可能不准确。通过《[MindStudio Tools Extension Library接口文档](https://gitcode.com/Ascend/mstx/blob/master/docs/zh/mstx_api_reference.md)》的mstxMemRegionsRegister和mstxMemRegionsUnregister接口，可以将准确的地址空间传递给异常检测工具，实现更精准的内存检测。
 
 > [!NOTE] 说明      
->《[MindStudio Sanitizer工具用户指南](./mssanitizer_user_guide.md)》中的“异常检测功能介绍\>功能说明>调用场景\>Kernel直调算子开发”中的内核调用符场景暂不支持使用mstx接口。
+>《[MindStudio Sanitizer工具用户指南](../user_guide/mssanitizer_user_guide.md)》中的“异常检测功能介绍>功能说明>调用场景>Kernel直调算子开发”中的内核调用符场景暂不支持使用mstx接口。
 
-**mstx接口列表<a name="section11665183510347"></a>**
+**mstx接口列表**
 
-msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使用状况请参考《mstx\_api》。
+msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使用状况请参考《mstx_api》。
 
-**表 1<a name="table111"></a>**  msSanitizer工具调用的mstx接口列表
+**表 1**  msSanitizer工具调用的mstx接口列表
 
 |接口名称|功能简介|
 |--|--|
@@ -461,7 +461,7 @@ msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使
 |mstxMemRegionsUnregister|注销内存池二次分配。|
 |mstxMemHeapUnregister|注销内存池时，与之关联的Regions将一并被注销。|
 
-**mstx接口的使用<a name="section184908195436"></a>**
+**mstx接口的使用**
 
 -   msSanitizer工具默认使能mstx接口，允许用户使用mstx接口自定义算子使用的内存空间地址和大小，可识别并快速界定算子的内存问题。
 -   mstx当前提供了两种API的使用方式：库文件和头文件，以[Link](https://gitee.com/ascend/samples/tree/master/operator/ascendc/0_introduction/1_add_frameworklaunch/AclNNInvocation)为例：
@@ -469,7 +469,7 @@ msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使
     >[!NOTE] 说明  
     >   此样例工程不支持Atlas A3 训练系列产品/Atlas A3 推理系列产品。
 
--   在\${git\_clone\_path\}/samples/operator/ascendc/0\_introduction/1\_add\_frameworklaunch/AclNNInvocation/src/CMakeLists.txt路径下新增库文件libms\_tools\_ext.so，地址为：$\{INSTALL\_DIR\}/lib64/libms\_tools\_ext.so。
+-   在${git_clone_path}/samples/operator/ascendc/0_introduction/1_add_frameworklaunch/AclNNInvocation/src/CMakeLists.txt路径下新增库文件libms_tools_ext.so，地址为：${INSTALL_DIR}/lib64/libms_tools_ext.so。
     
       ```  
         # Header path
@@ -485,7 +485,7 @@ msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使
     ```
 
     
--   在\${git\_clone\_path\}/samples/operator/ascendc/0\_introduction/1\_add\_frameworklaunch/AclNNInvocation/src/main.cpp路径下，将用户程序编译链接dl库，对应的头文件ms\_tools\_ext.h地址：$\{INSTALL\_DIR\}/include/mstx。
+-   在${git_clone_path}/samples/operator/ascendc/0_introduction/1_add_frameworklaunch/AclNNInvocation/src/main.cpp路径下，将用户程序编译链接dl库，对应的头文件ms_tools_ext.h地址：${INSTALL_DIR}/include/mstx。
     
     ```
     ...
@@ -494,9 +494,9 @@ msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使
     ```
 
     > [!NOTE] 说明        
-    > $\{INSTALL\_DIR\}请替换为CANN软件安装后文件存储路径。以root用户安装为例，安装后文件默认存储路径为：/usr/local/Ascend/cann。 
+    > ${INSTALL_DIR}请替换为CANN软件安装后文件存储路径。以root用户安装为例，安装后文件默认存储路径为：/usr/local/Ascend/cann。 
 
-**调用示例<a name="section13850111614384"></a>**
+**调用示例**
 
 ```
 mstxMemVirtualRangeDesc_t rangeDesc = {};
