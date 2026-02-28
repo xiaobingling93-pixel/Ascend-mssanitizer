@@ -32,11 +32,16 @@ __aicore__ inline uint64_t GetBlockIdx()
 #elif defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 // c310
     #if defined(__DAV_VEC__) && defined(SIMT_MODE) // c310-simt
         return bisheng::cce::simt::get_block_idx();
-    #elif defined(__DAV_CUBE__)                   // c310-cube
-        return get_block_idx();
-    #else                                         // c310-vec
-        return get_block_idx() * get_subblockdim() + get_subblockid();
-    #endif // __DAV_VEC__
+    #else                                         
+        int64_t coreId = get_coreid();
+        if ((coreId >= C310_A5_DEVICE_VEC_PHYS_SMALL_BOUND_CORE_START_IDS &&
+            coreId <= C310_A5_DEVICE_VEC_PHYS_SMALL_BOUND_CORE_END_IDS) ||
+            coreId >= C310_A5_DEVICE_VEC_PHYS_GREAT_BOUND_CORE_START_IDS) {    // c310-vec
+            return get_block_idx() * get_subblockdim() + get_subblockid();
+        } else {                                                               // c310-cube
+            return get_block_idx();
+        }
+    #endif // SIMT_MODE
 #else // NOT C220 C310
     return get_block_idx();
 #endif // __DAV
