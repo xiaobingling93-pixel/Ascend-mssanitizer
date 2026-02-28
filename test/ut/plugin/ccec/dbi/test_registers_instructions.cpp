@@ -3,6 +3,8 @@
 
 #include "../../ccec_defs.h"
 #include "../data_process.h"
+#ifdef __NPU_ARCH__
+#define __NPU_ARCH__ 2201
 #include "plugin/ccec/dbi/probes/registers_instructions.cpp"
 
 using namespace Sanitizer;
@@ -239,3 +241,4 @@ TEST(RegisterInstructions, set_lrelu_alpha_expect_get_correct_records)
 }
 
 }
+#endif

@@ -19,6 +19,46 @@
 
 using namespace Sanitizer;
 
+#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+
+SANITIZER_REPORT(set_vector_mask, uint64_t reg_idx, uint64_t reg_value)
+{
+    (void)reg_idx;
+    (void)reg_value;
+}
+
+SANITIZER_REPORT(set_ctrl, uint64_t config)
+{
+    (void)config;
+}
+
+SANITIZER_REPORT(set_ffts_base_addr, uint64_t config)
+{
+    (void)config;
+}
+
+SANITIZER_REPORT(set_fpc, uint64_t config)
+{
+    (void)config;
+}
+
+SANITIZER_REPORT(set_quant_pre, uint64_t config)
+{
+    (void)config;
+}
+
+SANITIZER_REPORT(set_quant_post, uint64_t config)
+{
+    (void)config;
+}
+
+SANITIZER_REPORT(set_lrelu_alpha, uint64_t config)
+{
+    (void)config;
+}
+
+#else
+
 SANITIZER_REPORT(set_vector_mask, uint64_t reg_idx, uint64_t reg_value)
 {
     RecordVectorMask(EXTRA_PARAMS, reg_idx, reg_value);
@@ -66,3 +106,5 @@ SANITIZER_REPORT(set_lrelu_alpha, float config)
 {
     RecordLreluAlpha(EXTRA_PARAMS, config, RegisterValueType::VAL_FLOAT);
 }
+
+#endif

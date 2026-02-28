@@ -365,7 +365,7 @@ std::vector<BindStub> bindStubs{
     {InstrType::WAIT_INTRA_BLOCKI_V, "__sanitizer_report_wait_intra_blocki_v", {0}},
     /// sync_instructions.cpp end
 
-    /// ctrl_instructions_registers.cpp start
+    /// registers_instructions.cpp start
     {InstrType::MOVE_MASK_0, "__sanitizer_report_set_vector_mask", {0, 1}},
     {InstrType::MOVE_MASK_1, "__sanitizer_report_set_vector_mask", {0, 1}},
     {InstrType::MOVE_MASK_IMM, "__sanitizer_report_set_vector_mask", {0, 1}},
@@ -375,7 +375,7 @@ std::vector<BindStub> bindStubs{
     {InstrType::SET_QUANT_PRE, "__sanitizer_report_set_quant_pre", {0}},
     {InstrType::SET_QUANT_POST, "__sanitizer_report_set_quant_post", {0}},
     {InstrType::SET_LRELU_ALPHA, "__sanitizer_report_set_lrelu_alpha", {0}},
-    /// ctrl_instructions_registers.cpp end
+    /// registers_instructions.cpp end
 };
 
 void MSBitAtInit()
