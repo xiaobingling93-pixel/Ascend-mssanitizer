@@ -217,7 +217,7 @@ static void ParseLdvaRecord(const KernelRecord &record, std::vector<SanEvent> &e
     events.emplace_back(event);
 }
 
-static void ParseRecordDmaMov(const KernelRecord &record, std::vector<SanEvent> &events)
+static void ParseRecordDmaMovImpl(const KernelRecord &record, std::vector<SanEvent> &events, bool alignCheck)
 {
     // 搬运模式为A      => B,这里将A/B看成2个内存事件
     SanEvent event;
@@ -253,15 +253,24 @@ static void ParseRecordDmaMov(const KernelRecord &record, std::vector<SanEvent> 
     memInfo.blockStride = 1U;
     memInfo.repeatTimes = dmaMovRecord.nBurst;
     memInfo.repeatStride = dmaMovRecord.lenBurst + dmaMovRecord.srcStride;
-    AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV);
+    if (alignCheck) {
+        AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV);
+    }
     events.emplace_back(event);
 
     memInfo.memType = dmaMovRecord.dstMemType;
     memInfo.opType = AccessType::WRITE;
     memInfo.addr = dmaMovRecord.dst;
     memInfo.repeatStride = dmaMovRecord.lenBurst + dmaMovRecord.dstStride;
-    AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV);
+    if (alignCheck) {
+        AlignChecker::Instance().CheckAlign(event, RecordType::DMA_MOV);
+    }
     events.emplace_back(event);
+}
+
+static void ParseRecordDmaMov(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    ParseRecordDmaMovImpl(record, events, true);
 }
 
 static bool IsSupportFor16(const DmaMovConvReluRecord& record)
@@ -663,7 +672,7 @@ static void ParseRecordDmaMovDn2nzDav(const KernelRecord &record, std::vector<Sa
     }
 }
 
-static void ParseRecordMovAlign(const KernelRecord &record, std::vector<SanEvent> &events)
+static void ParseRecordMovAlignImpl(const KernelRecord &record, std::vector<SanEvent> &events, bool alignCheck)
 {
     SanEvent event;
     auto& memInfo = event.eventInfo.memInfo;
@@ -697,7 +706,9 @@ static void ParseRecordMovAlign(const KernelRecord &record, std::vector<SanEvent
     memInfo.repeatStride = memInfo.memType == MemType::GM ?
         movAlignRecord.lenBurst + movAlignRecord.srcGap :
         CeilByAlignSize<UB_ALIGN_SIZE>(movAlignRecord.lenBurst) + movAlignRecord.srcGap * UB_ALIGN_SIZE;
-    AlignChecker::Instance().CheckAlign(event, record.recordType);
+    if (alignCheck) {
+        AlignChecker::Instance().CheckAlign(event, record.recordType);
+    }
     events.emplace_back(event);
 
     uint64_t paddingSize = (movAlignRecord.leftPaddingNum + movAlignRecord.rightPaddingNum) *
@@ -711,8 +722,15 @@ static void ParseRecordMovAlign(const KernelRecord &record, std::vector<SanEvent
     memInfo.repeatStride = memInfo.memType == MemType::GM ?
         movAlignRecord.lenBurst + movAlignRecord.dstGap :
         ubWriteSize + movAlignRecord.dstGap * UB_ALIGN_SIZE;
-    AlignChecker::Instance().CheckAlign(event, record.recordType);
+    if (alignCheck) {
+        AlignChecker::Instance().CheckAlign(event, record.recordType);
+    }
     events.emplace_back(event);
+}
+
+static void ParseRecordMovAlign(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    return ParseRecordMovAlignImpl(record, events, true);
 }
 
 // Generate events from record. Return true on success, false otherwise.
@@ -3400,7 +3418,7 @@ static void ParseRecordMstxDataCopy(const KernelRecord &record, std::vector<SanE
     dmaMovRecord.srcMemType = FormatConverter::AddrSpaceToMemType(mstxDataCopy.src.space);
     dmaMovRecord.padMode = PadMode::PAD_NONE;
     dmaMovRecord.byteMode = ByteMode::BM_DISABLE;
-    ParseRecordDmaMov(equivalence, events);
+    ParseRecordDmaMovImpl(equivalence, events, false);
 }
 
 static void ParseRecordMstxDataCopyPad(const KernelRecord &record, std::vector<SanEvent> &events)
@@ -3428,7 +3446,7 @@ static void ParseRecordMstxDataCopyPad(const KernelRecord &record, std::vector<S
     }
     movAlignRecord.leftPaddingNum = mstxDataCopyPad.leftPad;
     movAlignRecord.rightPaddingNum = mstxDataCopyPad.rightPad;
-    ParseRecordMovAlign(equivalence, events);
+    ParseRecordMovAlignImpl(equivalence, events, false);
 }
 
 static void ParseRecordMstxStub(const KernelRecord &record, std::vector<SanEvent> &events)
