@@ -324,8 +324,6 @@ std::vector<BindStub> bindStubs{
     {InstrType::MAD_MX_E5M2_E4M3, "__sanitizer_report_mad_mx_e5m2_e4m3", {0, 1, 2, 3}},
     {InstrType::MAD_MX_E5M2_E5M2, "__sanitizer_report_mad_mx_e5m2_e5m2", {0, 1, 2, 3}},
     /// cube_instructions.cpp end
-
-    {InstrType::PIPE_BARRIER, "__sanitizer_report_pipe_barrier", {0}},
     
     /// sync_instructions.cpp start
     {InstrType::SET_FLAG, "__sanitizer_report_set_flag", {0, 1, 2}},
@@ -363,6 +361,7 @@ std::vector<BindStub> bindStubs{
     {InstrType::SET_INTRA_BLOCKI_V, "__sanitizer_report_set_intra_blocki_v", {0}},
     {InstrType::WAIT_INTRA_BLOCK_V, "__sanitizer_report_wait_intra_block_v", {0}},
     {InstrType::WAIT_INTRA_BLOCKI_V, "__sanitizer_report_wait_intra_blocki_v", {0}},
+    {InstrType::PIPE_BARRIER, "__sanitizer_report_pipe_barrier", {0}},
     /// sync_instructions.cpp end
 
     /// registers_instructions.cpp start
@@ -376,6 +375,10 @@ std::vector<BindStub> bindStubs{
     {InstrType::SET_QUANT_POST, "__sanitizer_report_set_quant_post", {0}},
     {InstrType::SET_LRELU_ALPHA, "__sanitizer_report_set_lrelu_alpha", {0}},
     /// registers_instructions.cpp end
+
+    /// simt_sync_instructions.cpp start
+    {InstrType::THREAD_BLOCK_BARRIER, "__sanitizer_report_thread_block_barrier", {}},
+    /// simt_sync_instructions.cpp end
 };
 
 void MSBitAtInit()

@@ -48,8 +48,11 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, BaseEvent const & event
         return PrintClassicLocation(os, event.fileNo, event.lineNo, serialNo);
     }
 
-    os << "at pc current 0x" << std::hex << event.pc << std::dec <<
-          " (serialNo:" << serialNo << ")" << std::endl;
+    os << "at pc current 0x" << std::hex << event.pc << std::dec;
+    if (!event.isSimt) {
+        os << " (serialNo:" << serialNo << ")";
+    };
+    os << std::endl;
 
     return CallStack::Instance().FormatCallStack(os, stack);
 }
@@ -62,11 +65,41 @@ inline std::ostream &operator<<(std::ostream &os, RaceFormatKernelName const &fo
     return os << " in " << RuntimeContext::Instance().kernelNameDisplay;
 }
 
+inline std::ostream &operator<<(std::ostream &os, SimtThreadLocation const &threadLoc)
+{
+    os << " Thread (" << threadLoc.idX << "," <<threadLoc.idY << "," << threadLoc.idZ << ")";
+    return os;
+}
+
+inline void FormatEvent(std::ostream &os, const BaseEvent &event, std::string const &accessType,
+    std::string const &errType)
+{
+    os << "======    ";
+    if (!event.isSimt) {
+        os << static_cast<PipeType>(event.pipeType);
+    }
+    os << accessType;
+    if (event.isSimt) {
+        os << event.threadLoc;
+    }
+    os << " at " << errType << "()+0x" << std::hex << event.addr << std::dec << " in block " << event.coreId <<
+        " (" << event.blockType << ") " <<"on device "<< RuntimeContext::Instance().GetDeviceId() <<" ";
+    PrintLocationInfo(os, event, event.serialNo);
+}
+
 inline std::ostream &operator << (std::ostream &os, RaceDispInfo const &raceInfo)
 {
-    // 按照指令序号serialNo对事件p1和p2排序，让p1先于p2
-    auto const &raceEvent1 = raceInfo.p1.serialNo > raceInfo.p2.serialNo ? raceInfo.p2 : raceInfo.p1;
-    auto const &raceEvent2 = raceInfo.p1.serialNo > raceInfo.p2.serialNo ? raceInfo.p1 : raceInfo.p2;
+    BaseEvent raceEvent1{};
+    BaseEvent raceEvent2{};
+    if (raceInfo.p1.isSimt && raceInfo.p2.isSimt) {
+        // 如果都为simt错误，则默认竞争第一行显示小线程
+        raceEvent1 = raceInfo.p1.threadLoc < raceInfo.p2.threadLoc ? raceInfo.p1 : raceInfo.p2;
+        raceEvent2 = raceInfo.p1.threadLoc < raceInfo.p2.threadLoc ? raceInfo.p2 : raceInfo.p1;
+    } else {
+        // 按照指令序号serialNo对事件p1和p2排序，让p1先于p2
+        raceEvent1 = raceInfo.p1.serialNo > raceInfo.p2.serialNo ? raceInfo.p2 : raceInfo.p1;
+        raceEvent2 = raceInfo.p1.serialNo > raceInfo.p2.serialNo ? raceInfo.p1 : raceInfo.p2;
+    }
 
     std::string const &accessType1 =
         raceEvent1.accessType == static_cast<uint8_t>(AccessType::WRITE) ? " Write" : " Read";
@@ -75,14 +108,8 @@ inline std::ostream &operator << (std::ostream &os, RaceDispInfo const &raceInfo
     std::string errType = accessType2.substr(1, 1) + "A" + accessType1.substr(1, 1);  // 有空格，取"W"和"R"
     os << "====== ERROR: Potential " << errType << " hazard detected at " <<static_cast<MemType>(raceEvent2.memType) <<
         RaceFormatKernelName{} << " on device " << RuntimeContext::Instance().GetDeviceId() << ":" << std::endl;
-    os << "======    " << static_cast<PipeType>(raceEvent1.pipeType) << accessType1 << " at " << errType <<
-        "()+0x" << std::hex << raceEvent1.addr << std::dec << " in block " << raceEvent1.coreId <<
-        " (" << raceEvent1.blockType << ") " <<"on device "<<RuntimeContext::Instance().GetDeviceId()<<" ";
-    PrintLocationInfo(os, raceEvent1, raceEvent1.serialNo);
-    os << "======    " << static_cast<PipeType>(raceEvent2.pipeType) << accessType2 << " at " << errType <<
-        "()+0x" << std::hex << raceEvent2.addr << std::dec << " in block " << raceEvent2.coreId <<
-        " (" << raceEvent2.blockType << ") " <<"on device "<<RuntimeContext::Instance().GetDeviceId()<<" ";
-    PrintLocationInfo(os, raceEvent2, raceEvent2.serialNo);
+    FormatEvent(os, raceEvent1, accessType1, errType);
+    FormatEvent(os, raceEvent2, accessType2, errType);
     return os;
 }
 

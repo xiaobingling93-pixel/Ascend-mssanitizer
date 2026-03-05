@@ -505,34 +505,20 @@ void AddressSanitizer::DoWithLocalTensor(const MstxRecord &record, const std::ve
 
 void AddressSanitizer::ParseOnlineError(const KernelErrorRecord &record, BlockType blockType, uint64_t serialNo)
 {
-    ErrorMsg error{};
-    error.isError = true;
-    error.auxData.blockType = blockType;
-    error.auxData.serialNo = serialNo;
-    error.auxData.badAddr.addr = record.addr;
-    error.auxData.space = record.space;
-    error.auxData.lineNo = record.location.lineNo;
-    std::string filePath = FileMapping::Instance().Query(record.location.fileNo).fileName;
-    error.auxData.fileName = Utility::ReplaceInvalidChar(Path(filePath).Name());
-    error.auxData.pc = record.location.pc;
-    error.auxData.coreId = record.location.blockId;
-    error.auxData.side = MemOpSide::KERNEL;
-    error.auxData.isSimtError = true;
-    error.auxData.threadLoc = record.threadLoc;
     if (record.kernelErrorDesc == nullptr) {
         SAN_ERROR_LOG("kernelErrorDesc is nullptr");
         return;
     }
+    ErrorMsg error{};
+    error.isError = true;
+    error.auxData.blockType = blockType;
+    error.auxData.serialNo = serialNo;
+    error.auxData.side = MemOpSide::KERNEL;
+    error.auxData.isSimtError = true;
 
-    static const std::unordered_map<KernelErrorType, MemErrorType> KERNEL_ERROR_TO_MEM_ERROR {
-        {KernelErrorType::ILLEGAL_ADDR_WRITE, MemErrorType::ILLEGAL_ADDR_WRITE},
-        {KernelErrorType::ILLEGAL_ADDR_READ, MemErrorType::ILLEGAL_ADDR_READ},
-        {KernelErrorType::MISALIGNED_ACCESS, MemErrorType::MISALIGNED_ACCESS},
-        {KernelErrorType::THREADWISE_OVERLAP, MemErrorType::OUT_OF_BOUNDS},
-    };
     for (size_t errorIdx = 0; errorIdx < record.errorNum; ++errorIdx) {
         const KernelErrorDesc &kernelErrorDesc = record.kernelErrorDesc[errorIdx];
-        if (kernelErrorDesc.errorType == KernelErrorType::THREADWISE_OVERLAP) {
+        if (kernelErrorDesc.errorType == KernelErrorType::THREAD_OVERLAP) {
             SAN_INFO_LOG("shadow memory thread(%u,%u,%u) l1StartAddr=0x%lx l2StartAddr=0x%lx l2MemStatusAddr=0x%lx(maxAddr)",
                 error.auxData.threadLoc.idX, error.auxData.threadLoc.idY, error.auxData.threadLoc.idZ,
                 kernelErrorDesc.l1StartAddr, kernelErrorDesc.l2StartAddr, kernelErrorDesc.l2MemStatusAddr);
@@ -542,16 +528,42 @@ void AddressSanitizer::ParseOnlineError(const KernelErrorRecord &record, BlockTy
             if (kernelErrorDesc.l2StartAddr % 8 != 0) {
                 SAN_INFO_LOG("====== unaligned l2StartAddr=0x%lu", kernelErrorDesc.l2StartAddr);
             }
-        }
-        error.auxData.nBadBytes = kernelErrorDesc.nBadBytes;
-        error.auxData.conflictedThreadLoc = kernelErrorDesc.conflictedThreadLoc;
-        error.auxData.threadDim = kernelErrorDesc.threadDim;
-        if (!KERNEL_ERROR_TO_MEM_ERROR.count(kernelErrorDesc.errorType)) {
+ 	    }
+
+        if (kernelErrorDesc.errorType >= KernelErrorType::MAX) {
             SAN_ERROR_LOG("Unknown kernel error type: %u", static_cast<uint32_t>(kernelErrorDesc.errorType));
             continue;
         }
-        error.type = KERNEL_ERROR_TO_MEM_ERROR.at(kernelErrorDesc.errorType);
-        this->errorBuffer_.Add(error);
+
+        error.auxData.lineNo = kernelErrorDesc.location.lineNo;
+        std::string filePath = FileMapping::Instance().Query(kernelErrorDesc.location.fileNo).fileName;
+        error.auxData.fileName = Utility::ReplaceInvalidChar(Path(filePath).Name());
+        error.auxData.space = kernelErrorDesc.space;
+        error.auxData.pc = kernelErrorDesc.location.pc;
+        error.auxData.coreId = kernelErrorDesc.location.blockId;
+        error.auxData.threadLoc = kernelErrorDesc.threadLoc;
+        if (kernelErrorDesc.errorType == KernelErrorType::ILLEGAL_ADDR_READ ||
+            kernelErrorDesc.errorType == KernelErrorType::ILLEGAL_ADDR_WRITE) {
+            error.type = kernelErrorDesc.errorType == KernelErrorType::ILLEGAL_ADDR_READ ?
+                MemErrorType::ILLEGAL_ADDR_READ :  MemErrorType::ILLEGAL_ADDR_WRITE;
+            auto &errorDesc = kernelErrorDesc.payload.illegalDesc;
+            error.auxData.badAddr.addr = errorDesc.addr;
+            error.auxData.nBadBytes = errorDesc.illegalSize;
+            this->errorBuffer_.Add(error);
+        } else if (kernelErrorDesc.errorType == KernelErrorType::MISALIGNED_ACCESS) {
+            error.type = MemErrorType::MISALIGNED_ACCESS;
+            auto &errorDesc = kernelErrorDesc.payload.misAlignDesc;
+            error.auxData.badAddr.addr = errorDesc.addr;
+            error.auxData.nBadBytes = errorDesc.misAlignSize;
+            this->errorBuffer_.Add(error);
+        } else if (kernelErrorDesc.errorType == KernelErrorType::THREAD_OVERLAP) {
+            error.type = MemErrorType::OUT_OF_BOUNDS;
+            auto &errorDesc = kernelErrorDesc.payload.overLapDesc;
+            error.auxData.badAddr.addr = errorDesc.addr;
+            error.auxData.nBadBytes = errorDesc.overLapSize;
+            error.auxData.conflictedThreadLoc = errorDesc.conflictedThreadLoc;
+            this->errorBuffer_.Add(error);
+        }
     }
 }
 

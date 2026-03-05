@@ -172,15 +172,6 @@ __aicore__ inline void GetThreadDim(uint16_t &x, uint16_t &y, uint16_t &z)
     z = 0U;
 }
 
-__aicore__ inline void SyncThreads()
-{
-#if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
-    return __syncthreads();
-#endif // AICORE
-#endif // SIMT_MODE
-}
-
 // atomicCAS/atomicExch接口支持 uint32_t/int32_t/uint64_t/int64_t/float/half2/bfloat16x2_t
 // 因shadow memory中仅使用了uint64_t类型的atomicCAS，因此仅声明uint64_t类型的wrapper函数，其他atomic接口同理
 __aicore__ inline uint64_t AtomicCAS(__gm__ uint64_t *gmAddr, uint64_t compare, uint64_t val)
@@ -336,6 +327,33 @@ __aicore__ inline uint64_t GetDataBits(DetailedDataType type)
         default:
             return 128UL;
     }
+}
+
+/// 不开启竞争检测时，过滤掉同步指令记录
+__aicore__ inline bool DoRaceCheck(__gm__ uint8_t *memInfo)
+{
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    return head->checkParms.racecheck;
+}
+
+/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
+__aicore__ inline bool DoSyncCheck(__gm__ uint8_t *memInfo)
+{
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    return head->checkParms.synccheck;
+}
+
+__aicore__ inline bool DoMemCheck(__gm__ uint8_t *memInfo)
+{
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    return head->checkParms.defaultcheck;
+}
+
+/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
+__aicore__ inline bool DoRegisterCheck(__gm__ uint8_t *memInfo)
+{
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    return head->checkParms.registerCheck;
 }
 
 } // namespace Sanitizer

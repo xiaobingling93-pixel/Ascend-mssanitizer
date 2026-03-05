@@ -22,7 +22,9 @@
 
 namespace Sanitizer {
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+using namespace OnlineShadowMemory;
+
+#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
 
 enum class ErrorCode : uint64_t {
     // for MultiLayerTable
@@ -40,6 +42,20 @@ enum class ErrorCode : uint64_t {
     ALLOCATED_ADDR_ILLEGAL,
 
 };
+
+enum class SyncState : uint8_t {
+    IMPOSSIBLE_RACE = 0,           // 当前内存状态不可能存在竞争
+    POSSIBLE_RACE,                 // 有存在竞争的可能
+};
+
+__aicore__ inline OnlineMemoryType SpaceToOnlineMemory(AddressSpace space)
+{
+    if (space == AddressSpace::GM) {
+        return OnlineMemoryType::GM;
+    } else {
+        return OnlineMemoryType::UB;
+    }
+}
 
 class ShadowMemoryHeapAllocator {
 public:
@@ -121,27 +137,57 @@ private:
 template <typename ByteStatus_t>
 class MemoryByteStatusParser {
 public:
-    __aicore__ static inline ByteStatus_t Construct(uint16_t status, uint16_t threadId, uint64_t pc)
+    __aicore__ static inline ByteStatus_t Construct(uint8_t memoryStatus, uint16_t threadId, uint64_t pc,
+        OnlineMemoryType memoryType = OnlineMemoryType::GM, SyncState syncThreadState = SyncState::POSSIBLE_RACE)
     {
-        /*
-            [63:16]: pc
-            [11]: status
-            [10:0]: threadId
-        */
         static_assert(sizeof(ByteStatus_t) >= sizeof(uint64_t),
             "memory byte status model requires not less than 8 bytes length for every single byte");
-        return static_cast<ByteStatus_t>(pc << 16U) | static_cast<ByteStatus_t>((status & 0x1U) << 11U) |
-            static_cast<ByteStatus_t>(threadId & 0x7FFU);
+        return static_cast<ByteStatus_t>(pc << PC_START_BIT) |
+            static_cast<ByteStatus_t>((static_cast<uint8_t>(syncThreadState) & SYNC_STATE_MASK) << SYNC_STATE_START_BIT) |
+            static_cast<ByteStatus_t>((static_cast<uint8_t>(memoryType) & MEMORY_TYPE_MASK) << MEMORY_TYPE_START_BIT) |
+            static_cast<ByteStatus_t>((memoryStatus & MEMORY_STATUS_MASK) << MEMORY_STATUS_START_BIT) |
+            static_cast<ByteStatus_t>(threadId & THREAD_ID_MASK);
     }
 
-    __aicore__ static inline uint16_t ExtractStatus(ByteStatus_t val)
+    __aicore__ static inline MemoryByteStatus ExtractMemoryStatus(ByteStatus_t val)
     {
-        return static_cast<uint16_t>((val >> 11U) & 0x1U);
+        return static_cast<MemoryByteStatus>((val >> MEMORY_STATUS_START_BIT) & MEMORY_STATUS_MASK);
     }
 
     __aicore__ static inline uint16_t ExtractThreadId(ByteStatus_t val)
     {
-        return static_cast<uint16_t>(val & 0x7FFU);
+        return static_cast<uint16_t>(val & THREAD_ID_MASK);
+    }
+
+    __aicore__ static inline uint32_t ExtractPc(ByteStatus_t val)
+    {
+        return static_cast<uint32_t>((val >> PC_START_BIT) & PC_MASK);
+    }
+
+    __aicore__ static inline SyncState ExtractSyncStatus(ByteStatus_t val)
+    {
+        return static_cast<SyncState>((val >> SYNC_STATE_START_BIT) & SYNC_STATE_MASK);
+    }
+
+    __aicore__ static inline OnlineMemoryType ExtractMemoryType(ByteStatus_t val)
+    {
+        return static_cast<OnlineMemoryType>((val >> MEMORY_TYPE_START_BIT) & MEMORY_TYPE_MASK);
+    }
+
+    __aicore__ static inline void ResetSyncStatus(__gm__ ByteStatus_t &value,
+        uint8_t syncState = static_cast<uint8_t>(SyncState::IMPOSSIBLE_RACE))
+    {
+        value = (value & ~(1ULL << SYNC_STATE_START_BIT)) |
+            (static_cast<ByteStatus_t>((syncState & SYNC_STATE_MASK)) << SYNC_STATE_START_BIT);
+    }
+
+    __aicore__ static inline bool StatusIsValid(ByteStatus_t val)
+    {
+        if ((val == 0x0) || val == static_cast<ByteStatus_t>(OnlineSmAddrStatus::UNALLOCATABLE) ||
+            val == static_cast<ByteStatus_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS)) {
+            return false;
+        }
+        return true;
     }
 
 private:
@@ -340,30 +386,42 @@ private:
 
 // simplified shadow memory running in SIMT VF only
 class ShadowMemoryOnline {
-    enum MemoryByteStatus {
-        NOT_WRITTEN = 0U,
-        WRITTEN = 1U,
-    };
-    using ByteStatus_t = uint64_t;
 public:
-    struct AuxInfo {
-        /*** 线程间踩踏使用 ***/
-        SimtThreadLocation conflictedThreadLoc; // 记录被当前线程所踩踏的线程坐标
-        uint64_t l1StartAddr; // L1StartAddr
-        uint64_t l2StartAddr; // L2StartAddr
-        uint64_t l2MemStatusAddr; // 字节状态位地址
-
-        __aicore__ inline AuxInfo(): l1StartAddr(0U), l2StartAddr(0U), l2MemStatusAddr(0U)
-        {
-            conflictedThreadLoc.idX = 0;
-            conflictedThreadLoc.idY = 0;
-            conflictedThreadLoc.idZ = 0;
-        }
+    using ByteStatus_t = uint64_t;
+    using MBSP = MemoryByteStatusParser<ByteStatus_t>;
+    struct AuxErrorInfo {
+         /*** 线程间踩踏和线程间竞争使用 ***/ 
+        SimtThreadLocation conflictedThreadLoc{};                  // 记录被当前线程所踩踏的线程坐标
+        uint64_t nBadBytes{};                                      // 多核踩踏字节数，竞争不会用 
+        uint32_t pc{};                                             // 记录被当前线程所踩踏的pc
+        KernelErrorType errorType = KernelErrorType::INVALID;      // 错误类型
     };
+
+    static constexpr uint8_t maxErrorNum = 2;
+    static constexpr uint8_t overLapErrorIdx = 0;
+    static constexpr uint8_t raceErrorIdx = 1;
+    // 为了建模方便和节省空间，UB和GM采用了统一的ShadowMemory建模，实际场景下，UB和GM的空间也是隔离开的
+    // UB和GM的地址界限，小于该值为UB，大于该值为GM
+    static constexpr uint32_t ubGmEps = 256 * 1024;
+    struct AuxInfo {
+        uint64_t l1StartAddr{}; // L1StartAddr
+        uint64_t l2StartAddr{}; // L2StartAddr
+        uint64_t l2MemStatusAddr{}; // 字节状态位地址
+        AuxErrorInfo errorInfo[maxErrorNum]{};
+    };
+
     __aicore__ inline ShadowMemoryOnline() : tables_{}, isReady_{false} {}
 
-    __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size)
+    __aicore__ inline bool Init(uint64_t heapAddr, uint64_t size, __gm__ uint8_t *memInfo, __gm__ uint8_t *memInfoSimt,
+        __gm__ uint8_t *memInfoSimd)
     {
+        heapAddr_ = heapAddr;
+        memInfo_ = memInfo;
+        memInfoSimt_ = memInfoSimt;
+        memInfoSimd_ = memInfoSimd;
+        globalHead_ = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo_);
+        simtBlockHead_ = reinterpret_cast<__gm__ SimtRecordBlockHead *>(memInfoSimt_);
+        simdBlockHead_ = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimd_);
         if (!tables_.Init(heapAddr, size)) {
             return false;
         }
@@ -371,64 +429,266 @@ public:
         return true;
     }
 
+    template <KernelErrorType errorType>
+    __aicore__ inline void AssignErrorInfo(ByteStatus_t oldValue, uint16_t threadId, AuxInfo &auxInfo);
+
+    __aicore__ inline void LoadNBytes(AddrInfo const &addrInfo, AuxInfo &auxInfo);
+
+    __aicore__ inline void StoreNBytes(AddrInfo const &addrInfo, AuxInfo &auxInfo);
+
+    __aicore__ inline void ClearSyncThreadState()
+    {
+        uint64_t l0TblNum = (ONLINE_GLOBAL_MEM_MASK + ONLINE_LOCAL_MEM_MASK - 1U) / ONLINE_LOCAL_MEM_MASK;
+        uint64_t l1TblNum = (ONLINE_LOCAL_MEM_MASK + ONLINE_ONE_SM_STAND_FOR_BYTE - 1U) / ONLINE_ONE_SM_STAND_FOR_BYTE;
+        __gm__ uint64_t *l0TblPtr = reinterpret_cast<__gm__ uint64_t *>(heapAddr_ + sizeof(ShadowMemoryHeapHead));
+        for (size_t l0Idx = 0; l0Idx < l0TblNum; ++l0Idx) {
+            uint64_t l0Val = l0TblPtr[l0Idx];
+            if (!MemoryByteStatusParser<ByteStatus_t>::StatusIsValid(l0Val)) { continue; }
+            auto l1TblPtr = reinterpret_cast<__gm__ uint64_t *>(l0Val);
+            for (size_t l1Idx = 0; l1Idx < l1TblNum; ++l1Idx) {
+                uint64_t l1Val = l1TblPtr[l1Idx];
+                if (!MemoryByteStatusParser<ByteStatus_t>::StatusIsValid(l1Val)) { continue; }
+                auto l2TblPtr = reinterpret_cast<__gm__ uint64_t *>(l1Val);
+                for (size_t l2Idx = 0; l2Idx < ONLINE_ONE_SM_STAND_FOR_BYTE; ++l2Idx) {
+                    uint64_t l2Val = l2TblPtr[l2Idx];
+                    if (!MemoryByteStatusParser<ByteStatus_t>::StatusIsValid(l2Val)) { continue; }
+                    MemoryByteStatusParser<ByteStatus_t>::ResetSyncStatus(l2TblPtr[l2Idx]);
+                }
+            }
+        }
+    }
+
+private:
     __aicore__ inline bool IsReady() const
     {
         return isReady_;
     }
 
-    __aicore__ inline uint64_t LoadNBytes(AddrInfo const &addrInfo, AuxInfo &auxInfo)
+    __aicore__ inline bool InvalidRange(AddrInfo const &addrInfo) const
     {
-        // 踩踏不关心读操作
-        (void)addrInfo;
-        (void)auxInfo;
-        return 0U;
+        OnlineMemoryType memType = SpaceToOnlineMemory(addrInfo.space);
+        // 如下两种异常场景，越界算法会处理，竞争算法直接忽略该异常情况
+        if (memType == OnlineMemoryType::UB && (addrInfo.addr + addrInfo.size > ubGmEps)) {
+            return true;
+        }
+        if (memType == OnlineMemoryType::GM && (addrInfo.addr < ubGmEps)) {
+            return true;
+        }
+        return false;
     }
 
-    __aicore__ inline uint64_t StoreNBytes(AddrInfo const &addrInfo, AuxInfo &auxInfo)
+    __aicore__ inline bool ExistRace(ByteStatus_t value, OnlineMemoryType space) const
     {
-        uint64_t nBadBytesForOverlap = 0U;
-        uint64_t ret = 0U;
-
-        if (!IsReady()) {
-            return 0U;
+        if (MBSP::ExtractSyncStatus(value) == SyncState::POSSIBLE_RACE &&
+            MBSP::ExtractMemoryType(value) == space) {
+            return true;
         }
-
-        for (uint64_t i = 0U; i < addrInfo.size; ++i) {
-            uint64_t addr = addrInfo.addr + i;
-            ret = tables_.LookUp(addr, auxInfo.l1StartAddr,
-                auxInfo.l2StartAddr, auxInfo.l2MemStatusAddr);
-
-            if (ret != 0U) {
-                // shadow memory内存不够，地址查询失败，中断后续的地址访问
-                return 0U;
-            }
-
-            uint16_t threadId = GetThreadId();
-            ByteStatus_t oldValue = ExchangeMemStatus(auxInfo.l2MemStatusAddr,
-                static_cast<uint16_t>(MemoryByteStatus::WRITTEN), threadId, addrInfo.location.pc);
-            if ((MemoryByteStatusParser<ByteStatus_t>::ExtractStatus(oldValue) ==
-                static_cast<uint16_t>(MemoryByteStatus::WRITTEN)) &&
-                (MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue) != threadId)) {
-                DecomposeThreadId(threadId, auxInfo.conflictedThreadLoc.idX,
-                    auxInfo.conflictedThreadLoc.idY, auxInfo.conflictedThreadLoc.idZ);
-                nBadBytesForOverlap++;
-            }
-        }
-
-        return nBadBytesForOverlap;
+        return false;
     }
 
-    __aicore__ inline ByteStatus_t ExchangeMemStatus(uint64_t addr, uint16_t isWritten,
-        uint16_t threadId, uint64_t pc)
+    __aicore__ inline ByteStatus_t ExtractSamePcStatus(MemoryByteStatus memoryStatus, ByteStatus_t oldValue,
+        uint16_t threadId, AddrInfo const &addrInfo) const
     {
-        ByteStatus_t newValue = MemoryByteStatusParser<ByteStatus_t>::Construct(isWritten, threadId, pc);
-        return AtomicExch(reinterpret_cast<__gm__ uint64_t *>(addr), newValue);
+        uint16_t oldThreadId = MBSP::ExtractThreadId(oldValue);
+        uint32_t oldPc = MBSP::ExtractPc(oldValue);
+        OnlineMemoryType memType = SpaceToOnlineMemory(addrInfo.space);
+        if (addrInfo.location.pc == oldPc && oldThreadId < threadId) {
+            return MBSP::Construct(memoryStatus, oldThreadId, addrInfo.location.pc, memType);
+        }
+        return MBSP::Construct(memoryStatus, threadId, addrInfo.location.pc, memType);
     }
 
 private:
     MultiLayerTable<ByteStatus_t> tables_;
     bool isReady_;
+    __gm__ uint8_t *memInfo_;
+    __gm__ uint8_t *memInfoSimt_;
+    __gm__ uint8_t *memInfoSimd_;
+    __gm__ RecordGlobalHead *globalHead_;
+    __gm__ SimtRecordBlockHead *simtBlockHead_;
+    __gm__ RecordBlockHead *simdBlockHead_;
+    uint64_t heapAddr_{};
 };
+
+template <KernelErrorType errorType>
+__aicore__ inline void ShadowMemoryOnline::AssignErrorInfo(ShadowMemoryOnline::ByteStatus_t oldValue,
+    uint16_t threadId, ShadowMemoryOnline::AuxInfo &auxInfo) {}
+
+template<>
+__aicore__ inline void ShadowMemoryOnline::AssignErrorInfo<KernelErrorType::THREAD_OVERLAP>(
+    ShadowMemoryOnline::ByteStatus_t oldValue, uint16_t threadId, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!DoMemCheck(memInfo_)) { return; }
+    uint16_t oldThreadId = MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue);
+    auto &overLapError = auxInfo.errorInfo[overLapErrorIdx];
+    overLapError.errorType = KernelErrorType::THREAD_OVERLAP;
+    overLapError.pc = MemoryByteStatusParser<ByteStatus_t>::ExtractPc(oldValue);
+    overLapError.nBadBytes++;
+    DecomposeThreadId(oldThreadId, overLapError.conflictedThreadLoc.idX,
+        overLapError.conflictedThreadLoc.idY, overLapError.conflictedThreadLoc.idZ);
+}
+
+template<>
+__aicore__ inline void ShadowMemoryOnline::AssignErrorInfo<KernelErrorType::THREAD_WW_RACE>(
+    ShadowMemoryOnline::ByteStatus_t oldValue, uint16_t threadId, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!DoRaceCheck(memInfo_)) { return; }
+    uint16_t oldThreadId = MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue);
+    auto &raceError = auxInfo.errorInfo[raceErrorIdx];
+    raceError.errorType = KernelErrorType::THREAD_WW_RACE;
+    raceError.pc = MemoryByteStatusParser<ByteStatus_t>::ExtractPc(oldValue);
+    DecomposeThreadId(oldThreadId, raceError.conflictedThreadLoc.idX,
+        raceError.conflictedThreadLoc.idY, raceError.conflictedThreadLoc.idZ);
+}
+
+template<>
+__aicore__ inline void ShadowMemoryOnline::AssignErrorInfo<KernelErrorType::THREAD_RW_RACE>(
+    ShadowMemoryOnline::ByteStatus_t oldValue, uint16_t threadId, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!DoRaceCheck(memInfo_)) { return; }
+    uint16_t oldThreadId = MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue);
+    auto &raceError = auxInfo.errorInfo[raceErrorIdx];
+    raceError.errorType = KernelErrorType::THREAD_RW_RACE;
+    raceError.pc = MemoryByteStatusParser<ByteStatus_t>::ExtractPc(oldValue);
+    DecomposeThreadId(oldThreadId, raceError.conflictedThreadLoc.idX,
+        raceError.conflictedThreadLoc.idY, raceError.conflictedThreadLoc.idZ);
+}
+
+template<>
+__aicore__ inline void ShadowMemoryOnline::AssignErrorInfo<KernelErrorType::THREAD_WR_RACE>(
+    ShadowMemoryOnline::ByteStatus_t oldValue, uint16_t threadId, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!DoRaceCheck(memInfo_)) { return; }
+    uint16_t oldThreadId = MemoryByteStatusParser<ByteStatus_t>::ExtractThreadId(oldValue);
+    auto &raceError = auxInfo.errorInfo[raceErrorIdx];
+    raceError.errorType = KernelErrorType::THREAD_WR_RACE;
+    raceError.pc = MemoryByteStatusParser<ByteStatus_t>::ExtractPc(oldValue);
+    DecomposeThreadId(oldThreadId, raceError.conflictedThreadLoc.idX,
+        raceError.conflictedThreadLoc.idY, raceError.conflictedThreadLoc.idZ);
+}
+
+__aicore__ inline void ShadowMemoryOnline::LoadNBytes(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!IsReady() || memInfo_ == nullptr) { return; }
+    if (!DoRaceCheck(memInfo_)) { return; }
+    if (InvalidRange(addrInfo)) { return; }
+
+    OnlineMemoryType memType = SpaceToOnlineMemory(addrInfo.space);
+    uint16_t threadId = GetThreadId();
+    for (uint64_t i = 0U; i < addrInfo.size; ++i) {
+        uint64_t addr = addrInfo.addr + i;
+        uint64_t ret = tables_.LookUp(addr, auxInfo.l1StartAddr, auxInfo.l2StartAddr, auxInfo.l2MemStatusAddr);
+        // shadow memory内存不够，地址查询失败，中断后续的地址访问
+        if (ret != 0U) { return; }
+
+        ByteStatus_t oldValue = 0;
+        ByteStatus_t casRet = oldValue + 1;
+        // oldValue != casRet，说明其他线程修改了l2MemStatusAddr，重试；
+        // oldValue == casRet，说明本线程CAS更新成功，退出循环；
+        while (oldValue != casRet) {
+            oldValue = *reinterpret_cast<__gm__ ByteStatus_t*>(auxInfo.l2MemStatusAddr);
+            ByteStatus_t newValue = oldValue;
+            MemoryByteStatus oldStatus = MBSP::ExtractMemoryStatus(oldValue);
+            OnlineMemoryType oldSpace = MBSP::ExtractMemoryType(oldValue);
+            uint32_t oldPc = MBSP::ExtractPc(oldValue);
+            uint16_t oldThreadId = MBSP::ExtractThreadId(oldValue);
+            if (oldStatus == MemoryByteStatus::DEFAULT) {
+                newValue = MBSP::Construct(MemoryByteStatus::READ, threadId, addrInfo.location.pc, memType);
+            } else if (oldStatus == MemoryByteStatus::READ) {
+                if (oldThreadId == threadId) {
+                    newValue = MBSP::Construct(MemoryByteStatus::READ, threadId, addrInfo.location.pc, memType);
+                } else {
+                    newValue = ExtractSamePcStatus(MemoryByteStatus::GLOBAL_READ, oldValue, threadId, addrInfo);
+                }
+            } else if (oldStatus == MemoryByteStatus::GLOBAL_READ) {
+                newValue = ExtractSamePcStatus(MemoryByteStatus::GLOBAL_READ, oldValue, threadId, addrInfo);
+            } else if (oldStatus == MemoryByteStatus::WRITE) {
+                if (oldThreadId != threadId && ExistRace(oldValue, memType)) {
+                    /// 写读竞争时，将gm上的状态设置为写线程的状态，以保证后续遇到读事件时能识别到竞争问题
+                    newValue = MBSP::Construct(MemoryByteStatus::RACE, oldThreadId, oldPc, memType);
+                    AssignErrorInfo<KernelErrorType::THREAD_WR_RACE>(oldValue, threadId, auxInfo);
+                }
+            } else if (oldStatus == MemoryByteStatus::RACE) {
+                if (ExistRace(oldValue, memType)) {
+                    newValue = ExtractSamePcStatus(MemoryByteStatus::RACE, oldValue, threadId, addrInfo);
+                    AssignErrorInfo<KernelErrorType::THREAD_WR_RACE>(oldValue, threadId, auxInfo);
+                } else {
+                    newValue = MBSP::Construct(MemoryByteStatus::READ, threadId, addrInfo.location.pc, memType);
+                }
+            }
+            casRet = AtomicCAS(reinterpret_cast<__gm__ uint64_t*>(auxInfo.l2MemStatusAddr), oldValue, newValue);
+        }
+    }
+}
+
+__aicore__ inline void ShadowMemoryOnline::StoreNBytes(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo)
+{
+    if (!IsReady() || memInfo_ == nullptr) { return; }
+    if (!DoMemCheck(memInfo_) && !DoRaceCheck(memInfo_)) { return; }
+    if (InvalidRange(addrInfo)) { return; }
+
+    OnlineMemoryType memType = SpaceToOnlineMemory(addrInfo.space);
+    uint16_t threadId = GetThreadId();
+    for (uint64_t i = 0U; i < addrInfo.size; ++i) {
+        uint64_t addr = addrInfo.addr + i;
+        uint64_t ret = tables_.LookUp(addr, auxInfo.l1StartAddr, auxInfo.l2StartAddr, auxInfo.l2MemStatusAddr);
+        if (ret != 0U) { return; }
+
+        ByteStatus_t oldValue = 0;
+        ByteStatus_t casRet = oldValue + 1;
+        // oldValue != casRet，说明其他线程修改了l2MemStatusAddr，重试；
+        // oldValue == casRet，说明本线程CAS更新成功，退出循环；
+        bool overlapIsWrite = false;
+        while (oldValue != casRet) {
+            oldValue = *reinterpret_cast<__gm__ ByteStatus_t*>(auxInfo.l2MemStatusAddr);
+            ByteStatus_t newValue = oldValue;
+            MemoryByteStatus oldStatus = MBSP::ExtractMemoryStatus(oldValue);
+            OnlineMemoryType oldSpace = MBSP::ExtractMemoryType(oldValue);
+            uint32_t oldPc = MBSP::ExtractPc(oldValue);
+            uint16_t oldThreadId = MBSP::ExtractThreadId(oldValue);
+            if (oldStatus == MemoryByteStatus::DEFAULT) {
+                newValue = MBSP::Construct(MemoryByteStatus::WRITE, threadId, addrInfo.location.pc, memType);
+            } else if (oldStatus == MemoryByteStatus::READ) {
+                if (oldThreadId != threadId && ExistRace(oldValue, memType)) {
+                    newValue = MBSP::Construct(MemoryByteStatus::RACE, threadId, addrInfo.location.pc, memType);
+                    AssignErrorInfo<KernelErrorType::THREAD_RW_RACE>(oldValue, threadId, auxInfo);
+                } else {
+                    newValue = MBSP::Construct(MemoryByteStatus::WRITE, threadId, addrInfo.location.pc, memType);
+                }
+            } else if (oldStatus == MemoryByteStatus::GLOBAL_READ) {
+                if (ExistRace(oldValue, memType)) {
+                    newValue = MBSP::Construct(MemoryByteStatus::RACE, threadId, addrInfo.location.pc, memType);
+                    AssignErrorInfo<KernelErrorType::THREAD_RW_RACE>(oldValue, threadId, auxInfo);
+                } else {
+                    newValue = MBSP::Construct(MemoryByteStatus::WRITE, threadId, addrInfo.location.pc, memType);
+                }
+            } else if (oldStatus == MemoryByteStatus::WRITE) {
+                if (oldThreadId != threadId && ExistRace(oldValue, memType)) {
+                    newValue = ExtractSamePcStatus(MemoryByteStatus::RACE, oldValue, threadId, addrInfo);
+                    AssignErrorInfo<KernelErrorType::THREAD_WW_RACE>(oldValue, threadId, auxInfo);
+                    if (overlapIsWrite) {
+                        AssignErrorInfo<KernelErrorType::THREAD_OVERLAP>(oldValue, threadId, auxInfo);
+                        overlapIsWrite = true;
+                    }
+                } else {
+                    newValue = MBSP::Construct(MemoryByteStatus::WRITE, threadId, addrInfo.location.pc, memType);
+                }
+            } else if (oldStatus == MemoryByteStatus::RACE) {
+                if (ExistRace(oldValue, memType)) {
+                    newValue = ExtractSamePcStatus(MemoryByteStatus::RACE, oldValue, threadId, addrInfo);
+                    AssignErrorInfo<KernelErrorType::THREAD_WW_RACE>(oldValue, threadId, auxInfo);
+                    if (overlapIsWrite && oldThreadId != threadId) {
+                        AssignErrorInfo<KernelErrorType::THREAD_OVERLAP>(oldValue, threadId, auxInfo);
+                        overlapIsWrite = true;
+                    }
+                } else {
+                    newValue = MBSP::Construct(MemoryByteStatus::WRITE, threadId, addrInfo.location.pc, memType);
+                }
+            }
+            casRet = AtomicCAS(reinterpret_cast<__gm__ uint64_t*>(auxInfo.l2MemStatusAddr), oldValue, newValue);
+        }
+    }
+}
 
 #endif
 

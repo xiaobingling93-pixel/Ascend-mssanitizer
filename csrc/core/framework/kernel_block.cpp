@@ -75,7 +75,6 @@ inline bool ParseMemErrorType(uint8_t const *ptr, KernelErrorRecord &errorRecord
     errorRecord.record = reinterpret_cast<const void *>(ptr + sizeof(KernelErrorRecord));
     errorRecord.kernelErrorDesc = reinterpret_cast<const KernelErrorDesc *>(ptr + sizeof(KernelErrorRecord) +
         errorRecord.recordSize);
-    CalRecordPc(errorRecord);
     return true;
 }
 
@@ -440,7 +439,7 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::SIMT_RED, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.simtLoadStoreRecord, offset);
     }},
-    {RecordType::MEM_ERROR, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+    {RecordType::ONLINE_ERROR, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseMemErrorType(record, kernelRecord.payload.kernelErrorRecord, offset);
     }},
     {RecordType::SCALAR_RED, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
@@ -491,6 +490,9 @@ const std::map<RecordType, std::function<bool(uint8_t const *, KernelRecord &, u
     {RecordType::SET_LRELU_ALPHA, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
         return ParseRecordByType(record, kernelRecord.payload.registerSetRecord, offset);
     }},
+    {RecordType::THREAD_BLOCK_BARRIER, [](uint8_t const *record, KernelRecord &kernelRecord, uint64_t &offset) {
+        return ParseRecordByType(record, kernelRecord.payload.simtSyncRecord, offset);
+    }}
 };
 
 bool ParseRecord(RecordType recordType, uint8_t const *record, KernelRecord &kernelRecord, uint64_t &recordSize)

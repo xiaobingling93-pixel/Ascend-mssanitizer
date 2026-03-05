@@ -18,11 +18,11 @@
 #include <gtest/gtest.h>
 #include <algorithm>
 #include "ccec_defs.h"
-#include "plugin/memcheck.h"
+#include "plugin/online_check.h"
 
 using namespace Sanitizer;
 
-TEST(Memcheck, check_illegal_simt_record_expect_one_error)
+TEST(OnlineCheck, check_illegal_simt_record_expect_one_error)
 {
     uint64_t blockDim = 3;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
@@ -35,6 +35,7 @@ TEST(Memcheck, check_illegal_simt_record_expect_one_error)
     blockHead.hostMemoryInfoPtr = reinterpret_cast<HostMemoryInfo *>(hostmems.data());
     blockHead.hostMemoryNum = hostmems.size();
     head.simtInfo.threadByteSize = 500;
+    head.checkParms.defaultcheck = true;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
     std::copy_n(reinterpret_cast<uint8_t const*>(&blockHead), sizeof(RecordBlockHead),
         memInfo.begin() + sizeof(RecordGlobalHead));
@@ -42,7 +43,7 @@ TEST(Memcheck, check_illegal_simt_record_expect_one_error)
         memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
         sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 0);
     SimtLoadStoreRecord record = {
         .addr = 0x100,
@@ -55,15 +56,13 @@ TEST(Memcheck, check_illegal_simt_record_expect_one_error)
     
     auto recordTypePtr = reinterpret_cast<RecordType const*>(memInfo.data() + allHeadSize +
         sizeof(SimtRecordBlockHead));
-    ASSERT_EQ(*recordTypePtr, RecordType::MEM_ERROR);
+    ASSERT_EQ(*recordTypePtr, RecordType::ONLINE_ERROR);
     recordTypePtr++;
     auto errorRecord = reinterpret_cast<KernelErrorRecord const*>(recordTypePtr);
     ASSERT_EQ(errorRecord->errorNum, 1);
-    ASSERT_EQ(errorRecord->addr, 0x100);
-    ASSERT_EQ(errorRecord->space, AddressSpace::GM);
-    ASSERT_EQ(errorRecord->location.blockId, 1);
     ASSERT_EQ(errorRecord->recordSize, sizeof(SimtLoadStoreRecord));
     ASSERT_EQ(errorRecord->recordType, RecordType::SIMT_LDG);
+
     errorRecord++;
     auto simtRecord = reinterpret_cast<SimtLoadStoreRecord const*>(errorRecord);
     ASSERT_EQ(simtRecord->addr, 0x100);
@@ -75,16 +74,20 @@ TEST(Memcheck, check_illegal_simt_record_expect_one_error)
     simtRecord++;
     auto errorDesc = reinterpret_cast<KernelErrorDesc const*>(simtRecord);
     ASSERT_EQ(errorDesc->errorType, KernelErrorType::ILLEGAL_ADDR_READ);
-    ASSERT_EQ(errorDesc->nBadBytes, 1);
+    ASSERT_EQ(errorDesc->payload.illegalDesc.illegalSize, 1);
+    ASSERT_EQ(errorDesc->payload.illegalDesc.addr, 0x100);
+    ASSERT_EQ(errorDesc->space, AddressSpace::GM);
+    ASSERT_EQ(errorDesc->location.blockId, 1);
 }
 
-TEST(Memcheck, check_normal_simt_record_expect_success)
+TEST(OnlineCheck, check_normal_simt_record_expect_success)
 {
     uint64_t blockDim = 1;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
     std::vector<uint8_t> memInfo(cacheSize * blockDim, 0);
     RecordGlobalHead head{};
     head.simtInfo.ubDynamicSize = 253952UL;
+    head.checkParms.defaultcheck = true;
     RecordBlockHead blockHead{};
     std::vector<HostMemoryInfo> hostmems;
     hostmems.push_back({0x100, 100});
@@ -98,7 +101,7 @@ TEST(Memcheck, check_normal_simt_record_expect_success)
         memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
         sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 0);
     SimtLoadStoreRecord record = {
         .addr = 0x100,
@@ -127,13 +130,14 @@ TEST(Memcheck, check_normal_simt_record_expect_success)
     ASSERT_EQ(*recordTypePtr, RecordType{});
 }
 
-TEST(Memcheck, check_normal_simt_record_with_extra_info_and_all_block_check_expect_success)
+TEST(OnlineCheck, check_normal_simt_record_with_extra_info_and_all_block_check_expect_success)
 {
     uint64_t blockDim = 1;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
     std::vector<uint8_t> memInfo(cacheSize * blockDim, 0);
     RecordGlobalHead head{};
     head.kernelInfo.kernelParamNum = 4;
+    head.checkParms.defaultcheck = true;
     RecordBlockHead blockHead{};
     std::vector<HostMemoryInfo> hostmems;
     hostmems.push_back({0x100, 100});
@@ -158,7 +162,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_all_block_check_expe
         memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
         sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 1);
     checker.ProcessParaBaseAddr();
     ASSERT_EQ(hostmems[0].addr, 0x100);
@@ -175,7 +179,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_all_block_check_expe
     ASSERT_TRUE(simdHead->extraWriteSuccess);
 }
 
-TEST(Memcheck, check_normal_simt_record_with_extra_info_and_single_check_expect_success)
+TEST(OnlineCheck, check_normal_simt_record_with_extra_info_and_single_check_expect_success)
 {
     uint64_t blockDim = 2;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
@@ -183,6 +187,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_single_check_expect_
     RecordGlobalHead head{};
     head.kernelInfo.kernelParamNum = 4;
     head.checkParms.checkBlockId = 4;
+    head.checkParms.defaultcheck = true;
     RecordBlockHead blockHead{};
     std::vector<HostMemoryInfo> hostmems;
     hostmems.push_back({0x100, 100});
@@ -207,7 +212,7 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_single_check_expect_
         memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
         sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 0);
     checker.ProcessParaBaseAddr();
     ASSERT_EQ(hostmems[0].addr, 0x100);
@@ -218,13 +223,14 @@ TEST(Memcheck, check_normal_simt_record_with_extra_info_and_single_check_expect_
     ASSERT_FALSE(simdHead->extraWriteSuccess);
 }
 
-TEST(Memcheck, check_normal_simt_record_with_zero_extra_info_and_all_block_check_expect_success)
+TEST(OnlineCheck, check_normal_simt_record_with_zero_extra_info_and_all_block_check_expect_success)
 {
     uint64_t blockDim = 1;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
     std::vector<uint8_t> memInfo(cacheSize * blockDim, 0);
     RecordGlobalHead head{};
     head.kernelInfo.kernelParamNum = 4;
+    head.checkParms.defaultcheck = true;
     RecordBlockHead blockHead{};
     std::vector<HostMemoryInfo> hostmems;
     hostmems.push_back({0x100, 100});
@@ -249,7 +255,7 @@ TEST(Memcheck, check_normal_simt_record_with_zero_extra_info_and_all_block_check
         memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
         sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 1);
     checker.ProcessParaBaseAddr();
     ASSERT_EQ(hostmems[0].addr, 0x100);
@@ -266,7 +272,7 @@ TEST(Memcheck, check_normal_simt_record_with_zero_extra_info_and_all_block_check
     ASSERT_TRUE(simdHead->extraWriteSuccess);
 }
 
-TEST(Memcheck, check_unaligned_simt_record_expect_one_error)
+TEST(OnlineCheck, check_unaligned_simt_record_expect_one_error)
 {
     uint64_t blockDim = 3;
     uint64_t cacheSize = 10 * MB_TO_BYTES;
@@ -279,6 +285,7 @@ TEST(Memcheck, check_unaligned_simt_record_expect_one_error)
     blockHead.hostMemoryInfoPtr = reinterpret_cast<HostMemoryInfo *>(hostmems.data());
     blockHead.hostMemoryNum = hostmems.size();
     head.simtInfo.threadByteSize = 500;
+    head.checkParms.defaultcheck = true;
     std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
     std::copy_n(reinterpret_cast<uint8_t const*>(&blockHead), sizeof(RecordBlockHead),
     memInfo.begin() + sizeof(RecordGlobalHead));
@@ -286,7 +293,7 @@ TEST(Memcheck, check_unaligned_simt_record_expect_one_error)
     memInfo.begin() + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead));
     uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(HostMemoryInfo) * blockHead.hostMemoryNum +
                            sizeof(RecordBlockHead);
-    Memcheck checker = Memcheck();
+    OnlineCheck checker = OnlineCheck();
     checker.Init(memInfo.data(), memInfo.data() + allHeadSize, memInfo.data() + sizeof(RecordGlobalHead), 0);
     SimtLoadStoreRecord record = {
         .addr = 0x101,
@@ -300,13 +307,10 @@ TEST(Memcheck, check_unaligned_simt_record_expect_one_error)
 
     auto recordTypePtr = reinterpret_cast<RecordType const*>(memInfo.data() + allHeadSize +
                                                              sizeof(SimtRecordBlockHead));
-    ASSERT_EQ(*recordTypePtr, RecordType::MEM_ERROR);
+    ASSERT_EQ(*recordTypePtr, RecordType::ONLINE_ERROR);
     recordTypePtr++;
     auto errorRecord = reinterpret_cast<KernelErrorRecord const*>(recordTypePtr);
     ASSERT_EQ(errorRecord->errorNum, 1);
-    ASSERT_EQ(errorRecord->addr, 0x101);
-    ASSERT_EQ(errorRecord->space, AddressSpace::GM);
-    ASSERT_EQ(errorRecord->location.blockId, 1);
     ASSERT_EQ(errorRecord->recordSize, sizeof(SimtLoadStoreRecord));
     ASSERT_EQ(errorRecord->recordType, RecordType::SIMT_LDG);
     errorRecord++;
@@ -320,5 +324,8 @@ TEST(Memcheck, check_unaligned_simt_record_expect_one_error)
     simtRecord++;
     auto errorDesc = reinterpret_cast<KernelErrorDesc const*>(simtRecord);
     ASSERT_EQ(errorDesc->errorType, KernelErrorType::MISALIGNED_ACCESS);
-    ASSERT_EQ(errorDesc->nBadBytes, 8);
+    ASSERT_EQ(errorDesc->payload.illegalDesc.illegalSize, 8);
+    ASSERT_EQ(errorDesc->payload.illegalDesc.addr, 0x101);
+    ASSERT_EQ(errorDesc->space, AddressSpace::GM);
+    ASSERT_EQ(errorDesc->location.blockId, 1);
 }

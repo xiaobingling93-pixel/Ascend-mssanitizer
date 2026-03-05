@@ -365,15 +365,21 @@ void Checker::SetDetectionInfo(const LogLv &expectLv, std::ostream &detectionOst
 
 void Checker::ParseOnlineError(const SanitizerRecord &record)
 {
+    const auto &kernelRecord = record.payload.kernelRecord;
     uint8_t memCheckIdx = static_cast<uint8_t>(ToolType::MEMCHECK);
     if (sanitizerArr_[memCheckIdx] != nullptr) {
-        const auto &kernelRecord = record.payload.kernelRecord;
         sanitizerArr_[memCheckIdx]->ParseOnlineError(kernelRecord.payload.kernelErrorRecord,
             kernelRecord.blockType, kernelRecord.serialNo);
-        std::stringstream ss;
-        ss << record << ", deviceId:" << RuntimeContext::Instance().GetDeviceId();
-        SAN_LOG("%s", ss.str().c_str());
     }
+    uint8_t raceCheckIdx = static_cast<uint8_t>(ToolType::RACECHECK);
+    if (sanitizerArr_[raceCheckIdx] != nullptr) {
+        sanitizerArr_[raceCheckIdx]->ParseOnlineError(kernelRecord.payload.kernelErrorRecord,
+            kernelRecord.blockType, kernelRecord.serialNo);
+    }
+
+    std::stringstream ss;
+    ss << record << ", deviceId:" << RuntimeContext::Instance().GetDeviceId();
+    SAN_LOG("%s", ss.str().c_str());
 }
 
 void Checker::Do(const SanitizerRecord &record)
@@ -381,7 +387,7 @@ void Checker::Do(const SanitizerRecord &record)
     std::lock_guard<std::mutex> lk(doMutex_);
      /// 解析在线检测的异常结果
     if (record.version == RecordVersion::KERNEL_RECORD &&
-        record.payload.kernelRecord.recordType == RecordType::MEM_ERROR) {
+        record.payload.kernelRecord.recordType == RecordType::ONLINE_ERROR) {
         ParseOnlineError(record);
         return;
     }

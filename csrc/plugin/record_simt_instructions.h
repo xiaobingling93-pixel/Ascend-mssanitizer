@@ -54,7 +54,7 @@ __aicore__ inline void SimtRecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace s
     record.location.pc = static_cast<uint64_t>(pc);
 
     Recorder recorder(memInfo, blockIdx);
-    recorder.MemCheck<recordType>(record);
+    recorder.Check<recordType>(record);
 }
 
 template<RecordType recordType, DetailedDataType detailedDataType>
@@ -88,7 +88,36 @@ __aicore__ inline void SimtRecordAtomEvent(EXTRA_PARAMS_DEC, AddressSpace space,
     record.location.pc = static_cast<uint64_t>(pc);
 
     Recorder recorder(memInfo, blockIdx);
-    recorder.MemCheck<recordType>(record);
+    recorder.Check<recordType>(record);
 }
+
+template<RecordType recordType>
+__aicore__ inline void SimtRecordSyncEvent(EXTRA_PARAMS_DEC)
+{
+    if (MemInfoIsInvalid(memInfo)) {
+        return;
+    }
+
+    uint64_t blockIdx = GetBlockIdx();
+    SimtSyncRecord record{};
+    record.location.blockId = blockIdx;
+
+#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+    record.threadLoc.idX = GetThreadIdX();
+    record.threadLoc.idY = GetThreadIdY();
+    record.threadLoc.idZ = GetThreadIdZ();
+#endif
+
+#if !defined(BUILD_DYNAMIC_PROBE)
+    record.location.fileNo = fileNo;
+    record.location.lineNo = lineNo;
+#endif
+    record.location.pc = static_cast<uint64_t>(pc);
+
+    Recorder recorder(memInfo, blockIdx);
+    // 保留recordType和record的目的是为了指令落盘，便于后续定位问题
+    recorder.UpdateSyncThreadCount<recordType>(record);
+}
+
 }
 #endif

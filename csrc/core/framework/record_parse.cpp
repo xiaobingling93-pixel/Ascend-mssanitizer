@@ -3762,7 +3762,7 @@ static void ParseRecordShadowMemory(const KernelRecord &record, std::vector<SanE
     auto& memInfo = event.eventInfo.memInfo;
     SetLocationInfo(event, smRecord, record.blockType, record.serialNo);
     event.type = EventType::MEM_EVENT;
-    event.pipe = PipeType::PIPE_S;
+    event.pipe = PipeType::PIPE_V;
     memInfo.memType = FormatConverter::AddrSpaceToMemType(smRecord.space);
     memInfo.opType = smRecord.opType == MemOpType::LOAD ? AccessType::READ : AccessType::WRITE;
     memInfo.repeatTimes = 1;

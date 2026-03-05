@@ -103,12 +103,46 @@ constexpr uint64_t SHADOW_MEM_MIN_BYTE_SIZE = 12 * 1024 * 1024;
 // 非法的地址信息
 constexpr uint64_t ILLEGAL_ADDR = 0xFFFFFFFFFFFFFFFFULL;
 
+namespace OnlineShadowMemory {
 // gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
 constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
 // 片上内存建模地址范围0 ~ 0xF FFFF FFFF (32 bits)
 constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFULL;
 // 用于标记GM上定义的数据来源于host
 constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+
+enum MemoryByteStatus : uint8_t {
+    DEFAULT = 0,
+    READ,
+    GLOBAL_READ,
+    WRITE,
+    RACE,
+};
+
+enum class OnlineMemoryType : uint8_t {
+    GM = 0,
+    UB,
+};
+
+/*
+协议设计如下：
+    [63:32]: pc
+    [31:31]: sync threads state
+    [30:30]: memoryType 当前内存表示ub还是gm，默认为gm
+    [11:14]: memory status表示当前内存上的状态，分为DEFAULT/READ/GLOBAL_READ/WRITE/RACE ...
+    [10:0]: threadId
+*/
+constexpr uint64_t PC_START_BIT = 32;
+constexpr uint64_t PC_MASK = 0xFFFFU;
+constexpr uint64_t SYNC_STATE_START_BIT = 31;
+constexpr uint64_t SYNC_STATE_MASK = 0x1U;
+constexpr uint64_t MEMORY_TYPE_START_BIT = 30;
+constexpr uint64_t MEMORY_TYPE_MASK = 0x1U;
+constexpr uint64_t MEMORY_STATUS_START_BIT = 11;
+constexpr uint64_t MEMORY_STATUS_MASK = 0xFU;
+constexpr uint64_t THREAD_ID_MASK = 0x7FFU;
+} // namespace OnlineShadowMemory
+
 // MSTX API 信息上报时 API 的名字长度
 constexpr std::size_t MSTX_API_NAME_LENGTH = 64UL;
  
@@ -260,10 +294,11 @@ enum class RecordType : uint32_t {
     SIMT_ATOM,
     SIMT_RED,
     SHADOW_MEMORY = 40010,
+    THREAD_BLOCK_BARRIER,
     SIMT_END = 50000,
 
    /// online检测对应的错误类型
-    MEM_ERROR = 60000,
+    ONLINE_ERROR = 60000,
 
     // 寄存器
     REGISTER_START = 70000,
@@ -644,6 +679,7 @@ struct KernelInfo {
 
 /// 该结构体主要包含当前block包含的信息，保存在每个核的头部
 struct BlockInfo {
+    uint64_t simtSyncThreadCount{};                 // 当前核上simt单元多少个线程已经运行了sync_thread指令
     uint16_t blockId{};
     uint16_t threadXDim{};
     uint16_t threadYDim{};
@@ -1859,11 +1895,19 @@ struct SimtThreadLocation {
     uint16_t idX;
     uint16_t idY;
     uint16_t idZ;
-    bool operator==(const SimtThreadLocation &rhs) const
+
+    bool operator == (const SimtThreadLocation &rhs) const
     {
         return this->idX == rhs.idX &&
                this->idY == rhs.idY &&
                this->idZ == rhs.idZ;
+    }
+
+    bool operator < (const SimtThreadLocation& rhs) const
+    {
+        if (idZ != rhs.idZ) return idZ < rhs.idZ;
+        if (idY != rhs.idY) return idY < rhs.idY;
+        return idX < rhs.idX;
     }
 };
 
@@ -1886,6 +1930,11 @@ struct SimtAtomRecord {
     SimtAtomMode option;
 };
 
+struct SimtSyncRecord {
+    Location location;
+    SimtThreadLocation threadLoc;
+};
+
 struct ShadowMemoryRecordHead {
     uint32_t type = static_cast<uint32_t>(RecordType::SHADOW_MEMORY);
     uint64_t recordCount;
@@ -1904,27 +1953,55 @@ enum class KernelErrorType : uint8_t {
     ILLEGAL_ADDR_WRITE = 0U,
     ILLEGAL_ADDR_READ,
     MISALIGNED_ACCESS,
-    THREADWISE_OVERLAP,
+    THREAD_OVERLAP,                // 线程间踩踏
+    THREAD_RW_RACE,                // 线程间读写竞争，先读后写
+    THREAD_WR_RACE,                // 线程间写读竞争，先写后读
+    THREAD_WW_RACE,                // 线程间写写竞争
+
+    MAX,
+    INVALID = 0XFF,
+};
+
+struct KernelIllegalErrorDesc {
+    uint64_t addr;
+    uint64_t illegalSize;
+};
+
+struct KernelMisAlignErrorDesc {
+    uint64_t addr;
+    uint64_t misAlignSize;
+};
+
+struct KernelOverLapErrorDesc {
+    Location conflictedLocation;
+    SimtThreadLocation conflictedThreadLoc;
+    uint64_t addr;
+    uint64_t overLapSize;
+};
+
+struct KernelRaceErrorDesc {
+    Location conflictedLocation;
+    SimtThreadLocation conflictedThreadLoc;
+    uint64_t addr;
 };
 
 struct KernelErrorDesc {
+    Location location;
+    SimtThreadLocation threadLoc;
+    AddressSpace space;
     KernelErrorType errorType;
-    uint64_t nBadBytes;
-    SimtThreadLocation threadDim;
-
-    /*** 线程间踩踏使用 ***/
-    SimtThreadLocation conflictedThreadLoc; // 记录被当前线程所踩踏的线程坐标
     uint64_t l1StartAddr; // L1StartAddr
     uint64_t l2StartAddr; // L2StartAddr
     uint64_t l2MemStatusAddr; // 字节状态位地址
-    /*********************/
+    union Payload {
+       KernelIllegalErrorDesc illegalDesc;
+       KernelMisAlignErrorDesc misAlignDesc;
+       KernelOverLapErrorDesc overLapDesc;
+       KernelRaceErrorDesc raceDesc;
+    } payload;
 };
 
 struct KernelErrorRecord {
-    Location location;
-    SimtThreadLocation threadLoc;
-    uint64_t addr;
-    AddressSpace space;
     uint32_t errorNum;                                           // 错误类型个数，同一条记录可能对应多条错误信息
     RecordType recordType;                                       // 错误类型对应的桩记录类型
     uint16_t recordSize;
@@ -2004,6 +2081,7 @@ struct KernelRecord {
         Vms4v2RecordA5 vms4V2RecordA5;
         ShadowMemoryRecord shadowMemoryRecord;
         RegisterSetRecord registerSetRecord;
+        SimtSyncRecord simtSyncRecord;
     } payload;
 };
 

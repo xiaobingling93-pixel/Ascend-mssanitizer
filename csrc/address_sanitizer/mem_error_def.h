@@ -90,7 +90,7 @@ struct ErrorMsg {
         AuxData() : badAddr{}, nBadBytes{0UL}, space{AddressSpace::INVALID},
                     moduleId(-1), fileName{}, lineNo{0UL}, coreId{0UL},
                     blockType{BlockType::AICUBE}, pc{0UL}, serialNo(0L),
-                    side{MemOpSide::HOST}, threadLoc{}, conflictedThreadLoc{}, threadDim{}, isSimtError{false} { }
+                    side{MemOpSide::HOST}, threadLoc{}, conflictedThreadLoc{}, isSimtError{false} { }
         Addr badAddr;
         uint64_t nBadBytes;
         AddressSpace space;
@@ -104,7 +104,6 @@ struct ErrorMsg {
         MemOpSide side;
         SimtThreadLocation threadLoc;
         SimtThreadLocation conflictedThreadLoc;
-        SimtThreadLocation threadDim;
         bool isSimtError;
     } auxData;
     ErrorMsg() : type(MemErrorType::INVALID), isError(false) {}
@@ -306,7 +305,7 @@ inline std::ostream &PrintOutOfBounds(std::ostream &out, const ReducedErrorMsg &
     bool hasSubBlocks = HasSubBlocks(deviceType);
     out <<
         "====== WARNING: out of bounds of size " << msg.auxData.nBadBytes << std::endl <<
-        "======    at " << msg.auxData.badAddr << " on GM when writing data" <<
+        "======    at " << msg.auxData.badAddr << " on " << msg.auxData.space << " when writing data" <<
         FormatKernelName{msg} << std::endl <<
         FormatBlockInfo{reducedMsg, hasSubBlocks} <<
         " on device "<< RuntimeContext::Instance().GetDeviceId() << std::endl;

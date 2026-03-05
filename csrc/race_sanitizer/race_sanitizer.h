@@ -52,6 +52,8 @@ private:
     inline bool IsTargetBlockId(uint32_t blockId);
     // 检查记录是否是需要的指令记录
     bool IsTargetEvent(const SanEvent &event, BlockType targetBlockType);
+
+    void MergeSimtErrors();
     // 最多支持检测开启5个检测算法
     static constexpr uint32_t MAX_RACE_ALG_NUM = 5U;
     std::array<std::shared_ptr<RaceAlgBase>, MAX_RACE_ALG_NUM> raceAlgs_;
@@ -59,6 +61,7 @@ private:
     const uint8_t defaultCheckBlockId_ = 0U;
     MSG_FUNC msgFunc_;
     DeviceType deviceType_ = DeviceType::INVALID;
+    std::shared_ptr<std::vector<RaceDispInfo>> simtErrors_;
 };
 }
 #endif

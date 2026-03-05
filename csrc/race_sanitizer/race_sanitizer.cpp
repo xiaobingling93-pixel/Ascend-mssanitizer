@@ -19,7 +19,30 @@
 #include <sstream>
 #include "core/framework/utility/log.h"
 #include "alg_framework/race_alg_factory.h"
+#include "core/framework/format_converter.h"
 #include "race_info_display.h"
+
+namespace {
+
+uint8_t inline ThreadRaceToAccessType(Sanitizer::KernelErrorType errorType, bool isSecondEvent = false)
+{
+    if (errorType == Sanitizer::KernelErrorType::THREAD_RW_RACE) {
+        if (isSecondEvent) {
+            return static_cast<uint8_t>(Sanitizer::AccessType::READ);
+        }
+        return static_cast<uint8_t>(Sanitizer::AccessType::WRITE);
+    } else if (errorType == Sanitizer::KernelErrorType::THREAD_WR_RACE) {
+        if (isSecondEvent) {
+            return static_cast<uint8_t>(Sanitizer::AccessType::WRITE);
+        }
+        return static_cast<uint8_t>(Sanitizer::AccessType::READ);
+    } else if (errorType == Sanitizer::KernelErrorType::THREAD_WW_RACE) {
+        return static_cast<uint8_t>(Sanitizer::AccessType::WRITE);
+    }
+    return 0U;
+}
+
+}
 
 namespace Sanitizer {
 enum class RaceAlgCheckBlockType: uint8_t {
@@ -34,6 +57,7 @@ bool RaceSanitizer::SetDeviceInfo(DeviceInfoSummary const &deviceInfo, Config co
 {
     checkBlockId_ = config.checkBlockId;
     deviceType_ = deviceInfo.device;
+    simtErrors_ = std::make_shared<std::vector<RaceDispInfo>>();
     return false;
 }
 
@@ -88,6 +112,30 @@ bool RaceSanitizer::IsTargetEvent(const SanEvent &event, BlockType targetBlockTy
         return true;
     }
     return event.type == EventType::CROSS_CORE_SYNC_EVENT;
+}
+
+void RaceSanitizer::MergeSimtErrors()
+{
+    std::vector<RaceDispInfo> uniqueErrors;
+    if (simtErrors_ == nullptr) {
+        SAN_ERROR_LOG("simt errors is nullptr");
+        return;
+    }
+    for (const auto &current : *simtErrors_) {
+        bool found = false;
+        for (auto &exist : uniqueErrors) {
+            if (current.IsSameSimt(exist)) {
+                found = true;
+                exist.UpdateMinThreadLoc(current);
+                break;
+            }
+        }
+        if (!found) {
+            uniqueErrors.push_back(current);
+        }
+    }
+    simtErrors_->clear();
+    simtErrors_->assign(uniqueErrors.begin(), uniqueErrors.end());
 }
 
 void RaceSanitizer::RaceSanitizerRecord(std::shared_ptr<std::vector<RaceDispInfo>> p)
@@ -150,8 +198,9 @@ void RaceSanitizer::AllBlockRaceCheck(const std::vector<SanEvent> &events)
 
 bool RaceSanitizer::CheckRecordBeforeProcess(const SanitizerRecord &record)
 {
-    // 预处理当前仅处理KernelRecord
-    if (record.version == RecordVersion::KERNEL_RECORD) {
+    // 预处理当前仅处理KernelRecord，并且不处理simt的竞争事件
+    if (record.version == RecordVersion::KERNEL_RECORD &&
+        record.payload.kernelRecord.recordType != RecordType::SHADOW_MEMORY) {
         return true;
     }
     return false;
@@ -178,13 +227,57 @@ void RaceSanitizer::Do(const SanitizerRecord &record, const std::vector<SanEvent
             RaceSanitizerRecord(it->GetResult());
         }
     }
+
+    // 显示simt核内线程间的竞争结果
+    if (record.version == RecordVersion::KERNEL_RECORD &&
+        record.payload.kernelRecord.recordType == RecordType::FINISH) {
+        MergeSimtErrors();
+        RaceSanitizerRecord(simtErrors_);
+        simtErrors_->clear();
+    }
 }
 
 void RaceSanitizer::ParseOnlineError(const KernelErrorRecord &record, BlockType blockType, uint64_t serialNo)
 {
-    (void)record;
-    (void)blockType;
-    (void)serialNo;
+    if (simtErrors_ == nullptr) {
+        SAN_ERROR_LOG("simt errors is nullptr");
+        return;
+    }
+
+    for (size_t errorIdx = 0; errorIdx < record.errorNum; ++errorIdx) {
+        const KernelErrorDesc &kernelErrorDesc = record.kernelErrorDesc[errorIdx];
+        if (kernelErrorDesc.errorType >= KernelErrorType::MAX) {
+            SAN_ERROR_LOG("Unknown kernel error type: %u", static_cast<uint32_t>(kernelErrorDesc.errorType));
+            continue;
+        }
+
+        if (kernelErrorDesc.errorType == KernelErrorType::THREAD_RW_RACE ||
+            kernelErrorDesc.errorType == KernelErrorType::THREAD_WR_RACE ||
+            kernelErrorDesc.errorType == KernelErrorType::THREAD_WW_RACE) {
+            RaceDispInfo error{};
+            BaseEvent event{};
+            auto &errorDesc = kernelErrorDesc.payload.raceDesc;
+            event.coreId = kernelErrorDesc.location.blockId;
+            event.addr = errorDesc.addr;
+            event.pc = kernelErrorDesc.location.pc;
+            event.fileNo = kernelErrorDesc.location.fileNo;
+            event.lineNo = kernelErrorDesc.location.lineNo;
+            event.blockType = blockType;
+            event.isSimt = true;
+            event.accessType = ThreadRaceToAccessType(kernelErrorDesc.errorType);
+            event.memType = static_cast<uint8_t>(FormatConverter::AddrSpaceToMemType(kernelErrorDesc.space));
+            event.threadLoc = kernelErrorDesc.threadLoc;
+            error.p1 = event;
+            
+            event.accessType = ThreadRaceToAccessType(kernelErrorDesc.errorType, true);
+            event.pc = errorDesc.conflictedLocation.pc;
+            event.fileNo = errorDesc.conflictedLocation.fileNo;
+            event.lineNo = errorDesc.conflictedLocation.lineNo;
+            event.threadLoc = errorDesc.conflictedThreadLoc;
+            error.p2 = event;
+            simtErrors_->emplace_back(error);
+        }
+    }
 }
 
 void RaceSanitizer::RegisterNotifyFunc(const MSG_FUNC &func)

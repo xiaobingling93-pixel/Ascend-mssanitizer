@@ -23,8 +23,10 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <algorithm>
 #include "arch_def.h"
 #include "record_defs.h"
+#include "utility/log.h"
 
 namespace Sanitizer {
 
@@ -203,6 +205,8 @@ struct BaseEvent {
     uint8_t memType;
     uint8_t pipeType;
     BlockType blockType;
+    SimtThreadLocation threadLoc;
+    bool isSimt;
 
     void Init(const MemEvent &memEvent)
     {
@@ -216,6 +220,8 @@ struct BaseEvent {
         accessType = static_cast<uint8_t>(memEvent.memInfo.opType);
         memType = static_cast<uint8_t>(memEvent.memInfo.memType);
         pipeType = static_cast<uint8_t>(memEvent.pipe);
+        threadLoc = {};
+        isSimt = false;
     }
 
     bool operator == (const BaseEvent &other) const
@@ -227,13 +233,50 @@ struct BaseEvent {
                 lineNo == other.lineNo &&
                 pc == other.pc &&
                 pipeType == other.pipeType &&
-                coreId == other.coreId);
+                coreId == other.coreId &&
+                threadLoc == other.threadLoc &&
+                isSimt == other.isSimt);
+    }
+
+    bool IsSameSimt(const BaseEvent &other) const {
+         return (coreId == other.coreId &&
+                addr == other.addr &&
+                fileNo == other.fileNo &&
+                lineNo == other.lineNo &&
+                pc == other.pc &&
+                accessType == other.accessType &&
+                memType == other.memType &&
+                pipeType == other.pipeType &&
+                blockType == other.blockType &&
+                isSimt == other.isSimt);
     }
 };
 
 // 竞争检测信息展示单元
 struct RaceDispInfo {
     BaseEvent p1, p2;
+
+    bool IsSameSimt(const RaceDispInfo &other) const {
+        return (p1.IsSameSimt(other.p1) && p2.IsSameSimt(other.p2)) ||
+               (p1.IsSameSimt(other.p2) && p2.IsSameSimt(other.p1));
+    }
+
+    void UpdateMinThreadLoc(const RaceDispInfo &other) {
+        std::vector<SimtThreadLocation> simtLocs;
+        simtLocs.emplace_back(p1.threadLoc);
+        simtLocs.emplace_back(p2.threadLoc);
+        simtLocs.emplace_back(other.p1.threadLoc);
+        simtLocs.emplace_back(other.p2.threadLoc);
+        std::sort(simtLocs.begin(), simtLocs.end());
+        auto last = std::unique(simtLocs.begin(), simtLocs.end());
+        simtLocs.erase(last, simtLocs.end());
+        if (simtLocs.size() >= 2) {
+            p1.threadLoc = simtLocs[0];
+            p2.threadLoc = simtLocs[1];
+        } else {
+            SAN_ERROR_LOG("simt locations size error, size = %lu", simtLocs.size());
+        }
+    }
 };
 
 // 同步检测信息展示单元

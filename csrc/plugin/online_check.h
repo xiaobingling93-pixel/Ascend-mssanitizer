@@ -14,8 +14,8 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
-#ifndef PLUGIN_MEMCHECK_H
-#define PLUGIN_MEMCHECK_H
+#ifndef PLUGIN_ONLINE_CHECK_H
+#define PLUGIN_ONLINE_CHECK_H
 
 #include "kernel_pub_func.h"
 #include "record_type_map.h"
@@ -24,22 +24,22 @@
 
 namespace Sanitizer {
 
-/* Memcheck kernel侧内存检测类
+/* OnlineCheck kernel侧内存检测类
  * head处记录了host侧的malloc信息
  * 桩函数记录时，会解析head处的malloc信息并做比对，
  * 如果有内存错误则记录错误行为信息，无错误则直接返回；
  *
  * 使用方法如下
  * @code
- * Memcheck memcheck();
- * memcheck.Init(memInfo，memInfoBlock);
- * memcheck.Process<RecordType::SIMT_LDG>(record);
+ * OnlineCheck check();
+ * check.Init(memInfo，memInfoBlock);
+ * check.Process<RecordType::SIMT_LDG>(record);
  * @endcode
  */
 
-class Memcheck {
+class OnlineCheck {
 public:
-    __aicore__ __attribute__((always_inline)) Memcheck() : memInfo_{nullptr}, memInfoSimt_{nullptr}, memInfoSimd_{nullptr},
+    __aicore__ __attribute__((always_inline)) OnlineCheck() : memInfo_{nullptr}, memInfoSimt_{nullptr}, memInfoSimd_{nullptr},
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
         globalHead_{nullptr}, simtBlockHead_{nullptr}, simdBlockHead_{nullptr}, sortedLen_{}, blockIdx_{},
         shadowMemory_()
@@ -70,6 +70,12 @@ public:
      */
     __aicore__ inline void ProcessParaBaseAddr();
 
+#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+    __aicore__ inline void ClearSyncThreadState() {
+        shadowMemory_.ClearSyncThreadState();
+    }
+#endif
+
 private:
 
     /* @param  addr               待检查的地址
@@ -88,7 +94,7 @@ private:
      * @brief 计算内存操作行为的错误信息，支持多种错误类型的同时记录
     */
     template<RecordType recordType, typename Record>
-    __aicore__ inline void OnlineCheck(AddrInfo const &addrInfo, Record const &record);
+    __aicore__ inline void Do(AddrInfo const &addrInfo, Record const &record);
 
     /* @param addrInfo      simt指令的信息
      * @param illegalSize   错误长度
@@ -115,7 +121,7 @@ private:
      * @param   cacheWriteOffset  缓存的记录写入偏移
      * @brief 将当前记录的错误信息dump到gm上保存
      * dump协议如下：
-     * MEM_ERROR | KernelErrorRecord | Record | KernelErrorDesc_1 | KernelErrorDesc_2 | .....
+     * ONLINE_ERROR | KernelErrorRecord | Record | KernelErrorDesc_1 | KernelErrorDesc_2 | .....
      */
     template<RecordType recordType, typename Record>
     __aicore__ inline void DumpErrorInfo(KernelErrorRecord &errorRecord, KernelErrorDesc const &errorDesc,
@@ -145,13 +151,13 @@ private:
     __gm__ RecordBlockHead *simdBlockHead_;
     uint32_t sortedLen_;                    // 已经排好序的内存长度
     int16_t blockIdx_;
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
-    __aicore__ inline uint64_t ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo);
+#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
+    __aicore__ inline void ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo);
     ShadowMemoryOnline shadowMemory_; // 用于在线踩踏检测
 #endif
 };
 
-__aicore__ inline void Memcheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t *memInfoSimt,
+__aicore__ inline void OnlineCheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t *memInfoSimt,
     __gm__ uint8_t *memInfoSimd, uint64_t blockIdx)
 {
     memInfo_ = memInfo;
@@ -161,9 +167,9 @@ __aicore__ inline void Memcheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t *m
     globalHead_ = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
     simtBlockHead_ = reinterpret_cast<__gm__ SimtRecordBlockHead *>(memInfoSimt_);
     simdBlockHead_ = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimd_);
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
     shadowMemory_.Init((uint64_t)(memInfoSimd + globalHead_->simtInfo.shadowMemoryOffset),
-        globalHead_->simtInfo.shadowMemoryByteSize);
+        globalHead_->simtInfo.shadowMemoryByteSize, memInfo, memInfoSimt, memInfoSimd);
     auto &blockInfo = simdBlockHead_->blockInfo;
     uint16_t threadXDim{}, threadYDim{}, threadZDim{};
     GetThreadDim(threadXDim, threadYDim, threadZDim);
@@ -175,17 +181,17 @@ __aicore__ inline void Memcheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t *m
 }
 
 template<RecordType recordType, typename Record>
-__aicore__ inline void Memcheck::Process(Record const &record)
+__aicore__ inline void OnlineCheck::Process(Record const &record)
 {
     if (memInfo_ == nullptr) {
         return;
     }
 
     AddrInfo addrInfo = ParseRecord<recordType>(record);
-    OnlineCheck<recordType>(addrInfo, record);
+    Do<recordType>(addrInfo, record);
 }
 
-__aicore__ inline void Memcheck::ProcessParaBaseAddr()
+__aicore__ inline void OnlineCheck::ProcessParaBaseAddr()
 {
     if (memInfo_ == nullptr) {
         return;
@@ -199,7 +205,7 @@ __aicore__ inline void Memcheck::ProcessParaBaseAddr()
     Flush(memInfoSimd_);
 }
 
-__aicore__ inline uint64_t Memcheck::CalIntersectionSize(uint64_t addr, uint64_t size, uint64_t thresholdAddr,
+__aicore__ inline uint64_t OnlineCheck::CalIntersectionSize(uint64_t addr, uint64_t size, uint64_t thresholdAddr,
     uint64_t thresholdSize) const
 {
     /// 不存在交集
@@ -222,24 +228,24 @@ __aicore__ inline uint64_t Memcheck::CalIntersectionSize(uint64_t addr, uint64_t
 }
 
 template<RecordType recordType, typename Record>
-__aicore__ inline void Memcheck::OnlineCheck(AddrInfo const &addrInfo, Record const &record)
+__aicore__ inline void OnlineCheck::Do(AddrInfo const &addrInfo, Record const &record)
 {
     uint64_t cacheWriteOffset = simtBlockHead_->writeOffset;
     KernelErrorRecord errorRecord{};
-    errorRecord.location = addrInfo.location;
-    errorRecord.threadLoc = addrInfo.threadLoc;
-    errorRecord.addr = addrInfo.addr;
-    errorRecord.space = addrInfo.space;
     errorRecord.recordType = recordType;
     errorRecord.recordSize = sizeof(Record);
     KernelErrorDesc errorDesc{};
-    errorDesc.conflictedThreadLoc = addrInfo.threadLoc;
-    GetThreadDim(errorDesc.threadDim.idX, errorDesc.threadDim.idY, errorDesc.threadDim.idZ);
+    errorDesc.location = addrInfo.location;
+    errorDesc.threadLoc = addrInfo.threadLoc;
+    errorDesc.space = addrInfo.space;
 
     /// 1. 越界读写检测，后续拓展其他检测能力
     uint64_t illegalSize = 0U;
-    if (GmReadWriteCheck(addrInfo, illegalSize) || UbReadWriteCheck(addrInfo, illegalSize)) {
-        errorDesc.nBadBytes = illegalSize;
+    if (DoMemCheck(memInfo_) && (GmReadWriteCheck(addrInfo, illegalSize) ||
+        UbReadWriteCheck(addrInfo, illegalSize))) {
+        auto &illegalDesc = errorDesc.payload.illegalDesc;
+        illegalDesc.addr = addrInfo.addr;
+        illegalDesc.illegalSize = illegalSize;
         /// 如果是MEMCPY_BLOCKS，则应有读写2个错误类型，否则为1个
         if (addrInfo.opType == AccessType::MEMCPY_BLOCKS) {
             errorDesc.errorType = KernelErrorType::ILLEGAL_ADDR_READ;
@@ -254,24 +260,41 @@ __aicore__ inline void Memcheck::OnlineCheck(AddrInfo const &addrInfo, Record co
     }
 
     /// 2. 非对齐检测
-    if (AlignCheck(addrInfo)) {
-        errorDesc.nBadBytes = addrInfo.size;
+    if (DoMemCheck(memInfo_) && AlignCheck(addrInfo)) {
+        auto &misAlignDesc = errorDesc.payload.misAlignDesc;
+        misAlignDesc.addr = addrInfo.addr;
+        misAlignDesc.misAlignSize = addrInfo.alignSize;
         errorDesc.errorType = KernelErrorType::MISALIGNED_ACCESS;
         DumpErrorInfo<recordType>(errorRecord, errorDesc, record, cacheWriteOffset);
     }
 
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
-    /// 3. 内存踩踏检测，设计前提：SIMT每个线程访问的GM空间相互隔离无交叉，原子类操作的地址除外
+    /// 3. 线程间内存踩踏检测和竞争检测，设计前提：SIMT每个线程访问的GM空间相互隔离无交叉，原子类操作的地址除外
     if ((recordType != RecordType::SIMT_ATOM) && (recordType != RecordType::SIMT_RED)) {
-        ShadowMemoryOnline::AuxInfo auxInfo;
-        illegalSize = ShadowMemoryCheck(addrInfo, auxInfo);
-        if (illegalSize != 0U) {
-            errorDesc.nBadBytes = illegalSize;
-            errorDesc.errorType = KernelErrorType::THREADWISE_OVERLAP;
-            errorDesc.conflictedThreadLoc = auxInfo.conflictedThreadLoc;
-            errorDesc.l1StartAddr = auxInfo.l1StartAddr;
-            errorDesc.l2StartAddr = auxInfo.l2StartAddr;
-            errorDesc.l2MemStatusAddr = auxInfo.l2MemStatusAddr;
+        ShadowMemoryOnline::AuxInfo auxInfo{};
+        ShadowMemoryCheck(addrInfo, auxInfo);
+        errorDesc.l1StartAddr = auxInfo.l1StartAddr;
+        errorDesc.l2StartAddr = auxInfo.l2StartAddr;
+        errorDesc.l2MemStatusAddr = auxInfo.l2MemStatusAddr;
+        auto &overLapError = auxInfo.errorInfo[ShadowMemoryOnline::overLapErrorIdx];
+        if (overLapError.errorType == KernelErrorType::THREAD_OVERLAP) {
+            errorDesc.errorType = overLapError.errorType;
+            auto &overLapDesc = errorDesc.payload.overLapDesc;
+            overLapDesc.addr = addrInfo.addr;
+            overLapDesc.overLapSize = overLapError.nBadBytes;
+            overLapDesc.conflictedThreadLoc = overLapError.conflictedThreadLoc;
+            DumpErrorInfo<recordType>(errorRecord, errorDesc, record, cacheWriteOffset);
+        }
+
+        auto &raceError = auxInfo.errorInfo[ShadowMemoryOnline::raceErrorIdx];
+        if (raceError.errorType == KernelErrorType::THREAD_RW_RACE ||
+            raceError.errorType == KernelErrorType::THREAD_WR_RACE ||
+            raceError.errorType == KernelErrorType::THREAD_WW_RACE) {
+            errorDesc.errorType = raceError.errorType;
+            auto &raceDesc = errorDesc.payload.raceDesc;
+            raceDesc.addr = addrInfo.addr;
+            raceDesc.conflictedThreadLoc = raceError.conflictedThreadLoc;
+            raceDesc.conflictedLocation.pc = raceError.pc;
             DumpErrorInfo<recordType>(errorRecord, errorDesc, record, cacheWriteOffset);
         }
     }
@@ -279,28 +302,24 @@ __aicore__ inline void Memcheck::OnlineCheck(AddrInfo const &addrInfo, Record co
 }
 
 #if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
-__aicore__ inline uint64_t Memcheck::ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo)
+__aicore__ inline void OnlineCheck::ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo)
 {
-    uint64_t illegalSize = 0U;
-
-    if (addrInfo.space != AddressSpace::GM) {
-        return illegalSize;
+    if (addrInfo.space != AddressSpace::GM && addrInfo.space != AddressSpace::UB) {
+        return;
     }
 
     if (addrInfo.opType == AccessType::READ) {
-        illegalSize = shadowMemory_.LoadNBytes(addrInfo, auxInfo);
+        shadowMemory_.LoadNBytes(addrInfo, auxInfo);
     } else if (addrInfo.opType == AccessType::MEMCPY_BLOCKS) {
-        illegalSize = shadowMemory_.LoadNBytes(addrInfo, auxInfo);
-        illegalSize += shadowMemory_.StoreNBytes(addrInfo, auxInfo);
+        shadowMemory_.LoadNBytes(addrInfo, auxInfo);
+        shadowMemory_.StoreNBytes(addrInfo, auxInfo);
     } else {
-        illegalSize = shadowMemory_.StoreNBytes(addrInfo, auxInfo);
+        shadowMemory_.StoreNBytes(addrInfo, auxInfo);
     }
-
-    return illegalSize;
 }
 #endif
 
-__aicore__ inline bool Memcheck::GmReadWriteCheck(AddrInfo const &addrInfo, uint64_t &illegalSize) const
+__aicore__ inline bool OnlineCheck::GmReadWriteCheck(AddrInfo const &addrInfo, uint64_t &illegalSize) const
 {
     if (addrInfo.space != AddressSpace::GM) {
         return false;
@@ -321,7 +340,7 @@ __aicore__ inline bool Memcheck::GmReadWriteCheck(AddrInfo const &addrInfo, uint
     return illegalSize > 0U;
 }
 
-__aicore__ inline bool Memcheck::UbReadWriteCheck(AddrInfo const &addrInfo, uint64_t &illegalSize) const
+__aicore__ inline bool OnlineCheck::UbReadWriteCheck(AddrInfo const &addrInfo, uint64_t &illegalSize) const
 {
     if (addrInfo.space != AddressSpace::UB) {
         return false;
@@ -343,14 +362,14 @@ __aicore__ inline bool Memcheck::UbReadWriteCheck(AddrInfo const &addrInfo, uint
 /// 记录第一个错误类型时，会记录RecordType/KernelErrorRecord/Record/KernelErrorDesc；
 /// 后续其余的错误类型只会记录KernelErrorDesc，其余的信息只会刷新
 template<RecordType recordType, typename Record>
-__aicore__ inline void Memcheck::DumpErrorInfo(KernelErrorRecord &errorRecord, KernelErrorDesc const &errorDesc,
+__aicore__ inline void OnlineCheck::DumpErrorInfo(KernelErrorRecord &errorRecord, KernelErrorDesc const &errorDesc,
     Record const &record, uint64_t cacheWriteOffset)
 {
     constexpr uint32_t FIRST_ERROR_NUM = 1;
     errorRecord.errorNum++;
     __gm__ uint8_t *startPtr = memInfoSimt_ + sizeof(SimtRecordBlockHead) + cacheWriteOffset;
     __gm__ RecordType *errorType = reinterpret_cast<__gm__ RecordType *>(startPtr);
-    *errorType = RecordType::MEM_ERROR;
+    *errorType = RecordType::ONLINE_ERROR;
     __gm__ KernelErrorRecord *gmErrorRecord = reinterpret_cast<__gm__ KernelErrorRecord *>(errorType + 1);
     __gm__ Record *gmRecord = reinterpret_cast<__gm__ Record *>(gmErrorRecord + 1);
     __gm__ KernelErrorDesc *gmErrorDesc =  reinterpret_cast<__gm__ KernelErrorDesc *>(
@@ -409,7 +428,7 @@ __aicore__ inline int64_t GetRegisterIdx()
     return coreId;
 }
 
-__aicore__ inline bool Memcheck::WriteParaBaseAddr()
+__aicore__ inline bool OnlineCheck::WriteParaBaseAddr()
 {
     /// 如果开启单核检测，则只有目标核会写入extra地址
     if (globalHead_->checkParms.checkBlockId != CHECK_ALL_BLOCK && globalHead_->checkParms.checkBlockId != blockIdx_) {
@@ -440,7 +459,7 @@ __aicore__ inline bool Memcheck::WriteParaBaseAddr()
     return true;
 }
 
-__aicore__ inline void Memcheck::InsertionSortMemory()
+__aicore__ inline void OnlineCheck::InsertionSortMemory()
 {
     auto &memoryInfoPtr = simdBlockHead_->hostMemoryInfoPtr;
     for (uint32_t i = sortedLen_; i < simdBlockHead_->hostMemoryNum; ++i) {
@@ -462,7 +481,7 @@ __aicore__ inline void Memcheck::InsertionSortMemory()
     }
 }
 
-__aicore__ inline void Memcheck::MergeMemory()
+__aicore__ inline void OnlineCheck::MergeMemory()
 {
     auto &memoryInfoPtr = simdBlockHead_->hostMemoryInfoPtr;
     if (simdBlockHead_->hostMemoryNum <= 1) {
@@ -497,11 +516,11 @@ __aicore__ inline void Memcheck::MergeMemory()
     }
 }
 
-__aicore__ inline bool Memcheck::AlignCheck(const AddrInfo &addrInfo) const
+__aicore__ inline bool OnlineCheck::AlignCheck(const AddrInfo &addrInfo) const
 {
     return addrInfo.addr % addrInfo.alignSize != 0;
 }
 
 }  // namespace Sanitizer
 
-#endif  // PLUGIN_MEMCHECK_H
+#endif  // PLUGIN_ONLINE_CHECK_H

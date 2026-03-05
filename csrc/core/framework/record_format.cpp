@@ -160,7 +160,7 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::SIMT_ST,                     "SIMT_ST"},
     {RecordType::SIMT_ATOM,                   "SIMT_ATOM"},
     {RecordType::SIMT_RED,                    "SIMT_RED"},
-    {RecordType::MEM_ERROR,                   "MEM_ERROR"},
+    {RecordType::ONLINE_ERROR,                "ONLINE_ERROR"},
     {RecordType::SCALAR_RED,                  "SCALAR_RED"},
     {RecordType::SCALAR_ATOM,                 "SCALAR_ATOM"},
     {RecordType::LDVA,                        "LDVA"},
@@ -181,6 +181,7 @@ static const std::map<RecordType, std::string> RECORD_TYPE_MAP = {
     {RecordType::SET_QUANT_PRE,               "SET_QUANT_PRE"},
     {RecordType::SET_QUANT_POST,              "SET_QUANT_POST"},
     {RecordType::SET_LRELU_ALPHA,             "SET_LRELU_ALPHA"},
+    {RecordType::THREAD_BLOCK_BARRIER,        "THREAD_BLOCK_BARRIER"},
 };
 
 std::ostream &operator<<(std::ostream &os, RecordType recordType)
@@ -1337,8 +1338,6 @@ std::ostream &operator<<(std::ostream &os, SimtAtomRecord const &record)
 
 std::ostream &operator<<(std::ostream &os, KernelErrorRecord const &errorRecord)
 {
-    os << errorRecord.location
-       << ", " << "type:" << errorRecord.recordType;
     if (errorRecord.record != nullptr) {
         if (errorRecord.recordType == RecordType::SIMT_LDG || errorRecord.recordType == RecordType::SIMT_STG
         || errorRecord.recordType == RecordType::SIMT_LDS || errorRecord.recordType == RecordType::SIMT_STS
@@ -1346,13 +1345,17 @@ std::ostream &operator<<(std::ostream &os, KernelErrorRecord const &errorRecord)
         || errorRecord.recordType == RecordType::SIMT_LD || errorRecord.recordType == RecordType::SIMT_ST
         || errorRecord.recordType == RecordType::SIMT_RED) {
             auto record = *reinterpret_cast<const SimtLoadStoreRecord *>(errorRecord.record);
-            os << ", " << record.threadLoc
+            os << record.location.blockId
+              << ", " << "type:" << errorRecord.recordType
+              << ", " << record.threadLoc
               << ";" << "space:" << record.space
               << ";" << "addr:0x" << std::hex << record.addr << std::dec
               << ";" << "size:" << record.size;
         } else if (errorRecord.recordType == RecordType::SIMT_ATOM) {
             auto record = *reinterpret_cast<const SimtAtomRecord *>(errorRecord.record);
-            os << ", " << record.threadLoc
+            os << record.location.blockId
+              << ", " << "type:" << errorRecord.recordType
+              << ", " << record.threadLoc
               << ";" << "space:" << record.space
               << ";" << "addr:0x" << std::hex << record.addr << std::dec
               << ";" << "size:" << record.size
@@ -1581,7 +1584,7 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::SIMT_ST,       [](std::ostream& os, KernelRecord const& r) { os << r.payload.simtLoadStoreRecord; }},
     {RecordType::SIMT_ATOM,     [](std::ostream& os, KernelRecord const& r) { os << r.payload.simtAtomRecord; }},
     {RecordType::SIMT_RED,      [](std::ostream& os, KernelRecord const& r) { os << r.payload.simtLoadStoreRecord; }},
-    {RecordType::MEM_ERROR,     [](std::ostream &os, KernelRecord const &r) { os << r.payload.kernelErrorRecord; }},
+    {RecordType::ONLINE_ERROR,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.kernelErrorRecord; }},
     {RecordType::SCALAR_RED,    [](std::ostream &os, KernelRecord const &r) { os << r.payload.redRecord; }},
     {RecordType::SCALAR_ATOM,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.redRecord; }},
     {RecordType::LDVA,          [](std::ostream &os, KernelRecord const &r) { os << r.payload.loadStoreRecord; }},
@@ -1600,6 +1603,7 @@ static const std::map<RecordType, KernelRecordStreamFunc> KERNEL_RECORD_FORMAT_M
     {RecordType::SET_QUANT_PRE,   [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
     {RecordType::SET_QUANT_POST,  [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
     {RecordType::SET_LRELU_ALPHA, [](std::ostream &os, KernelRecord const &r) { os << r.payload.registerSetRecord; }},
+    {RecordType::THREAD_BLOCK_BARRIER, [](std::ostream &os, KernelRecord const &r) { os << r.payload.simtSyncRecord; }}
 };
 
 std::ostream &operator<<(std::ostream &os, KernelRecord const &record)
@@ -1782,6 +1786,11 @@ std::ostream &operator<<(std::ostream &os, RegisterSetRecord const &record)
     return os << record.location << ", "
               << "regValType:" << static_cast<uint32_t>(record.regPayLoad.regValType) << ", "
               << "regVal:" << record.regPayLoad.regVal;
+}
+
+std::ostream &operator<<(std::ostream &os, SimtSyncRecord const &record)
+{
+    return os << record.location << ", " << record.threadLoc;
 }
 
 }  // namespace Sanitizer

@@ -17,38 +17,9 @@
 #ifndef PLUGIN_RECORDER_H
 #define PLUGIN_RECORDER_H
 
-#include "memcheck.h"
+#include "online_check.h"
 
 namespace Sanitizer {
-
-/// 不开启竞争检测时，过滤掉同步指令记录
-__aicore__ inline bool DoRaceCheck(__gm__ uint8_t *memInfo)
-{
-    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
-    return head->checkParms.racecheck;
-}
-
-/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
-__aicore__ inline bool DoSyncCheck(__gm__ uint8_t *memInfo)
-{
-    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
-    return head->checkParms.synccheck;
-}
-
-/// 同步检测当前需要判断冗余，需要其他类型的pipe指令
-__aicore__ inline bool DoRegisterCheck(__gm__ uint8_t *memInfo)
-{
-    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
-    return head->checkParms.registerCheck;
-}
-
-/// 只做内存检测
-__aicore__ inline bool OnlyDoMemCheck(__gm__ uint8_t *memInfo)
-{
-    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
-    return head->checkParms.defaultcheck && !head->checkParms.initcheck && !head->checkParms.racecheck &&
-        !head->checkParms.synccheck;
-}
 
 __aicore__ inline bool IsTargetBlock(__gm__ uint8_t *memInfo, int16_t blockIdx)
 {
@@ -240,14 +211,14 @@ __aicore__ inline uint64_t CalcMemInfoOffset(__gm__ RecordGlobalHead *head, uint
  * Recorder recorder(memInfo, blockIdx);
  * recorder.DumpRecord<RecordType::DMA_MOVE>(record);
  * 内存检测用法：
- * recorder.MemCheck<RecordType::SIMT_LDG>(record);
+ * recorder.Check<RecordType::SIMT_LDG>(record);
  * @endcode
  */
 
 class Recorder {
 public:
     __aicore__ __attribute__((always_inline)) Recorder(__gm__ uint8_t *memInfo, uint64_t blockIdx) :
-        memInfo_(memInfo), blockIdx_(blockIdx), memcheck_()
+        memInfo_(memInfo), blockIdx_(blockIdx), check_()
     {
         if (MemInfoIsInvalid(memInfo)) {
             memInfoSimdBlock_ = nullptr;
@@ -271,7 +242,7 @@ public:
         /// 后续增加新的字段，字段信息需要记录到memInfoBlockHead，记录到memInfoHead由于dcci的特性可能导致记录信息丢失
         memInfoBlockHead->blockInfo.vecSubBlockDim = vecSubBlockDim;
         memInfoBlockHead->blockInfo.blockType = blockType;
-        memcheck_.Init(memInfo, memInfoSimtBlock_, memInfoSimdBlock_, blockIdx_);
+        check_.Init(memInfo, memInfoSimtBlock_, memInfoSimdBlock_, blockIdx_);
     }
 
     /* @tparam recordType 记录类型枚举
@@ -308,13 +279,16 @@ public:
      *        写入的 Record 类型，使得解析时可以根据记录头正确解析 Record
      */
     template<RecordType recordType, typename Record, typename Check = record_type_check<true>>
-    __aicore__ inline void MemCheck(Record const &record);
+    __aicore__ inline void Check(Record const &record);
 
      /*
      * @brief 处理para base addr地址，将kernel入参地址写入到blockHead对应位置
      */
     __aicore__ inline void ProcessParaBaseAddr();
 
+    template<RecordType recordType, typename Record>
+    __aicore__ inline void UpdateSyncThreadCount(Record const &record);
+    
     __aicore__ inline void SetParaBaseAddr(uint64_t size);
 
 private:
@@ -329,7 +303,7 @@ private:
     __gm__ uint8_t *memInfoSimdBlock_ = nullptr;     // simd信息记录的位置
     __gm__ uint8_t *memInfo_ = nullptr;
     int16_t blockIdx_{};
-    Memcheck memcheck_;
+    OnlineCheck check_;
 };
 
 template<RecordType recordType, typename Record, typename Check>
@@ -467,7 +441,7 @@ __aicore__ inline void Recorder::SetMstxFuseScope(bool inMstxFuseScope) const
 }
 
 template<RecordType recordType, typename Record, typename Check>
-__aicore__ inline void Recorder::MemCheck(Record const &record)
+__aicore__ inline void Recorder::Check(Record const &record)
 {
     // 目前大概确认8.1-8.4, 9.1-9.4，11.1-11.4版本有问题，因此这些版本暂时去除检查
 #if defined(__GNUC__) && (__GNUC__ == 8 || __GNUC__ == 9|| __GNUC__ == 11) && (__GNUC_MINOR__ <= 4)
@@ -483,20 +457,36 @@ __aicore__ inline void Recorder::MemCheck(Record const &record)
         return;
     }
 
-    if (!OnlyDoMemCheck(memInfo_)) {
-        return;
-    }
-
     if (!IsTargetIntrinsic<recordType>(memInfo_, blockIdx_, &record)) {
         return;
     }
 
-    memcheck_.Process<recordType>(record);
+    check_.Process<recordType>(record);
 }
 
 __aicore__ inline void Recorder::ProcessParaBaseAddr()
 {
-    memcheck_.ProcessParaBaseAddr();
+    check_.ProcessParaBaseAddr();
+}
+
+template<RecordType recordType, typename Record>
+__aicore__ inline void Recorder::UpdateSyncThreadCount(Record const &record)
+{
+    (void)recordType;
+    (void)record;
+    if (memInfo_ == nullptr) {
+        return;
+    }
+
+#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+    auto memInfoBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
+    auto &blockInfo = memInfoBlockHead->blockInfo;
+    AtomicAdd(&blockInfo.simtSyncThreadCount, 1);
+    if (blockInfo.simtSyncThreadCount == blockInfo.threadXDim * blockInfo.threadYDim * blockInfo.threadZDim) {
+        check_.ClearSyncThreadState();
+        blockInfo.simtSyncThreadCount = 0;
+    }
+#endif
 }
 
 __aicore__ inline void Recorder::SetParaBaseAddr(uint64_t size)

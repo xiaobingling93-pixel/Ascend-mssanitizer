@@ -45,6 +45,7 @@ using RecordTypeMap = TypeMap<
     TypePair<RecordType::SIMT_ST, SimtLoadStoreRecord>,
     TypePair<RecordType::SIMT_ATOM, SimtAtomRecord>,
     TypePair<RecordType::SIMT_RED, SimtLoadStoreRecord>,
+    TypePair<RecordType::THREAD_BLOCK_BARRIER, SimtSyncRecord>,
     TypePair<RecordType::LOAD, LoadStoreRecord>,
     TypePair<RecordType::STORE, LoadStoreRecord>,
     TypePair<RecordType::LD, LoadStoreRecord>,
