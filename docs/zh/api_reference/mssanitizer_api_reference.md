@@ -1,6 +1,5 @@
 # **MindStudio Sanitizer对外接口使用说明**
 
-
 ## 接口列表
 
 **接口简介**
@@ -12,17 +11,17 @@ msSanitizer工具包含sanitizer接口和mstx扩展接口两种类型。sanitize
 |接口名称|功能简介|
 |--|--|
 |[sanitizer接口](#sanitizer接口)|在ACL对应接口的功能基础上，向msSanitizer工具上报sanitizer接口调用位置的代码文件和行号信息。|
-|[sanitizerRtMalloc](#sanitizerRtMalloc)|调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。|
-|[sanitizerRtMallocCached](#sanitizerRtMallocCached)|调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。|
-|[sanitizerRtFree](#sanitizerRtFree)|调用aclrtFree接口释放Device上的内存，并向检测工具上报内存释放信息。实际的内存释放行为和参数含义与aclrtFree一致。|
-|[sanitizerRtMemset](#sanitizerRtMemset)|调用aclrtMemset接口初始化内存，将内存中的内容设置为指定值，并向检测工具上报内存初始化信息。实际的内存初始化行为和参数含义与aclrtMemset一致。|
-|[sanitizerRtMemsetAsync](#sanitizerRtMemsetAsync)|调用aclrtMemsetAsync接口初始化内存，将内存中的内容设置为指定的值，并向检测工具上报内存初始化信息。此接口为异步接口。实际的内存初始化行为和参数含义与aclrtMemsetAsync一致。|
-|[sanitizerRtMemcpy](#sanitizerRtMemcpy)|调用aclrtMemcpy接口完成内存复制，并向检测工具上报内存复制信息。实际的内存复制行为和参数含义与aclrtMemcpy一致。|
-|[sanitizerRtMemcpyAsync](#sanitizerRtMemcpyAsync)|调用aclrtMemcpyAsync接口完成内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的内存复制行为和参数含义与aclrtMemcpyAsync一致。|
-|[sanitizerRtMemcpy2d](#sanitizerRtMemcpy2d)|调用aclrtMemcpy2d接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2d一致。|
-|[sanitizerRtMemcpy2dAsync](#sanitizerRtMemcpy2dAsync)|调用aclrtMemcpy2dAsync接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2dAsync一致。|
-|[sanitizerReportMalloc](#sanitizerReportMalloc)|手动上报GM内存分配信息。|
-|[sanitizerReportFree](#sanitizerReportFree)|手动上报GM内存释放信息。|
+|[sanitizerRtMalloc](#sanitizerrtmalloc)|调用aclrtMalloc接口在Device上分配size大小的线性内存，并通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。实际的内存分配行为和参数含义与aclrtMalloc一致。|
+|[sanitizerRtMallocCached](#sanitizerrtmalloccached)|调用aclrtMallocCached接口在Device上申请size大小的线性内存，通过*devPtr返回已分配内存的指针，并向检测工具上报内存分配信息。该接口在任何场景下，申请的内存都支持cache缓存。实际的内存分配行为和参数含义与aclrtMallocCached一致。|
+|[sanitizerRtFree](#sanitizerrtfree)|调用aclrtFree接口释放Device上的内存，并向检测工具上报内存释放信息。实际的内存释放行为和参数含义与aclrtFree一致。|
+|[sanitizerRtMemset](#sanitizerrtmemset)|调用aclrtMemset接口初始化内存，将内存中的内容设置为指定值，并向检测工具上报内存初始化信息。实际的内存初始化行为和参数含义与aclrtMemset一致。|
+|[sanitizerRtMemsetAsync](#sanitizerrtmemsetasync)|调用aclrtMemsetAsync接口初始化内存，将内存中的内容设置为指定的值，并向检测工具上报内存初始化信息。此接口为异步接口。实际的内存初始化行为和参数含义与aclrtMemsetAsync一致。|
+|[sanitizerRtMemcpy](#sanitizerrtmemcpy)|调用aclrtMemcpy接口完成内存复制，并向检测工具上报内存复制信息。实际的内存复制行为和参数含义与aclrtMemcpy一致。|
+|[sanitizerRtMemcpyAsync](#sanitizerrtmemcpyasync)|调用aclrtMemcpyAsync接口完成内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的内存复制行为和参数含义与aclrtMemcpyAsync一致。|
+|[sanitizerRtMemcpy2d](#sanitizerrtmemcpy2d)|调用aclrtMemcpy2d接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2d一致。|
+|[sanitizerRtMemcpy2dAsync](#sanitizerrtmemcpy2dasync)|调用aclrtMemcpy2dAsync接口完成矩阵数据内存复制，并向检测工具上报内存复制信息。此接口为异步接口。实际的矩阵数据内存复制行为和参数含义与aclrtMemcpy2dAsync一致。|
+|[sanitizerReportMalloc](#sanitizerreportmalloc)|手动上报GM内存分配信息。|
+|[sanitizerReportFree](#sanitizerreportfree)|手动上报GM内存释放信息。|
 |[mstx扩展功能](#mstx扩展功能)|mstx接口是MindStudio提供的一套扩展接口，它允许用户在应用程序中插入特定的标记，以便在工具进行内存检测时能够更精确地定位特定算子的内存问题。|
 |mstxDomainCreateA|创建域。|
 |mstxMemHeapRegister|内存池注册接口。|
@@ -451,7 +450,7 @@ mstx接口是MindStudio提供的一套扩展接口，它允许用户在应用程
 
 msSanitizer工具调用的mstx接口列表如[表1](#table111)所示，具体使用状况请参考《mstx_api》。
 
-**表 1**  msSanitizer工具调用的mstx接口列表
+**表 1**  msSanitizer工具调用的mstx接口列表<a name="table111"></a>
 
 |接口名称|功能简介|
 |--|--|
