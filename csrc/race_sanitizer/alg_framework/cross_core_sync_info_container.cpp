@@ -175,6 +175,61 @@ void CrossCoreSyncInfoContainer::SetMode2SyncInfo(uint8_t flagId, uint32_t block
     }
 }
 
+// mode4:AIV0->AIC, AIV1->AIC或AIC->AIV0, AIC->AIV1, AIV0/AIV1可单独触发AIC等待
+void CrossCoreSyncInfoContainer::SetMode4SyncInfo(uint8_t syncId, uint32_t blockIdx, const VectorTime &vectorTime, uint8_t vecSubBlockDim)
+{
+    if (vecSubBlockDim == 0) {
+        SAN_WARN_LOG("Set SyncInfo Mode 4 failed due to VecSubBlockDim error");
+        return;
+    }
+    if (!IsAIC(blockIdx, kernelType_) && syncId >= 16) {
+        SAN_WARN_LOG("Set SyncInfo Mode 4 failed due to SyncId invalid in vector core");
+        return;
+    }
+    blockSyncEvent_[blockIdx][syncId].setVec4.push(vectorTime);
+    if (vecSubBlockDim == 1) {
+        // vec:cube = 1:1
+        if (IsAIC(blockIdx, kernelType_)) {
+            // cube核
+            uint32_t aivInGroup = blockIdx / C220_MIX_SUB_BLOCKDIM / C220_VEC_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM +
+                                  blockIdx / C220_MIX_SUB_BLOCKDIM % C220_VEC_SUB_BLOCKDIM;
+            blockSyncEvent_[aivInGroup][syncId].intrablockwaitVec.push(vectorTime);
+        } else {
+            // vec核
+            uint32_t aicInGroup = C220_MIX_SUB_BLOCKDIM * (blockIdx / C220_MIX_SUB_BLOCKDIM * C220_VEC_SUB_BLOCKDIM +
+                                  blockIdx % C220_MIX_SUB_BLOCKDIM) + C220_VEC_SUB_BLOCKDIM;
+            blockSyncEvent_[aicInGroup][syncId].intrablockwaitVec.push(vectorTime);
+        }
+        blockSyncEvent_[blockIdx][syncId].setVec4.pop();
+    } else {
+        // vec:cube = 2:1, 该模式下AIV0/1单独与AIC配对
+        if (IsAIC(blockIdx, kernelType_)) {
+            // cube核
+            if (syncId <= 15) {
+                // 此时cube core匹配vector core0 的 0~15
+                blockSyncEvent_[blockIdx - 2U][syncId].intrablockwaitVec.push(vectorTime);
+            } else if (syncId >= 16 && syncId <= 31)
+            {
+                // 此时cube core匹配vector core1 的 0~15
+                blockSyncEvent_[blockIdx - 1U][syncId - 16].intrablockwaitVec.push(vectorTime);
+            }
+            blockSyncEvent_[blockIdx][syncId].setVec4.pop();
+        } else {
+            // vec核
+            uint32_t aicInGroup = 2 + blockIdx / C220_MIX_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM;
+            uint32_t aiv0InGroup = blockIdx / C220_MIX_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM;
+            if (blockIdx == aiv0InGroup) {
+                // vector core0
+                blockSyncEvent_[aicInGroup][syncId].intrablockwaitVec.push(vectorTime);
+            } else {
+                // vector core1
+                blockSyncEvent_[aicInGroup][syncId + 16].intrablockwaitVec.push(vectorTime);
+            }
+            blockSyncEvent_[blockIdx][syncId].setVec4.pop();
+        }
+    }
+}
+
 void CrossCoreSyncInfoContainer::SetBlockSyncInfo(uint8_t flagId, FftsSyncMode mode, uint32_t blockIdx,
     const VectorTime &vectorTime, uint8_t vecSubBlockDim)
 {
@@ -192,6 +247,8 @@ void CrossCoreSyncInfoContainer::SetBlockSyncInfo(uint8_t flagId, FftsSyncMode m
         SetMode1SyncInfo(flagId, blockIdx, vectorTime);
     } else if (mode == FftsSyncMode::MODE2) {
         SetMode2SyncInfo(flagId, blockIdx, vectorTime, vecSubBlockDim);
+    } else if (mode == FftsSyncMode::MODE4) {
+        SetMode4SyncInfo(flagId, blockIdx, vectorTime, vecSubBlockDim);
     }
     return;
 }
@@ -204,6 +261,19 @@ bool CrossCoreSyncInfoContainer::GetBlockSyncInfo(uint8_t flagId, uint32_t block
     if (!blockSyncEvent_[blockIdx][flagId].waitVec.empty()) {
         VectorClock::UpdateVectorTime(blockSyncEvent_[blockIdx][flagId].waitVec.front(), vectorTime);
         blockSyncEvent_[blockIdx][flagId].waitVec.pop();
+        return true;
+    }
+    return false;
+}
+
+bool CrossCoreSyncInfoContainer::GetIntraBlockSyncInfo(uint8_t syncId, uint32_t blockIdx, VectorTime &vectorTime)
+{
+    if (blockIdx >= maxBlockNum_) {
+        return false;
+    }
+    if (!blockSyncEvent_[blockIdx][syncId].intrablockwaitVec.empty()) {
+        VectorClock::UpdateVectorTime(blockSyncEvent_[blockIdx][syncId].intrablockwaitVec.front(), vectorTime);
+        blockSyncEvent_[blockIdx][syncId].intrablockwaitVec.pop();
         return true;
     }
     return false;

@@ -3066,6 +3066,36 @@ static void ParseWaitDevPipeRecord(const KernelRecord &record, std::vector<SanEv
     events.emplace_back(event);
 }
 
+static void ParseSetIntraBlockRecord(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    /// -> set_intra_block(pipe_t pipe, ...)
+    ///    表示同步点在哪个pipeline中，当该pipeline前面所有指令执行完毕后达到同步点
+    SanEvent event;
+    SetLocationInfo(event, record.payload.intraBlockSyncRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SYNC_EVENT;
+    event.pipe = record.payload.intraBlockSyncRecord.pipe;
+    event.eventInfo.fftsSyncInfo.opType = SyncType::FFTS_SYNC;
+    event.eventInfo.fftsSyncInfo.dstPipe = record.payload.intraBlockSyncRecord.pipe;
+    event.eventInfo.fftsSyncInfo.flagId = record.payload.intraBlockSyncRecord.syncID;
+    event.eventInfo.fftsSyncInfo.mode = 4;
+    event.eventInfo.fftsSyncInfo.vecSubBlockDim = record.payload.intraBlockSyncRecord.vecSubBlockDim;
+    events.emplace_back(event);
+}
+
+static void ParseWaitIntraBlockRecord(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    /// -> wait_intar_block(uint64_t syncID)和set_intra_block配套使用（通过syncID对应），
+    ///    功能为等待所有同步对象到达syncID对应的同步点
+    SanEvent event;
+    SetLocationInfo(event, record.payload.intraBlockSyncRecord, record.blockType, record.serialNo);
+    event.type = EventType::CROSS_CORE_SYNC_EVENT;
+    event.pipe = record.payload.intraBlockSyncRecord.pipe;
+    event.eventInfo.fftsSyncInfo.opType = SyncType::WAIT_INTRA_BLOCK;
+    event.eventInfo.fftsSyncInfo.dstPipe = record.payload.intraBlockSyncRecord.pipe;
+    event.eventInfo.fftsSyncInfo.flagId = record.payload.intraBlockSyncRecord.syncID;
+    events.emplace_back(event);
+}
+
 static void ParseRecordIBSetStub(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3918,6 +3948,14 @@ const std::unordered_map<RecordType, ParseFunc> g_parseFuncs = {
     {RecordType::FFTS_SYNC_V, ParseFftsSyncRecord},
     {RecordType::WAIT_FLAG_DEV_PIPE_V, ParseWaitDevPipeRecord},
     {RecordType::WAIT_FLAG_DEVI_PIPE_V, ParseWaitDevPipeRecord},
+    {RecordType::SET_INTRA_BLOCK, ParseSetIntraBlockRecord},
+    {RecordType::SET_INTRA_BLOCKI, ParseSetIntraBlockRecord},
+    {RecordType::SET_INTRA_BLOCK_V, ParseSetIntraBlockRecord},
+    {RecordType::SET_INTRA_BLOCKI_V, ParseSetIntraBlockRecord},
+    {RecordType::WAIT_INTRA_BLOCK, ParseWaitIntraBlockRecord},
+    {RecordType::WAIT_INTRA_BLOCKI, ParseWaitIntraBlockRecord},
+    {RecordType::WAIT_INTRA_BLOCK_V, ParseWaitIntraBlockRecord},
+    {RecordType::WAIT_INTRA_BLOCKI_V, ParseWaitIntraBlockRecord},
     {RecordType::IB_SET_STUB, ParseRecordIBSetStub},
     {RecordType::IB_WAIT_STUB, ParseRecordIBWaitStub},
     {RecordType::SYNC_ALL_STUB, ParseRecordSyncAllStub},

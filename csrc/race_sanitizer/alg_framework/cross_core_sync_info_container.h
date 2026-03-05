@@ -75,7 +75,9 @@ struct BlockSyncInfo {
     std::queue<VectorTime> setVec0;
     std::queue<VectorTime> setVec1;
     std::queue<VectorTime> setVec2;
+    std::queue<VectorTime> setVec4;
     std::queue<VectorTime> waitVec;
+    std::queue<VectorTime> intrablockwaitVec;
 };
 
 struct BlockSoftSyncInfo {
@@ -96,6 +98,7 @@ public:
                           uint8_t vecSubBlockDim = 2);
     // 获取同步向量时钟并更新本地时钟
     bool GetBlockSyncInfo(uint8_t flagId, uint32_t blockIdx, VectorTime &vectorTime);
+    bool GetIntraBlockSyncInfo(uint8_t flagId, uint32_t blockIdx, VectorTime &vectorTime);
 
     // 设置同步向量时钟-软同步
     void SetBlockSoftSyncInfo(int32_t eventID, uint32_t blockIdx, const VectorTime& vectorTime);
@@ -116,6 +119,8 @@ private:
     void SetMode0SyncInfo(uint8_t flagId, uint32_t blockIdx, const VectorTime &vectorTime);
     void SetMode1SyncInfo(uint8_t flagId, uint32_t blockIdx, const VectorTime &vectorTime);
     void SetMode2SyncInfo(uint8_t flagId, uint32_t blockIdx, const VectorTime &vectorTime,
+                          uint8_t vecSubBlockDim = 2);
+    void SetMode4SyncInfo(uint8_t flagId, uint32_t blockIdx, const VectorTime &vectorTime,
                           uint8_t vecSubBlockDim = 2);
     template<BlockType blockType>
     void UpdateSyncInfoInMode0(uint8_t flagId);

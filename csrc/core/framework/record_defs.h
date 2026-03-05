@@ -1408,6 +1408,7 @@ struct IntraBlockSyncRecord {
     Location location;
     PipeType pipe;
     uint64_t syncID;
+    uint8_t vecSubBlockDim;
 };
 
 enum class AddrCalMode {

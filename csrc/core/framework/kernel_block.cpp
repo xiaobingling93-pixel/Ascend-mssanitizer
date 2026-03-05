@@ -577,8 +577,10 @@ bool KernelBlock::ParseSimdRecord(uint8_t const *record, KernelRecord &kernelRec
     ++RuntimeContext::Instance().serialNo_;
 
     /// 后续字段赋值，需要在ParseRecord之后赋值，ParseRecord会重新解析record，在此之前赋值会导致信息丢失；
-    if (*recordTypePtr == RecordType::FFTS_SYNC) {
+    if (*recordTypePtr == RecordType::FFTS_SYNC || *recordTypePtr == RecordType::FFTS_SYNC_V) {
         kernelRecord.payload.fftsSyncRecord.vecSubBlockDim = vecSubBlockDim_;
+    } else if (*recordTypePtr == RecordType::SET_INTRA_BLOCK || *recordTypePtr == RecordType::SET_INTRA_BLOCKI || *recordTypePtr == RecordType::SET_INTRA_BLOCK_V || *recordTypePtr == RecordType::SET_INTRA_BLOCKI_V) {
+        kernelRecord.payload.intraBlockSyncRecord.vecSubBlockDim = vecSubBlockDim_;
     }
     return true;
 }

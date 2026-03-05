@@ -37,6 +37,11 @@ ReturnType RaceAlgBase::ProcessBlockSyncEvent(const SanEvent &event, RaceCheckTy
                                                          vc_[curPipe])) {
             return ReturnType::PROCESS_OK;
         }
+    } else if (event.eventInfo.fftsSyncInfo.opType == SyncType::WAIT_INTRA_BLOCK) {
+        if (crossCoreSyncInfoContainer_.GetIntraBlockSyncInfo(event.eventInfo.fftsSyncInfo.flagId, blockIndex,
+                                                         vc_[curPipe])) {
+            return ReturnType::PROCESS_OK;
+        }
     }
     return ReturnType::PROCESS_STALLED;
 }

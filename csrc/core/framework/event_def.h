@@ -56,6 +56,7 @@ enum class SyncType : uint8_t {
     MSTX_WAIT_CROSS,
     GET_BUF,
     RLS_BUF,
+    WAIT_INTRA_BLOCK,
 };
 
 enum class RaceCheckType: uint8_t {
@@ -74,6 +75,8 @@ enum class FftsSyncMode : uint8_t {
     MODE0 = 0U,
     MODE1,
     MODE2,
+    MODE3,
+    MODE4,
 };
 
 struct MemOpInfo {
