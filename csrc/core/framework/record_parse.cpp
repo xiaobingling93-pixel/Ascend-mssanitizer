@@ -2960,7 +2960,7 @@ static void ParseMmadA5Record(const KernelRecord &record, std::vector<SanEvent> 
     }
 }
 
-static void ParseRecordSetFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+static SanEvent GetSetFlagEvent(const KernelRecord &record)
 {
     SanEvent event;
     SetLocationInfo(event, record.payload.syncRecord, record.blockType, record.serialNo);
@@ -2972,10 +2972,16 @@ static void ParseRecordSetFlag(const KernelRecord &record, std::vector<SanEvent>
     event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.syncRecord.eventID);
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
+    return event;
+}
+
+static void ParseRecordSetFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event = GetSetFlagEvent(record);
     events.emplace_back(event);
 }
 
-static void ParseRecordWaitFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+static SanEvent GetWaitFlagEvent(const KernelRecord &record)
 {
     SanEvent event;
     SetLocationInfo(event, record.payload.syncRecord, record.blockType, record.serialNo);
@@ -2987,9 +2993,17 @@ static void ParseRecordWaitFlag(const KernelRecord &record, std::vector<SanEvent
     event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.syncRecord.eventID);
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
+    return event;
+}
+
+static void ParseRecordWaitFlag(const KernelRecord &record, std::vector<SanEvent> &events)
+{
+    SanEvent event = GetWaitFlagEvent(record);
     events.emplace_back(event);
 }
 
+// 该map声明在单例类RecordParse中
+std::map<uint64_t, std::tuple<bool, int, KernelRecord>> Sanitizer::RecordParse::bufRecord_;
 static void ParseRecordGetBuf(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     SanEvent event;
@@ -3003,6 +3017,40 @@ static void ParseRecordGetBuf(const KernelRecord &record, std::vector<SanEvent> 
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
     events.emplace_back(event);
+    int index = events.size() - 1;
+
+    // 查找是否存在前置rls_buf指令
+    auto iter = Sanitizer::RecordParse::bufRecord_.find(record.payload.bufRecord.bufId);
+    if (iter == Sanitizer::RecordParse::bufRecord_.end()) {
+        // 没找到，正常记录
+        Sanitizer::RecordParse::bufRecord_[record.payload.bufRecord.bufId] = {true, index, record};
+        return;
+    }
+    if (std::get<0>(iter->second) == true) {
+        // 二次get_buf, 错误处理
+        SAN_ERROR_LOG("get_buf twice, invalid kernelNo:%lld", static_cast<long long>(record.serialNo));
+        return;
+    }
+    PipeType srcPipe = std::get<2>(iter->second).payload.bufRecord.pipe;
+    PipeType dstPipe = record.payload.bufRecord.pipe;
+    if (srcPipe == dstPipe) {
+        // 有前置rls_buf指令，且pipe相同，则插入一个pipeBarrier
+        events[index] = CreateInnerPipeSyncEvent(record, srcPipe, record.payload.syncRecord);
+    } else {
+        // 有前置rls_buf指令，且pipe不同，则插入一个set_flag + wait_flag
+        KernelRecord recordFlag = std::get<2>(iter->second);
+        int indexFlag = std::get<1>(iter->second);
+        recordFlag.payload.syncRecord.src = srcPipe;
+        recordFlag.payload.syncRecord.dst = dstPipe;
+        events[indexFlag] = GetSetFlagEvent(recordFlag);
+        // mode0在GET_BUF处插入wait_flag, mode1在RLS_BUF处插入wait_flag
+        if (recordFlag.payload.bufRecord.mode == Sanitizer::BufMode::NONBLOCK_MODE) {
+            events[indexFlag + 1] = GetWaitFlagEvent(recordFlag);
+        } else {
+            events[index] = GetWaitFlagEvent(recordFlag);
+        }
+    }
+    Sanitizer::RecordParse::bufRecord_[record.payload.bufRecord.bufId] = {true, index, record};
 }
 
 static void ParseRecordRlsBuf(const KernelRecord &record, std::vector<SanEvent> &events)
@@ -3018,6 +3066,36 @@ static void ParseRecordRlsBuf(const KernelRecord &record, std::vector<SanEvent> 
     event.eventInfo.syncInfo.memType = MemType::INVALID;
     event.eventInfo.syncInfo.isRetrogress = false;
     events.emplace_back(event);
+    int index = events.size() - 1;
+
+    // 查找是否存在前置get_buf指令
+    auto iter = Sanitizer::RecordParse::bufRecord_.find(record.payload.bufRecord.bufId);
+    if (iter == Sanitizer::RecordParse::bufRecord_.end()) {
+        // 无前置get_buf, 错误处理
+        SAN_ERROR_LOG("rls_buf without get_buf, invalid kernelNo:%lld", static_cast<long long>(record.serialNo));
+        return;
+    }
+    if (std::get<0>(iter->second) == false) {
+        // 二次rls_buf, 错误处理
+        SAN_ERROR_LOG("rls_buf twice, invalid kernelNo:%lld", static_cast<long long>(record.serialNo));
+        return;
+    }
+    if (std::get<2>(iter->second).payload.bufRecord.pipe == record.payload.bufRecord.pipe) {
+        // 有前置get_buf指令，但pipe不对应，错误处理
+        SAN_ERROR_LOG("rls_buf pipe not match, invalid kernelNo:%lld", static_cast<long long>(record.serialNo));
+        return;
+    }
+    if (std::get<2>(iter->second).payload.bufRecord.mode != record.payload.bufRecord.mode) {
+        // 有前置get_buf指令，但mode不对应，错误处理
+        SAN_ERROR_LOG("rls_buf mode not match, invalid kernelNo:%lld", static_cast<long long>(record.serialNo));
+        return;
+    }
+    // 有前置get_buf指令, 且pipe和mode对应, 正常记录
+    Sanitizer::RecordParse::bufRecord_[record.payload.bufRecord.bufId] = {false, index, record};
+    if (record.payload.bufRecord.mode == Sanitizer::BufMode::NONBLOCK_MODE) {
+        // mode1在RLS_BUF处插入set_flag和wait_flag, 因此额外插入一个指令
+        events.emplace_back(event);
+    }
 }
 
 static void ParseFftsSyncRecord(const KernelRecord &record, std::vector<SanEvent> &events)

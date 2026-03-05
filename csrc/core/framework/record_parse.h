@@ -50,6 +50,7 @@ public:
     // 用图存储流水间同步信息，key:dst val:[src1, src2, ...]
     using DstSrcGraph = std::unordered_map<PipeType, std::unordered_set<PipeType>>;
     thread_local static DstSrcGraph dstSrcGraph_;
+    static std::map<uint64_t, std::tuple<bool, int, KernelRecord>> bufRecord_;
 private:
     static void UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEvent> &events);
     /// 递归函数，查找和targetPipe直接或间接相连的src pipe
