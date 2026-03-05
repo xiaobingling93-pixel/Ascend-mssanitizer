@@ -35,12 +35,14 @@ cd build
 cmake ../cmake
 make -j$(nproc)  # -j 是并行编译的 job 数量，可自行指定；nproc 不可用时请手动填数字（例如 -j8）。
 ```
->[!NOTE] debug 版本编译方法   
+>[!NOTE] 说明    
+> **debug 版本编译方法**    
 > 如果想进行 gdb 或 vscode 图形化断点调试等，需要编译 debug 版本，方法如下：   
 > 在执行如上 cmake 命令时增加参数 -DCMAKE_BUILD_TYPE=Debug，例如：`cmake ../cmake -DCMAKE_BUILD_TYPE=Debug`
 
->[!CAUTION] cmake的参数问题
->请务必使用 `cmake ../cmake` 而非 `cmake ..`，否则不会生成 .run 安装包。
+>[!CAUTION] 注意    
+> **CMake的参数问题**    
+> 请务必使用 `cmake ../cmake` 而非 `cmake ..`，否则不会生成 .run 安装包。
 
 
 若 `output` 目录下的 `Ascend-mindstudio-sanitizer-xxx.run` 文件的生成时间已更新为当前编译时间，则表明编译与打包已成功完成。
@@ -74,7 +76,8 @@ python download_dependencies.py test
 ```
 #### 4.2.2 执行UT测试
 
->[!NOTE] UT 的 CMake 入口说明
+>[!NOTE] 说明    
+> **UT 的 CMake 入口说明**    
 > UT 构建使用工程根目录的 `CMakeLists.txt`（即 `cmake ..`，不是`cmake ../cmake`），只编译测试与依赖，不包含 `.run` 打包流程。
 
 ```shell
