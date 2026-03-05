@@ -40,7 +40,7 @@ namespace Sanitizer {
 class OnlineCheck {
 public:
     __aicore__ __attribute__((always_inline)) OnlineCheck() : memInfo_{nullptr}, memInfoSimt_{nullptr}, memInfoSimd_{nullptr},
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
         globalHead_{nullptr}, simtBlockHead_{nullptr}, simdBlockHead_{nullptr}, sortedLen_{}, blockIdx_{},
         shadowMemory_()
 #else
@@ -70,7 +70,7 @@ public:
      */
     __aicore__ inline void ProcessParaBaseAddr();
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
     __aicore__ inline void ClearSyncThreadState() {
         shadowMemory_.ClearSyncThreadState();
     }
@@ -151,7 +151,7 @@ private:
     __gm__ RecordBlockHead *simdBlockHead_;
     uint32_t sortedLen_;                    // 已经排好序的内存长度
     int16_t blockIdx_;
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
+#if (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
     __aicore__ inline void ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo);
     ShadowMemoryOnline shadowMemory_; // 用于在线踩踏检测
 #endif
@@ -167,7 +167,7 @@ __aicore__ inline void OnlineCheck::Init(__gm__ uint8_t *memInfo, __gm__ uint8_t
     globalHead_ = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
     simtBlockHead_ = reinterpret_cast<__gm__ SimtRecordBlockHead *>(memInfoSimt_);
     simdBlockHead_ = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimd_);
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
+#if (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
     shadowMemory_.Init((uint64_t)(memInfoSimd + globalHead_->simtInfo.shadowMemoryOffset),
         globalHead_->simtInfo.shadowMemoryByteSize, memInfo, memInfoSimt, memInfoSimd);
     auto &blockInfo = simdBlockHead_->blockInfo;
@@ -268,7 +268,7 @@ __aicore__ inline void OnlineCheck::Do(AddrInfo const &addrInfo, Record const &r
         DumpErrorInfo<recordType>(errorRecord, errorDesc, record, cacheWriteOffset);
     }
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
     /// 3. 线程间内存踩踏检测和竞争检测，设计前提：SIMT每个线程访问的GM空间相互隔离无交叉，原子类操作的地址除外
     if ((recordType != RecordType::SIMT_ATOM) && (recordType != RecordType::SIMT_RED)) {
         ShadowMemoryOnline::AuxInfo auxInfo{};
@@ -301,7 +301,7 @@ __aicore__ inline void OnlineCheck::Do(AddrInfo const &addrInfo, Record const &r
 #endif
 }
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
 __aicore__ inline void OnlineCheck::ShadowMemoryCheck(AddrInfo const &addrInfo, ShadowMemoryOnline::AuxInfo &auxInfo)
 {
     if (addrInfo.space != AddressSpace::GM && addrInfo.space != AddressSpace::UB) {
@@ -407,7 +407,7 @@ __aicore__ inline int64_t GetRegisterIdx()
 
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
 #ifdef SIMT_MODE
     coreId = bisheng::cce::simt::get_coreid();
 #else

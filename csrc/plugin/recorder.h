@@ -119,7 +119,7 @@ __aicore__ inline uint64_t CalcDumpBlockIdx(BlockType &blockType, uint64_t block
     int64_t coreId{};
 
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
 #ifdef SIMT_MODE
     coreId = bisheng::cce::simt::get_coreid();
     vecSubBlockDim = bisheng::cce::simt::get_subblockdim();
@@ -139,7 +139,7 @@ __aicore__ inline uint64_t CalcDumpBlockIdx(BlockType &blockType, uint64_t block
         blockType = BlockType::AICUBE;
         dumpIdx += (blockIdx + 1) * (C220_MIX_SUB_BLOCKDIM - 1);
     }
-#elif defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#elif defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     if ((coreId >= C310_A5_DEVICE_VEC_PHYS_SMALL_BOUND_CORE_START_IDS &&
         coreId <= C310_A5_DEVICE_VEC_PHYS_SMALL_BOUND_CORE_END_IDS) ||
         coreId >= C310_A5_DEVICE_VEC_PHYS_GREAT_BOUND_CORE_START_IDS) {
@@ -163,7 +163,7 @@ __aicore__ inline uint64_t CalcMemInfoOffset(__gm__ RecordGlobalHead *head, uint
     int16_t checkBlockId = head->checkParms.checkBlockId;
     uint32_t cacheSize = head->checkParms.cacheSize;
     uint64_t simdHeadSize = GetRecordHeadSize(hostMemoryNum);
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     uint64_t threadId = GetThreadId();
     threadOffset = head->simtInfo.offset +
         threadId * (head->simtInfo.threadByteSize + sizeof(SimtRecordBlockHead));
@@ -174,7 +174,7 @@ __aicore__ inline uint64_t CalcMemInfoOffset(__gm__ RecordGlobalHead *head, uint
     }
 
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
     uint64_t vecTargetBlockIdx = checkBlockId / C220_VEC_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM +
         checkBlockId % C220_VEC_SUB_BLOCKDIM;
     uint64_t cubeTargetBlockIdx = checkBlockId * C220_MIX_SUB_BLOCKDIM + C220_VEC_SUB_BLOCKDIM;
@@ -183,7 +183,7 @@ __aicore__ inline uint64_t CalcMemInfoOffset(__gm__ RecordGlobalHead *head, uint
     uint64_t offset{};
     for (size_t i = 0; i < dumpIdx; ++i) {
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
         if (i == vecTargetBlockIdx || i == cubeTargetBlockIdx) {
 #else
         if (i == checkBlockId) {
@@ -235,7 +235,7 @@ public:
         uint64_t threadOffset{};
         memInfoSimdBlock_ = memInfo + sizeof(RecordGlobalHead) +
             CalcMemInfoOffset(globalHead, dumpIdx, simdBlockZeroHead->hostMemoryNum, threadOffset);
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
         memInfoSimtBlock_ = memInfoSimdBlock_ + threadOffset;
 #endif
         auto memInfoBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
@@ -331,7 +331,7 @@ __aicore__ inline void Recorder::DumpRecord(Record const &record)
         return;
     }
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
     DumpSimtRecord<recordType>(record);
 #else
     DumpSimdRecord<recordType>(record);
@@ -478,7 +478,7 @@ __aicore__ inline void Recorder::UpdateSyncThreadCount(Record const &record)
         return;
     }
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)
     auto memInfoBlockHead = reinterpret_cast<__gm__ RecordBlockHead *>(memInfoSimdBlock_);
     auto &blockInfo = memInfoBlockHead->blockInfo;
     AtomicAdd(&blockInfo.simtSyncThreadCount, 1);

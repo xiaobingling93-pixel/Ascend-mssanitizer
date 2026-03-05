@@ -41,7 +41,7 @@ __aicore__ inline void SimtRecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace s
     record.space = space;
     record.detailedDataType = detailedDataType;
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     record.threadLoc.idX = GetThreadIdX();
     record.threadLoc.idY = GetThreadIdY();
     record.threadLoc.idZ = GetThreadIdZ();
@@ -75,7 +75,7 @@ __aicore__ inline void SimtRecordAtomEvent(EXTRA_PARAMS_DEC, AddressSpace space,
     record.detailedDataType = detailedDataType;
     record.option = option;
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     record.threadLoc.idX = GetThreadIdX();
     record.threadLoc.idY = GetThreadIdY();
     record.threadLoc.idZ = GetThreadIdZ();
@@ -102,7 +102,7 @@ __aicore__ inline void SimtRecordSyncEvent(EXTRA_PARAMS_DEC)
     SimtSyncRecord record{};
     record.location.blockId = blockIdx;
 
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     record.threadLoc.idX = GetThreadIdX();
     record.threadLoc.idY = GetThreadIdY();
     record.threadLoc.idZ = GetThreadIdZ();

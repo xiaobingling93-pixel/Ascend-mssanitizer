@@ -346,7 +346,7 @@ SANITIZER_REPORT(ld_dev_b8, uint64_t addr, int64_t offset)
 
 SANITIZER_REPORT(scalar_atom_u32, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_ATOM, DetailedDataType::U32>(EXTRA_PARAMS, addr, sizeof(uint32_t));
 #else
     (void)addr;
@@ -355,7 +355,7 @@ SANITIZER_REPORT(scalar_atom_u32, uint64_t addr)
 
 SANITIZER_REPORT(scalar_atom_s32, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_ATOM, DetailedDataType::S32>(EXTRA_PARAMS, addr, sizeof(int32_t));
 #else
     (void)addr;
@@ -364,7 +364,7 @@ SANITIZER_REPORT(scalar_atom_s32, uint64_t addr)
 
 SANITIZER_REPORT(scalar_atom_u64, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_ATOM, DetailedDataType::U64>(EXTRA_PARAMS, addr, sizeof(uint64_t));
 #else
     (void)addr;
@@ -373,7 +373,7 @@ SANITIZER_REPORT(scalar_atom_u64, uint64_t addr)
 
 SANITIZER_REPORT(scalar_atom_s64, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_ATOM, DetailedDataType::S64>(EXTRA_PARAMS, addr, sizeof(int64_t));
 #else
     (void)addr;
@@ -382,7 +382,7 @@ SANITIZER_REPORT(scalar_atom_s64, uint64_t addr)
 
 SANITIZER_REPORT(scalar_red_u32, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_RED, DetailedDataType::U32>(EXTRA_PARAMS, addr, sizeof(uint32_t));
 #else
     (void)addr;
@@ -391,7 +391,7 @@ SANITIZER_REPORT(scalar_red_u32, uint64_t addr)
 
 SANITIZER_REPORT(scalar_red_s32, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_RED, DetailedDataType::S32>(EXTRA_PARAMS, addr, sizeof(int32_t));
 #else
     (void)addr;
@@ -400,7 +400,7 @@ SANITIZER_REPORT(scalar_red_s32, uint64_t addr)
 
 SANITIZER_REPORT(scalar_red_f16, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_RED, DetailedDataType::F16>(EXTRA_PARAMS, addr, sizeof(half));
 #else
     (void)addr;
@@ -409,7 +409,7 @@ SANITIZER_REPORT(scalar_red_f16, uint64_t addr)
 
 SANITIZER_REPORT(scalar_red_bf16, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_RED, DetailedDataType::BF16>(EXTRA_PARAMS, addr, sizeof(__bf16));
 #else
     (void)addr;
@@ -418,7 +418,7 @@ SANITIZER_REPORT(scalar_red_bf16, uint64_t addr)
 
 SANITIZER_REPORT(scalar_red_f32, uint64_t addr)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     RecordScalarRedAndAtomEvent<RecordType::SCALAR_RED, DetailedDataType::FLOAT>(EXTRA_PARAMS, addr, sizeof(float));
 #else
     (void)addr;

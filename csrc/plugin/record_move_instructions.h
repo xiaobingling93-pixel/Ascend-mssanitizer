@@ -33,7 +33,7 @@ __aicore__ inline uint64_t StackAddrTransform(uint64_t addr)
     // 310P的地址范围为0x40000 ~ 0x40000 + 0x4000
     uint64_t transformedAddr = addr;
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
     transformedAddr = addr - GetSysVaBase() - 0x100000; // 对地址做偏移，偏移后的值作为后续的地址输入。
 #elif defined(__DAV_M200__) || (defined __DAV_M200_VEC__)
     transformedAddr = addr - 0x40000;
@@ -55,7 +55,7 @@ __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
     recorder.SetParaBaseAddr(get_para_base());
 // 目前只有c310的动态插桩会启动extra的信息写入
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(BUILD_DYNAMIC_PROBE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__) && defined(BUILD_DYNAMIC_PROBE)
     if (recordType == RecordType::LDP || recordType == RecordType::LD || recordType == RecordType::LD_IO ||
         recordType == RecordType::LD_DEV) {
         recorder.ProcessParaBaseAddr();
@@ -76,7 +76,7 @@ __aicore__ inline void RecordLoadStoreEvent(EXTRA_PARAMS_DEC, AddressSpace space
     record.addr = addr;
     /// 有同名函数时，mix算子链接时会优先链接cube.o中的函数，会导致mix算子load/store指令越界，这里需保证vec/cube函数逻辑相同
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
     if (space == AddressSpace::UB) {
         record.addr = GetUintFromConf<18, 0>(record.addr);
     }
@@ -1413,7 +1413,7 @@ __aicore__ inline void RecordMovBtEvent(EXTRA_PARAMS_DEC, uint64_t dst, uint64_t
 
 __aicore__ inline bool IsMovFpQuantToB16(uint64_t quantPRE)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     // david: 1,10,11,16,31,32,33,34
     return (quantPRE == 1 || quantPRE == 10 || quantPRE == 11 || quantPRE == 16 || (quantPRE >= 31 && quantPRE <= 34));
 #else
@@ -1424,7 +1424,7 @@ __aicore__ inline bool IsMovFpQuantToB16(uint64_t quantPRE)
 
 __aicore__ inline bool IsMovFpQuantToB8(uint64_t quantPRE)
 {
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510)
     // david: 2,3,4,5,8,9,12,13,23,24
     return ((quantPRE >= 2 && quantPRE <= 5) || quantPRE == 8 || quantPRE == 9 ||
         quantPRE == 12 || quantPRE == 13 || quantPRE == 23 || quantPRE == 24);

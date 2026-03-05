@@ -29,7 +29,7 @@ __aicore__ inline uint64_t GetBlockIdx()
 
 #if (defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__))
     return get_block_idx() * get_subblockdim() + get_subblockid();
-#elif defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 // c310
+#elif defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) // c310
     #if defined(__DAV_VEC__) && defined(SIMT_MODE) // c310-simt
         return bisheng::cce::simt::get_block_idx();
     #else                                         
@@ -56,7 +56,7 @@ __aicore__ inline uint64_t GetSysVaBase()
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1 // AICORE
 
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
     return get_sys_va_base();
 #else
     return 0;
@@ -72,7 +72,7 @@ __aicore__ inline uint64_t GetStackPhyBase()
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1 // AICORE
 
 #if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
-    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+    (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
     return get_stack_phy_base();
 #else
     return 0;
@@ -94,7 +94,7 @@ __aicore__ inline uint64_t GetIntFromConf(uint64_t config)
 __aicore__ inline uint16_t GetThreadIdX()
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     return __cce_simt_get_TID_X();
 #endif // AICORE
 #endif // SIMT_MODE
@@ -104,7 +104,7 @@ __aicore__ inline uint16_t GetThreadIdX()
 __aicore__ inline uint16_t GetThreadIdY()
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     return __cce_simt_get_TID_Y();
 #endif // AICORE
 #endif // SIMT_MODE
@@ -114,7 +114,7 @@ __aicore__ inline uint16_t GetThreadIdY()
 __aicore__ inline uint16_t GetThreadIdZ()
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     return __cce_simt_get_TID_Z();
 #endif // AICORE
 #endif // SIMT_MODE
@@ -125,7 +125,7 @@ __aicore__ inline uint16_t GetThreadIdZ()
 __aicore__ inline uint16_t GetThreadId()
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     int32_t blockDimX = __cce_simt_get_BLOCK_DIM_X();
     int32_t blockDimY = __cce_simt_get_BLOCK_DIM_Y();
     int32_t threadIdX = GetThreadIdX();
@@ -141,7 +141,7 @@ __aicore__ inline uint16_t GetThreadId()
 __aicore__ inline void DecomposeThreadId(uint16_t threadId, uint16_t &x, uint16_t &y, uint16_t &z)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     int32_t blockDimX = __cce_simt_get_BLOCK_DIM_X();
     int32_t blockDimY = __cce_simt_get_BLOCK_DIM_Y();
     int32_t blockDimZ = __cce_simt_get_BLOCK_DIM_Z();
@@ -160,7 +160,7 @@ __aicore__ inline void DecomposeThreadId(uint16_t threadId, uint16_t &x, uint16_
 __aicore__ inline void GetThreadDim(uint16_t &x, uint16_t &y, uint16_t &z)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__)
     x = __cce_simt_get_BLOCK_DIM_X();
     y = __cce_simt_get_BLOCK_DIM_Y();
     z = __cce_simt_get_BLOCK_DIM_Z();
@@ -177,7 +177,7 @@ __aicore__ inline void GetThreadDim(uint16_t &x, uint16_t &y, uint16_t &z)
 __aicore__ inline uint64_t AtomicCAS(__gm__ uint64_t *gmAddr, uint64_t compare, uint64_t val)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__) && defined(SIMT_MODE)
     return atomicCAS(gmAddr, compare, val);
 #endif // AICORE
 #endif // SIMT_MODE
@@ -187,7 +187,7 @@ __aicore__ inline uint64_t AtomicCAS(__gm__ uint64_t *gmAddr, uint64_t compare, 
 __aicore__ inline uint64_t AtomicExch(__gm__ uint64_t *gmAddr, uint64_t val)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__) && defined(SIMT_MODE)
     return atomicExch(gmAddr, val);
 #endif // AICORE
 #endif // SIMT_MODE
@@ -197,7 +197,7 @@ __aicore__ inline uint64_t AtomicExch(__gm__ uint64_t *gmAddr, uint64_t val)
 __aicore__ inline uint64_t AtomicAdd(__gm__ uint64_t *gmAddr, uint64_t val)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(__DAV_VEC__) && defined(SIMT_MODE)
+#if defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(__DAV_VEC__) && defined(SIMT_MODE)
     return atomicAdd(gmAddr, val);
 #endif // AICORE
 #endif // SIMT_MODE
@@ -244,7 +244,7 @@ __aicore__ inline void CopyRecordToGm(__gm__ Record *gmRecord, Record const *sta
 __aicore__ inline void Flush(__gm__ uint8_t *gm)
 {
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+#if (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510))
         dcci((__gm__ uint64_t*)gm, ENTIRE_DATA_CACHE, CACHELINE_ALL);
 #else
         dcci(gm, ENTIRE_DATA_CACHE);

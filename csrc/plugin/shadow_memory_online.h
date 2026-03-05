@@ -24,7 +24,7 @@ namespace Sanitizer {
 
 using namespace OnlineShadowMemory;
 
-#if (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101 && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
+#if (defined(__NPU_ARCH__) && (__NPU_ARCH__ == 3101 || __NPU_ARCH__ == 3510) && defined(SIMT_MODE)) || defined(__BUILD_TESTS__)
 
 enum class ErrorCode : uint64_t {
     // for MultiLayerTable
