@@ -15,7 +15,7 @@ set(BISHENG_COMPILER_OPTIONS -g --cce-enable-sanitizer)
 
 ## 2. 内核调用符场景
 
-1. 样例工程代码请参考[Link](https://gitee.com/ascend/samples/tree/8.0.RC2/operator/AddCustomSample/KernelLaunch/AddKernelInvocation)，执行以下命令，下载分支版本的样例代码。
+1. 样例工程代码请参考[LAddKernelInvocationk代码示例](https://gitee.com/ascend/samples/tree/8.0.RC2/operator/AddCustomSample/KernelLaunch/AddKernelInvocation)，执行以下命令，下载分支版本的样例代码。
 
     ```sh
     git clone https://gitee.com/ascend/samples.git -b 8.0.RC2
@@ -75,7 +75,7 @@ set(BISHENG_COMPILER_OPTIONS -g --cce-enable-sanitizer)
 
 ## 3. msOpGen算子工程编译场景
 
-1. 单击[Link](https://gitee.com/ascend/samples/tree/master/operator/ascendc/0_introduction/1_add_frameworklaunch/AddCustom)，在${git_clone_path}/samples/operator/ascendc/0_introduction/1_add_frameworklaunch目录下运行install.sh脚本，生成自定义算子工程。
+1. 单击[AddCustom代码示例](https://gitee.com/ascend/samples/tree/master/operator/ascendc/0_introduction/1_add_frameworklaunch/AddCustom)，在${git_clone_path}/samples/operator/ascendc/0_introduction/1_add_frameworklaunch目录下运行install.sh脚本，生成自定义算子工程。
 
     > [!NOTE] 说明  
     > 下载代码样例时，需执行以下命令指定分支版本。
@@ -96,9 +96,9 @@ set(BISHENG_COMPILER_OPTIONS -g --cce-enable-sanitizer)
 
 3. 编辑样例工程目录下的“op_kernel/CMakeLists.txt”文件，在编译选项中添加-sanitizer选项，具体请参考《MindStudio Ops Generator工具用户指南》中的“算子编译部署>支持自定义编译选项”章节。
 
-    ```
-    add_ops_compile_options(ALL OPTIONS -sanitizer)
-    ```
+```cmake
+add_ops_compile_options(ALL OPTIONS -sanitizer)
+```
 
 ## 4. Triton算子调用场景
 
