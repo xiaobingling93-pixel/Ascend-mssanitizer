@@ -52,9 +52,9 @@ inline std::ostream &PrintLocationInfo(std::ostream &os, BaseEvent const &info)
     return CallStack::Instance().FormatCallStack(os, stack);
 }
 
-struct FormatKernelName {};
+struct SyncFormatKernelName {};
 
-inline std::ostream &operator<<(std::ostream &os, FormatKernelName const &formatKernelName)
+inline std::ostream &operator<<(std::ostream &os, SyncFormatKernelName const &formatKernelName)
 {
     // 同步异常一定是 kernel 上发生的，因此打印 kernel name
     return os << " in " << RuntimeContext::Instance().kernelNameDisplay;
@@ -69,7 +69,7 @@ inline std::ostream &operator << (std::ostream &os, SyncDispInfo const &info)
 
     os << "====== " << "WARNING" << ": "<< checkTypeStr << " " << instrStr << " instructions detected" << std::endl
        << "======    from " << static_cast<PipeType>(info.srcPipe) << " to "
-       << static_cast<PipeType>(info.dstPipe) << FormatKernelName{} << std::endl
+       << static_cast<PipeType>(info.dstPipe) << SyncFormatKernelName{} << std::endl
        << "======    in block " << info.baseEvent.blockType << "(" << info.baseEvent.coreId << ")"
        << " on device "<< RuntimeContext::Instance().GetDeviceId() << std::endl;
     PrintLocationInfo(os, info.baseEvent);

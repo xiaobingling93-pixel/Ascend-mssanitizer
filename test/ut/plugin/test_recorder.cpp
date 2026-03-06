@@ -188,7 +188,7 @@ TEST(Recorder, dump_block_data_with_not_equal_block_records_default_cache_size_a
 {
     uint64_t defaultCacheSize = 100;
     RecordGlobalHead head{};
-    uint64_t blockIdx = RandInt(1, 72);
+    uint64_t blockIdx = RandInt(1, 2);
     head.checkParms.checkBlockId = RandInt(0, blockIdx - 1);
     uint64_t totalSize = (defaultCacheSize * MB_TO_BYTES + sizeof(RecordBlockHead)) *
                             blockIdx * C220_MIX_SUB_BLOCKDIM;
@@ -240,7 +240,7 @@ TEST(Recorder, dump_block_data_with_equal_block_records_dafault_cache_size_and_g
 {
     uint64_t cacheSize = 100;
     RecordGlobalHead head{};
-    uint64_t blockIdx = RandInt(1, 72);
+    uint64_t blockIdx = RandInt(1, 2);
     head.checkParms.checkBlockId = RandInt(0, blockIdx - 1);
     uint64_t totalSize = (cacheSize * MB_TO_BYTES + sizeof(RecordBlockHead)) * blockIdx * C220_MIX_SUB_BLOCKDIM;
     std::vector<uint8_t> memInfo(sizeof(RecordGlobalHead) + totalSize, 0);

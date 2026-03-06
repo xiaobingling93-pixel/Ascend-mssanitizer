@@ -72,7 +72,7 @@ class BuildManager:
             unit_test_build_dir.mkdir(exist_ok=True)
             os.chdir(unit_test_build_dir)
 
-            self._execute_command(["cmake", "..", "-DBUILD_TESTS=ON"])
+            self._execute_command(["cmake", "..", "-DBUILD_TESTS=ON", "-DCMAKE_BUILD_TYPE=Debug"])
             self._execute_command(["make", "-j", str(self.build_jobs), "mssanitizer_test"])
 
             test_binary_dir = unit_test_build_dir / "test" / "ut"
