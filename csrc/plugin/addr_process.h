@@ -89,6 +89,24 @@ inline __aicore__ AddressSpace SimtRemapAddress(uint64_t &Rn, int64_t offset, ui
     return AddressSpace::GM;
 }
 
+constexpr uint64_t TB_TO_B_MULTIPLIER = 1ULL << 40;
+constexpr uint64_t GM_OFFSET_RANGE_MIN = 24 * TB_TO_B_MULTIPLIER;
+constexpr uint64_t GM_OFFSET_RANGE_MAX = 40 * TB_TO_B_MULTIPLIER;
+
+// 双页表区间gm地址偏移还原
+inline __aicore__ uint64_t GmAddrSubOffset(__gm__ uint8_t *memInfo, MemType memType, uint64_t &addr) {
+    if (memType != MemType::GM) {
+        return addr;
+    }
+
+    auto head = reinterpret_cast<__gm__ RecordGlobalHead *>(memInfo);
+    if (addr >= GM_OFFSET_RANGE_MIN && addr <= GM_OFFSET_RANGE_MAX) {
+        return addr - head->kernelInfo.l2CacheOffset;
+    }
+
+    return addr;
+}
+
 
 } // namespace Sanitizer
 

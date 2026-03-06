@@ -21,6 +21,8 @@
 #include "kernel_pub_func.h"
 #include "utils.h"
 #include "recorder.h"
+#include "addr_process.h"
+
 namespace Sanitizer {
 
 __aicore__ inline uint64_t StackAddrTransform(uint64_t addr)
@@ -106,8 +108,8 @@ __aicore__ inline void RecordDmaMovEvent(EXTRA_PARAMS_DEC, uint64_t dst,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = DmaMovRecord{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.nBurst = nBurst;
     record.lenBurst = lenBurst;
     record.srcStride = srcStride;
@@ -203,8 +205,8 @@ __aicore__ inline void RecordDmaMovNd2nzEvent(EXTRA_PARAMS_DEC,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = DmaMovNd2nzRecord {};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
     record.location.lineNo = lineNo;
@@ -261,8 +263,8 @@ __aicore__ inline void DumpDmaMovNd2nzDavRecord(EXTRA_PARAMS_DEC,
     record.srcMemType = srcMemType;
     record.dstMemType = dstMemType;
     record.dataType = dataType;
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.location.blockId = static_cast<uint16_t>(blockIdx);
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
@@ -338,8 +340,8 @@ __aicore__ inline void RecordLoad2DEvent(EXTRA_PARAMS_DEC, uint64_t dst,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = Load2DRecord{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.baseIdx = config & 0xffff;
     record.repeat = (config >> 16U) & 0xff;
     record.srcStride = (config >> 24U) & 0xffff;
@@ -371,8 +373,8 @@ __aicore__ inline void RecordLoad2DV2Event(EXTRA_PARAMS_DEC, uint64_t dst,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = Load2DRecord{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
 
     Recorder recorder(memInfo, blockIdx);
     uint64_t mte2SrcPara = 0;
@@ -515,7 +517,7 @@ __aicore__ inline void RecordLoadSmaskEvent(EXTRA_PARAMS_DEC, uint64_t dst,
     uint64_t blockIdx = GetBlockIdx();
     auto record = LoadSmaskRecord{};
     record.dst = dst;
-    record.src = src;
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);;
     record.location.blockId = blockIdx;
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
@@ -665,7 +667,7 @@ __aicore__ inline void RecordDecompressHeaderEvent(EXTRA_PARAMS_DEC, uint64_t sr
  
     uint64_t blockIdx = GetBlockIdx();
     auto record = DecompressHeaderRecord{};
-    record.src = src;
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.location.blockId = blockIdx;
     record.nBlock = nBlock;
 #if !defined(BUILD_DYNAMIC_PROBE)
@@ -752,7 +754,7 @@ __aicore__ inline void RecordDcPreloadEvent(EXTRA_PARAMS_DEC, AddressSpace space
     uint64_t blockIdx = GetBlockIdx();
     auto record = DcPreloadRecord{};
     record.offset = offset;
-    record.addr = src;
+    record.addr = GmAddrSubOffset(memInfo, MemType::GM, src);
     record.location.blockId = blockIdx;
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
@@ -1196,8 +1198,8 @@ __aicore__ inline void RecordMovAlignEvent(EXTRA_PARAMS_DEC,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = MovAlignRecord{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.nBurst = nBurst;
     record.lenBurst = lenBurst;
     record.srcGap = srcGap;
@@ -1299,8 +1301,8 @@ __aicore__ inline void RecordMovAlignEventV2(EXTRA_PARAMS_DEC, uint64_t dst,
     recorder.GetRegister(loopSizePtr, loopSize);
 
     MovAlignRecordV2 record{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.nBurst = GetUintFromConf<24, 4>(config);
     record.lenBurst = GetUintFromConf<45, 25>(config);
     record.loop1Size = GetUintFromConf<20, 0>(loopSize);
@@ -1335,7 +1337,7 @@ __aicore__ inline void RecordNdDMAOut2Ub(EXTRA_PARAMS_DEC, uint64_t dst,
     record.location.pc = static_cast<uint64_t>(pc);
     record.location.blockId = blockIdx;
     record.dst = dst;
-    record.src = src;
+    record.src = GmAddrSubOffset(memInfo, MemType::GM, src);
     record.dataType = dataType;
     uint64_t sprPadCntNdDma{};
     uint64_t sprLoopStrideNdDma[5];
@@ -1466,7 +1468,7 @@ __aicore__ inline void RecordMovFpEvent(EXTRA_PARAMS_DEC, uint64_t dst, uint64_t
 
     auto record = MovFpRecord {};
     record.isC310 = false;
-    record.dst = dst;
+    record.dst = GmAddrSubOffset(memInfo, MemType::GM, dst);
     record.src = src;
     record.nSize = nSize;
     record.mSize = mSize;
@@ -1526,7 +1528,7 @@ __aicore__ inline void RecordMovFpV2Event(EXTRA_PARAMS_DEC, uint64_t dst, uint64
 
     auto record = MovFpRecord {};
     record.isC310 = true; // c310的读写行为和910B不同，需要区分
-    record.dst = dst;
+    record.dst = GmAddrSubOffset(memInfo, MemType::GM, dst);
     record.src = src;
     record.nSize = (xm >> 4) & 0xFFF;
     record.mSize = (xm >> 16) & 0xFFFF;
