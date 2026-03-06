@@ -666,7 +666,7 @@ __aicore__ inline void ShadowMemoryOnline::StoreNBytes(AddrInfo const &addrInfo,
                 if (oldThreadId != threadId && ExistRace(oldValue, memType)) {
                     newValue = ExtractSamePcStatus(MemoryByteStatus::RACE, oldValue, threadId, addrInfo);
                     AssignErrorInfo<KernelErrorType::THREAD_WW_RACE>(oldValue, threadId, auxInfo);
-                    if (overlapIsWrite) {
+                    if (!overlapIsWrite) {
                         AssignErrorInfo<KernelErrorType::THREAD_OVERLAP>(oldValue, threadId, auxInfo);
                         overlapIsWrite = true;
                     }
@@ -677,7 +677,7 @@ __aicore__ inline void ShadowMemoryOnline::StoreNBytes(AddrInfo const &addrInfo,
                 if (ExistRace(oldValue, memType)) {
                     newValue = ExtractSamePcStatus(MemoryByteStatus::RACE, oldValue, threadId, addrInfo);
                     AssignErrorInfo<KernelErrorType::THREAD_WW_RACE>(oldValue, threadId, auxInfo);
-                    if (overlapIsWrite && oldThreadId != threadId) {
+                    if (!overlapIsWrite && oldThreadId != threadId) {
                         AssignErrorInfo<KernelErrorType::THREAD_OVERLAP>(oldValue, threadId, auxInfo);
                         overlapIsWrite = true;
                     }
