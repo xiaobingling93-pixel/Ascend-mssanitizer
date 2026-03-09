@@ -517,7 +517,7 @@ __aicore__ inline void RecordLoadSmaskEvent(EXTRA_PARAMS_DEC, uint64_t dst,
     uint64_t blockIdx = GetBlockIdx();
     auto record = LoadSmaskRecord{};
     record.dst = dst;
-    record.src = GmAddrSubOffset(memInfo, srcMemType, src);;
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.location.blockId = blockIdx;
 #if !defined(BUILD_DYNAMIC_PROBE)
     record.location.fileNo = fileNo;
@@ -545,8 +545,8 @@ __aicore__ inline void RecordLoad2DEvent(EXTRA_PARAMS_DEC, uint64_t dst,
 
     uint64_t blockIdx = GetBlockIdx();
     auto record = Load2DRecord{};
-    record.dst = dst;
-    record.src = src;
+    record.dst = GmAddrSubOffset(memInfo, dstMemType, dst);
+    record.src = GmAddrSubOffset(memInfo, srcMemType, src);
     record.baseIdx = baseIdx;
     record.repeat = repeat;
     record.srcStride = srcStride;
