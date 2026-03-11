@@ -26,7 +26,7 @@
 namespace {
 using namespace Sanitizer;
 
-void UT_FillRegRecord(SanitizerRecord& record, RecordType type, uint16_t coreId, RegisterValueType regValType, uint64_t regVal)
+void UT_FillRegRecord(SanitizerRecord& record, RecordType type, uint16_t coreId, RegisterValueType regValType, uint64_t regVal, int64_t regIdx)
 {
     record.version = RecordVersion::KERNEL_RECORD;
     record.payload.kernelRecord.recordType = type;
@@ -35,6 +35,17 @@ void UT_FillRegRecord(SanitizerRecord& record, RecordType type, uint16_t coreId,
     regRecord.location.blockId = coreId;
     regRecord.regPayLoad.regValType = regValType;
     regRecord.regPayLoad.regVal = regVal;
+    regRecord.regPayLoad.regIdx = regIdx;
+}
+
+int64_t UT_GetRegIdx()
+{
+    static int64_t regIdx = 0;
+    regIdx += 5;
+    if (regIdx >= C220_A2_A3_MAXCORE_NUM) {
+        regIdx = 0;
+    }
+    return regIdx;
 }
 
 TEST(RegisterSanitizer, set_vector_mask_0_expect_report_exception)
@@ -56,22 +67,23 @@ TEST(RegisterSanitizer, set_vector_mask_0_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123456;
-    RegisterType regType = RegisterType::VECTOR_MASK_0;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::VECTOR_MASK_0);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_VECTOR_MASK_0;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 }
@@ -88,24 +100,25 @@ TEST(RegisterSanitizer, set_vector_mask_0_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123456;
-    RegisterType regType = RegisterType::VECTOR_MASK_0;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::VECTOR_MASK_0);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_VECTOR_MASK_0;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -122,22 +135,23 @@ TEST(RegisterSanitizer, set_vector_mask_1_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123457;
-    RegisterType regType = RegisterType::VECTOR_MASK_1;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::VECTOR_MASK_1);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_VECTOR_MASK_1;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 
@@ -155,24 +169,25 @@ TEST(RegisterSanitizer, set_vector_mask_1_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123457;
-    RegisterType regType = RegisterType::VECTOR_MASK_1;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::VECTOR_MASK_1);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_VECTOR_MASK_1;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -189,22 +204,23 @@ TEST(RegisterSanitizer, set_ctrl_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123458;
-    RegisterType regType = RegisterType::CTRL;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::CTRL);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_CTRL;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 }
@@ -221,24 +237,25 @@ TEST(RegisterSanitizer, set_ctrl_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123458;
-    RegisterType regType = RegisterType::CTRL;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::CTRL);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_CTRL;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -255,22 +272,23 @@ TEST(RegisterSanitizer, set_ffts_base_addr_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123459;
-    RegisterType regType = RegisterType::FFTS_BASE_ADDR;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::FFTS_BASE_ADDR);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_FFTS_BASE_ADDR;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 }
@@ -287,24 +305,25 @@ TEST(RegisterSanitizer, set_ffts_base_addr_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123459;
-    RegisterType regType = RegisterType::FFTS_BASE_ADDR;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::FFTS_BASE_ADDR);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_FFTS_BASE_ADDR;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -321,29 +340,24 @@ TEST(RegisterSanitizer, set_fpc_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123460;
-    RegisterType regType = RegisterType::FPC;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::FPC);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_FPC;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
 
-    // 重置为默认值不报告警
-    regSan.Init();
-    events.clear();
-    msg = "";
-
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    // 未重置为默认值报告警
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
-    RecordPreProcess::GetInstance().Process(record, events);
-    ASSERT_EQ(events.size(), 2U);
+    ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
-        + std::to_string(coreId) + ")") == std::string::npos);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
+        + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
 
@@ -359,24 +373,25 @@ TEST(RegisterSanitizer, set_fpc_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123460;
-    RegisterType regType = RegisterType::FPC;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::FPC);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_FPC;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -394,22 +409,23 @@ TEST(RegisterSanitizer, set_quant_pre_expect_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123461;
-    RegisterType regType = RegisterType::QUANT_PRE;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::QUANT_PRE);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_QUANT_PRE;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 }
@@ -426,24 +442,25 @@ TEST(RegisterSanitizer, set_quant_pre_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123461;
-    RegisterType regType = RegisterType::QUANT_PRE;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::QUANT_PRE);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_QUANT_PRE;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -460,22 +477,23 @@ TEST(RegisterSanitizer, set_quant_post_expect_not_report_exception)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123462;
-    RegisterType regType = RegisterType::QUANT_POST;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::QUANT_POST);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_QUANT_POST;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值不报告警，因为post_expect寄存器不检测
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -492,28 +510,25 @@ TEST(RegisterSanitizer, set_quant_post_expect_not_report_exception_2)
     endEvent.isEndFrame = true;
     SanitizerRecord record {};
     uint64_t regvalU64 = 123462;
-    RegisterType regType = RegisterType::QUANT_POST;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::QUANT_POST);
+    uint64_t regvalU64Dft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_QUANT_POST;
     uint16_t coreId = 0;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警
-    regSan.Init();
-    events.clear();
-    msg = "";
-
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64Dft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64Dft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64Dft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -532,22 +547,23 @@ TEST(RegisterSanitizer, set_lrelu_alpha_uint64_expect_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 未重置为默认值报告警 - UINT64
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalU64);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalU64);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalU64) + ")") != std::string::npos);
 }
@@ -566,24 +582,25 @@ TEST(RegisterSanitizer, set_lrelu_alpha_uint64_expect_not_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
     
     // 重置为默认值不报告警 - UINT64
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalU64, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalDft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalDft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalDft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalDft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -602,25 +619,23 @@ TEST(RegisterSanitizer, set_lrelu_alpha_half_expect_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
-    // 未重置为默认值报告警 - half
-    regSan.Init();
-    events.clear();
-    msg = "";
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, regvalHalf);
+    // 未重置为默认值不报告警 - half
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, regvalHalf, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalHalf);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalHalf);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalHalf) + ")") != std::string::npos);
 }
@@ -639,24 +654,25 @@ TEST(RegisterSanitizer, set_lrelu_alpha_half_expect_not_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警 - half
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, static_cast<uint64_t>(regvalU64));
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, static_cast<uint64_t>(regvalU64), regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, regvalDft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_HALF, regvalDft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalDft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalDft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalU64) + ")") == std::string::npos);
 }
@@ -675,46 +691,25 @@ TEST(RegisterSanitizer, set_lrelu_alpha_float_expect_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 未重置为默认值报告警 - float
-    regSan.Init();
-    events.clear();
-    msg = "";
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalFloat);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_UINT64, regvalFloat, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 1U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalFloat);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalFloat);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") != std::string::npos);
     ASSERT_TRUE(msg.find("current value is (" + std::to_string(regvalFloat) + ")") != std::string::npos);
-
-    // 重置为默认值不报告警 - float
-    regSan.Init();
-    events.clear();
-    msg = "";
-
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, static_cast<uint64_t>(regvalFloat));
-    RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, regvalDft);
-    RecordPreProcess::GetInstance().Process(record, events);
-    ASSERT_EQ(events.size(), 2U);
-    events.emplace_back(endEvent);
-    regSan.Do(record, events);
-
-    std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalDft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
-        + std::to_string(coreId) + ")") == std::string::npos);
-    ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalFloat) + ")") == std::string::npos);
 }
 
 TEST(RegisterSanitizer, set_lrelu_alpha_float_expect_not_report_exception)
@@ -731,24 +726,25 @@ TEST(RegisterSanitizer, set_lrelu_alpha_float_expect_not_report_exception)
     uint64_t regvalU64 = 123463;
     uint16_t regvalHalf = 123464;
     uint32_t regvalFloat = 123465;
-    RegisterType regType = RegisterType::LRELU_ALPHA;
-    size_t regIdx = static_cast<size_t>(regType);
-    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regIdx].regDftVal;
+    size_t regType = static_cast<size_t>(RegisterType::LRELU_ALPHA);
+    uint64_t regvalDft = Sanitizer::g_regInfoTbl[regType].regDftVal;
     RecordType recordType = RecordType::SET_LRELU_ALPHA;
     uint16_t coreId = 1;
+    int64_t regIdx = UT_GetRegIdx();
 
     // 重置为默认值不报告警 - float
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, static_cast<uint64_t>(regvalFloat));
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, static_cast<uint64_t>(regvalFloat), regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
-    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, regvalDft);
+    UT_FillRegRecord(record, recordType, coreId, RegisterValueType::VAL_FLOAT, regvalDft, regIdx);
     RecordPreProcess::GetInstance().Process(record, events);
     ASSERT_EQ(events.size(), 2U);
     events.emplace_back(endEvent);
     regSan.Do(record, events);
 
     std::cout << "[UT_DEBUG]msg: \n" << msg << std::endl;
-    ASSERT_EQ(regSan.regValActual_[coreId][regIdx], regvalDft);
-    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regIdx].regNameStr + " was not reset to default in block aiv("
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].regVal, regvalDft);
+    ASSERT_EQ(regSan.regValActual_[regIdx][regType].blockId, coreId);
+    ASSERT_TRUE(msg.find("Register " + Sanitizer::g_regInfoTbl[regType].regNameStr + " was not reset to default in block aiv("
         + std::to_string(coreId) + ")") == std::string::npos);
     ASSERT_TRUE(msg.find("current valure is (" + std::to_string(regvalFloat) + ")") == std::string::npos);
 }

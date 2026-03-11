@@ -44,7 +44,9 @@ bool RegisterSanitizer::Init()
 {
     for (int i = 0; i < C220_A2_A3_MAXCORE_NUM; ++i) {
         for (int regIdx = 0; regIdx < static_cast<int>(RegisterType::MAX); ++regIdx) {
-            regValActual_[i][regIdx] = g_regInfoTbl[regIdx].regDftVal;
+            regValActual_[i][regIdx].regVal = g_regInfoTbl[regIdx].regDftVal;
+            regValActual_[i][regIdx].blockType = BlockType::AIVEC;
+            regValActual_[i][regIdx].blockId = 0;
         }
     }
 
@@ -71,19 +73,19 @@ void RegisterSanitizer::Do(const SanitizerRecord &record, const std::vector<SanE
     }
 
     for (auto& event : events) {
-        int32_t coreId = event.loc.coreId;
-
         // 某个算子的事件记录全部结束后，检查是否所有需要检查的寄存器都还原回默认值
         if (event.isEndFrame) {
             for (int i = 0; i < C220_A2_A3_MAXCORE_NUM; ++i) {
                 for (int regIdx = 0; regIdx < static_cast<int>(RegisterType::MAX); ++regIdx) {
-                    if ((regValActual_[i][regIdx] != g_regInfoTbl[regIdx].regDftVal) && g_regInfoTbl[regIdx].check) {
+                    if ((regValActual_[i][regIdx].regVal != g_regInfoTbl[regIdx].regDftVal) &&
+                        g_regInfoTbl[regIdx].check) {
                         auto regInfo = RegisterDispInfo {};
-                        regInfo.baseEvent.coreId = i;  // 只使用coreId一个属性
+                        regInfo.baseEvent.coreId = regValActual_[i][regIdx].blockId;
+                        regInfo.baseEvent.blockType = regValActual_[i][regIdx].blockType;
                         regInfo.kernelName = kernelName_;
                         regInfo.regType = static_cast<RegisterType>(regIdx);
                         regInfo.regExpVal.regVal = g_regInfoTbl[regIdx].regDftVal;
-                        regInfo.regActVal.regVal = regValActual_[i][regIdx];
+                        regInfo.regActVal.regVal = regValActual_[i][regIdx].regVal;
 
                         ReportRegisterInfo(regInfo);
                     }
@@ -95,8 +97,11 @@ void RegisterSanitizer::Do(const SanitizerRecord &record, const std::vector<SanE
             continue;
         }
 
-        regValActual_[coreId][static_cast<int>(event.eventInfo.regInfo.regType)] =
-            event.eventInfo.regInfo.regPayLoad.regVal;
+        int64_t regIdx = event.eventInfo.regInfo.regPayLoad.regIdx;  // 调用 GetRegisterIdx() 接口获取的regIdx，与kernel侧保持一致
+        int32_t regType = static_cast<int>(event.eventInfo.regInfo.regType);
+        regValActual_[regIdx][regType].regVal = event.eventInfo.regInfo.regPayLoad.regVal;
+        regValActual_[regIdx][regType].blockType = event.loc.blockType;
+        regValActual_[regIdx][regType].blockId = event.loc.coreId;  // 用于后续输出告警时打印
     }
 }
 

@@ -68,6 +68,7 @@ __aicore__ inline void RecordSetRegister(EXTRA_PARAMS_DEC, T Register::*reg, T v
     RegisterSetRecord record {};
     record.regPayLoad.regValType = regValType;
     record.regPayLoad.regVal = value;
+    record.regPayLoad.regIdx = GetRegisterIdx();
 
     RecordRegister(EXTRA_PARAMS, reg, value);
     DumpRegisterSetRecord<recordType>(EXTRA_PARAMS, record);
@@ -78,6 +79,7 @@ __aicore__ inline void RecordVectorMask(EXTRA_PARAMS_DEC, uint64_t reg_idx, uint
     RegisterSetRecord record {};
     record.regPayLoad.regValType = RegisterValueType::VAL_UINT64;
     record.regPayLoad.regVal = reg_value;
+    record.regPayLoad.regIdx = GetRegisterIdx();
 
     static constexpr uint64_t vectorMaskIdx0 = 0UL;
     static constexpr uint64_t vectorMaskIdx1 = 1UL;
@@ -115,6 +117,7 @@ __aicore__ inline void RecordLreluAlpha(EXTRA_PARAMS_DEC, T value, RegisterValue
     RegisterSetRecord record {};
     record.regPayLoad.regValType = lreluReg.regValType;
     record.regPayLoad.regVal = lreluReg.regVal;
+    record.regPayLoad.regIdx = GetRegisterIdx();
     DumpRegisterSetRecord<RecordType::SET_LRELU_ALPHA>(EXTRA_PARAMS, record);
 }
 
