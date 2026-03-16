@@ -3396,7 +3396,7 @@ static void ParseMstxCrossCoreBarrier(const KernelRecord &record, std::vector<Sa
 static void ParseMstxCrossCoreSetFlag(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     auto &mstxRecord = record.payload.mstxRecord;
-    auto &mstxCrossCoreSetFlag = mstxRecord.interface.mstxCrossCoreSetWaitFlag;
+    auto &mstxCrossCoreSetFlag = mstxRecord.interface.mstxCrossCoreSetFlag;
     if (mstxCrossCoreSetFlag.peerCoreId >= 0) {
         SAN_WARN_LOG("MstxCrossCoreSetFlag emits signal to certain core is unsupported.");
     }
@@ -3419,7 +3419,7 @@ static void ParseMstxCrossCoreSetFlag(const KernelRecord &record, std::vector<Sa
 static void ParseMstxCrossCoreWaitFlag(const KernelRecord &record, std::vector<SanEvent> &events)
 {
     auto &mstxRecord = record.payload.mstxRecord;
-    auto &mstxCrossCoreWaitFlag = mstxRecord.interface.mstxCrossCoreSetWaitFlag;
+    auto &mstxCrossCoreWaitFlag = mstxRecord.interface.mstxCrossCoreWaitFlag;
 
     if (mstxCrossCoreWaitFlag.pipeBarrierAll) {
         CreatePipeAllSyncEvent(record, events, mstxRecord);

@@ -1,0 +1,4 @@
+file(GLOB HEADER_FILES "*.h")
+install(FILES ${HEADER_FILES}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+)

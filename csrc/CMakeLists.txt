@@ -25,12 +25,14 @@ add_subdirectory(core)
 add_subdirectory(stub_def)
 add_subdirectory(hooks)
 add_subdirectory(plugin)
+add_subdirectory(include)
 
 target_include_directories(
     ascend_san PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                       ${SECUREC_INC_DIR}
                       ${JSON_INC}
                       ${CSRC_INC_DIR}
+                      ${SANITIZER_INC_DIR}
 )
 target_link_libraries(ascend_san c_sec pthread stdc++fs dl)
 target_link_options(ascend_san PRIVATE "-Wl,-z,defs")
@@ -39,6 +41,7 @@ target_include_directories(
     ascend_san_stub PUBLIC ${FRAMEWORK_INC_DIR}
                            ${SECUREC_INC_DIR}
                            ${CSRC_INC_DIR}
+                           ${SANITIZER_INC_DIR}
 )
 target_link_libraries(ascend_san_stub c_sec pthread)
 target_link_options(ascend_san_stub PRIVATE "-Wl,-z,defs")

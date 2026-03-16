@@ -472,7 +472,14 @@ std::ostream &operator<<(std::ostream &os, MstxCrossCoreBarrier const &record)
               << ", " << "pipeBarrierAll:" << std::boolalpha << record.pipeBarrierAll;
 }
 
-std::ostream &operator<<(std::ostream &os, MstxCrossCoreSetWaitFlag const &record)
+std::ostream &operator<<(std::ostream &os, MstxCrossCoreSetFlag const &record)
+{
+    return os << ", " << "eventId:" << record.eventId
+              << ", " << "peerCoreId:" << record.peerCoreId
+              << ", " << "pipeBarrierAll:" << std::boolalpha << record.pipeBarrierAll;
+}
+
+std::ostream &operator<<(std::ostream &os, MstxCrossCoreWaitFlag const &record)
 {
     return os << ", " << "eventId:" << record.eventId
               << ", " << "peerCoreId:" << record.peerCoreId
@@ -570,9 +577,9 @@ std::ostream &operator<<(std::ostream &os, MstxRecord const &record)
         {InterfaceType::MSTX_CROSS_CORE_BARRIER,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreBarrier; }},
         {InterfaceType::MSTX_CROSS_CORE_SET_FLAG,
-            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreSetWaitFlag; }},
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreSetFlag; }},
         {InterfaceType::MSTX_CROSS_CORE_WAIT_FLAG,
-            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreSetWaitFlag; }},
+            [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxCrossCoreWaitFlag; }},
         {InterfaceType::MSTX_VEC_UNARY_OP,
             [](std::ostream &os, MstxRecord const &r) { os << r.interface.mstxVecUnaryDesc; }},
         {InterfaceType::MSTX_VEC_BINARY_OP,

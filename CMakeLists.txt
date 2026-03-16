@@ -10,7 +10,8 @@ get_filename_component(ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR} ABSOLUTE)
 get_filename_component(THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty ABSOLUTE)
 get_filename_component(JSON_INC ${THIRD_PARTY_DIR}/json/include/ ABSOLUTE)
 get_filename_component(SECUREC_INC_DIR ${THIRD_PARTY_DIR}/securec/include ABSOLUTE)
-get_filename_component(SANITIZER_THIRDPARTY_INCLUDE csrc/include/thirdparty  ABSOLUTE)
+get_filename_component(SANITIZER_INC_DIR csrc/include ABSOLUTE)
+get_filename_component(SANITIZER_THIRDPARTY_INCLUDE csrc/include/thirdparty ABSOLUTE)
 get_filename_component(MSOPSCOMMON_INC ${CMAKE_CURRENT_SOURCE_DIR}/msopscommon/csrc/kernel_injection/include/ ABSOLUTE)
 
 # 检查是否可用 ccache

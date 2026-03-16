@@ -19,6 +19,7 @@
 
 #include "arch_def.h"
 #include "utility/struct.h"
+#include "sanitizer_report.h"
 
 /*************************************************************************************
  * This header file is included by both c/c++ and cce kernel. Never include standard *
@@ -143,9 +144,6 @@ constexpr uint64_t MEMORY_STATUS_MASK = 0xFU;
 constexpr uint64_t THREAD_ID_MASK = 0x7FFU;
 } // namespace OnlineShadowMemory
 
-// MSTX API 信息上报时 API 的名字长度
-constexpr std::size_t MSTX_API_NAME_LENGTH = 64UL;
- 
 // 在线shadow memory的单字节状态
 enum class OnlineSmAddrStatus : uint64_t {
     LOCKED_BY_OTHER_THREADS = 1U,
@@ -489,29 +487,10 @@ enum class MemOpType : uint32_t { // 待修改为uint8_t
     INVALID,
 };
 
-/// 内存空间枚举，MemOpRecord 使用，后续逐步弃用
-enum class AddressSpace : int32_t { // 待修改为int8_t
-    PRIVATE = 0,
-    GM,
-    L1,
-    L0A,
-    L0B,
-    L0C,
-    UB,
-    BT,         // bias table
-    FB,         // fixPipe buffer
-    INVALID = -1,
-};
-
 enum class AccessType: uint8_t {
     READ = 0U,
     WRITE,
     MEMCPY_BLOCKS,
-};
-
-enum class MaskMode : uint8_t {
-    MASK_NORM = 0U,
-    MASK_COUNT,
 };
 
 /// 设备信息
@@ -556,15 +535,6 @@ enum class BlockType : uint8_t {
     AIVEC,
     AICUBE,
     AICORE,
-};
-
-struct VectorMask {
-    bool operator==(const VectorMask &rhs) const
-    {
-        return mask0 == rhs.mask0 && mask1 == rhs.mask1;
-    }
-    uint64_t mask0;  // 对应到硬件的 mask0 寄存器
-    uint64_t mask1;  // 对应到硬件的 mask1 寄存器
 };
 
 struct CompareMask {
@@ -849,105 +819,6 @@ struct MstxHcclRecordV {
     int32_t flagId; // flagId为0表示AlltoAllV接口
 };
 
-/// 此枚举表示MstxRecord中inferfaceId对应的记录类型
-enum class InterfaceType : uint32_t {
-    MSTX_SET_CROSS_SYNC = 0,
-    MSTX_WAIT_CROSS_SYNC,
-    MSTX_HCCL,
-    MSTX_HCCLV,
-    MSTX_CROSS_CORE_BARRIER = 4,
-    MSTX_CROSS_CORE_SET_FLAG,
-    MSTX_CROSS_CORE_WAIT_FLAG,
-
-    MSTX_FUSE_SCOPE_START = 1000,  // 融合语义范围开始标记，范围内的指令记录会被忽略
-    MSTX_FUSE_SCOPE_END,           // 融合语义范围结束标记
-
-    MSTX_VEC_UNARY_OP = 3000,
-    MSTX_VEC_BINARY_OP,
-
-    MSTX_DATA_COPY = 4001,
-    MSTX_DATA_COPY_PAD,
-    MSTX_WITH_TENSOR,
-};
-
-struct MstxCrossCoreBarrier {
-    uint32_t usedCoreNum;
-    uint32_t *usedCoreId;
-    bool isAIVOnly;
-    bool pipeBarrierAll;
-};
-
-struct MstxCrossCoreSetWaitFlag {
-    int32_t eventId;
-    int32_t peerCoreId;
-    bool pipeBarrierAll;
-};
-
-struct MstxTensorDesc {
-    AddressSpace space;
-    uint64_t addr;
-    uint64_t size;
-    uint8_t dataBits;
-};
-
-struct MstxVecWrapper {
-    MaskMode maskMode;
-    VectorMask mask;
-    uint32_t reserveBufSize;
-    bool useMask;  // 是否使用 api 传入的 vector mask
-};
-
-struct MstxVecUnaryDesc {
-    MstxTensorDesc dst;
-    MstxTensorDesc src;
-    MstxVecWrapper wrapper;
-    uint32_t blockNum;
-    uint32_t dstBlockStride;
-    uint32_t srcBlockStride;
-    uint32_t repeatTimes;
-    uint32_t dstRepeatStride;
-    uint32_t srcRepeatStride;
-    char name[MSTX_API_NAME_LENGTH];
-};
-
-struct MstxVecBinaryDesc {
-    MstxTensorDesc dst;
-    MstxTensorDesc src0;
-    MstxTensorDesc src1;
-    MstxVecWrapper wrapper;
-    uint32_t blockNum;
-    uint32_t dstBlockStride;
-    uint32_t src0BlockStride;
-    uint32_t src1BlockStride;
-    uint32_t repeatTimes;
-    uint32_t dstRepeatStride;
-    uint32_t src0RepeatStride;
-    uint32_t src1RepeatStride;
-    char name[MSTX_API_NAME_LENGTH];
-};
-
-struct MstxDataCopyDesc {
-    MstxTensorDesc dst;
-    MstxTensorDesc src;
-    uint32_t lenBurst;
-    uint32_t nBurst;
-    uint32_t srcGap;
-    uint32_t dstGap;
-    char name[MSTX_API_NAME_LENGTH];
-};
-
-struct MstxDataCopyPadDesc {
-    MstxTensorDesc dst;
-    MstxTensorDesc src;
-    uint32_t lenBurst;
-    uint32_t nBurst;
-    uint32_t srcGap;
-    uint32_t dstGap;
-    uint32_t leftPad;
-    uint32_t rightPad;
-    char name[MSTX_API_NAME_LENGTH];
-};
-
 struct MstxRecord {
     InterfaceType interfaceType;
     uint32_t bufferLens;
@@ -962,7 +833,8 @@ struct MstxRecord {
         MstxDataCopyDesc mstxDataCopyDesc;
         MstxDataCopyPadDesc mstxDataCopyPadDesc;
         MstxCrossCoreBarrier mstxCrossCoreBarrier;
-        MstxCrossCoreSetWaitFlag mstxCrossCoreSetWaitFlag;
+        MstxCrossCoreSetFlag mstxCrossCoreSetFlag;
+        MstxCrossCoreWaitFlag mstxCrossCoreWaitFlag;
     } interface;
 };
 

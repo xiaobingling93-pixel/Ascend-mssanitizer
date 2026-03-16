@@ -44,7 +44,11 @@ function(compile_cce_object CCE_AICORE_ARCH SANITIZER_STUB_OBJECT SANITIZER_STUB
   endif()
 
   add_library(${SANITIZER_STUB_OBJECT} OBJECT ${SANITIZER_STUB_FILES})
-  target_include_directories(${SANITIZER_STUB_OBJECT} PUBLIC ${CSRC_INC_DIR} ${SANITIZER_THIRDPARTY_INCLUDE})
+  target_include_directories(${SANITIZER_STUB_OBJECT} PUBLIC
+    ${CSRC_INC_DIR}
+    ${SANITIZER_THIRDPARTY_INCLUDE}
+    ${SANITIZER_INC_DIR}
+  )
   # remove secure flags from parent project
   set_target_properties(${SANITIZER_STUB_OBJECT} PROPERTIES COMPILE_OPTIONS "")
   set_target_properties(${SANITIZER_STUB_OBJECT} PROPERTIES COMPILE_FLAGS ${SANITIZER_COMPILE_FLAGS})

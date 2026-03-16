@@ -17,6 +17,7 @@ target_include_directories(ascend_hal_hook PUBLIC
   ${SECUREC_INC_DIR}
   ${HOOK_INC_DIR}
   ${SANITIZER_THIRDPARTY_INCLUDE}
+  ${SANITIZER_INC_DIR}
 )
 target_link_libraries(ascend_hal_hook ascend_hal c_sec dl pthread)
 target_link_options(ascend_hal_hook PRIVATE "-Wl,-z,defs")

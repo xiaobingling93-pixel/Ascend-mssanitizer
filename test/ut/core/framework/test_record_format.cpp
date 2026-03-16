@@ -1254,9 +1254,9 @@ TEST(RecordFormat, format_mstx_cross_core_barrier_record_expect_correct_result)
     ASSERT_NE(result.find("pipeBarrierAll:true"), std::string::npos);
 }
 
-TEST(RecordFormat, format_mstx_cross_core_set_wait_flag_record_expect_correct_result)
+TEST(RecordFormat, format_mstx_cross_core_set_flag_record_expect_correct_result)
 {
-    MstxCrossCoreSetWaitFlag record;
+    MstxCrossCoreSetFlag record;
     record.eventId = 10;
     record.peerCoreId = -1;
     record.pipeBarrierAll = true;
