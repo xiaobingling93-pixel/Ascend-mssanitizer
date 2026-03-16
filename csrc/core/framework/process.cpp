@@ -119,7 +119,7 @@ void Process::Launch(const ExecCmd &cmd)
         SetPreloadEnv(config_);
         DoLaunch(cmd);
     } else {
-        PostProcess(cmd);
+        PostProcess(pid, cmd);
     }
 }
 
@@ -146,11 +146,11 @@ void Process::PreProcess(Config const &config)
     return;
 }
 
-void Process::PostProcess(ExecCmd const &cmd)
+void Process::PostProcess(pid_t child, ExecCmd const &cmd)
 {
     // 可能存在后处理，比如，完成最后一次数据搬运的确认等
     auto status = int32_t {};
-    wait(&status);
+    waitpid(child, &status, 0);
     uint32_t ustatus = static_cast<uint32_t>(status);
     if (WIFEXITED(ustatus)) {
         if (WEXITSTATUS(ustatus) != EXIT_SUCCESS) {

@@ -55,7 +55,7 @@ public:
 
 private:
     void PreProcess(Config const &config);
-    void PostProcess(ExecCmd const &cmd);
+    void PostProcess(pid_t child, ExecCmd const &cmd);
     void DoLaunch(const ExecCmd& cmd);
 
 private:
