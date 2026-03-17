@@ -88,16 +88,6 @@ bool IsMstxWaitRecord(const KernelRecord &kernelRecord)
            kernelRecord.payload.mstxRecord.interface.mstxCrossRecord.isMore;
 }
 
-bool IsHardSyncRecordCacheRequired(const SanitizerRecord & record)
-{
-    if (record.payload.kernelRecord.recordType == RecordType::HSET_FLAG) {
-        auto hardSyncRecord = record.payload.kernelRecord.payload.hardSyncRecord;
-        // 当v为1时，代表该hset没有跟内存指令绑定,hwait不做缓存处理,直接退化成wait
-        return hardSyncRecord.v == 0;
-    }
-    return false;
-}
-
 template<typename T>
 bool HardSyncMatchedComp(const HardSyncRecord &hardSyncRecord, const KernelRecord &record,
     T KernelRecord::Payload::*item)
@@ -111,129 +101,9 @@ bool HardSyncMatchedComp(const HardSyncRecord &hardSyncRecord, const KernelRecor
     return memTypeMatched && pipeTypeMatched && coreIdMatched;
 }
 
-template<typename T>
-bool HardSyncMatchedForDecompressHeaderComp(const HardSyncRecord &hardSyncRecord, const KernelRecord &record,
-    T KernelRecord::Payload::*item)
-{
-    T payloadRecord = record.payload.*item;
-    bool memTypeMatched = payloadRecord.srcMemType == hardSyncRecord.memory;
-    bool pipeTypeMatched = hardSyncRecord.src == PipeType::PIPE_MTE2;
-    bool coreIdMatched = payloadRecord.location.blockId == hardSyncRecord.location.blockId;
-    return memTypeMatched && pipeTypeMatched && coreIdMatched;
-}
-
-static const std::map<RecordType, std::function<bool(const HardSyncRecord& hardSyncRecord,
-        const KernelRecord& record)>> g_hardSyncMatchMap = {
-        {RecordType::LOAD_2D, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::load2DRecord);
-        }},
-        {RecordType::LOAD_2D_SPARSE, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::load2DSparseRecord);
-        }},
-        {RecordType::LOAD_2D_TRANSPOSE, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::load2DTransposeRecord);
-        }},
-        {RecordType::DECOMPRESS_HEADER, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedForDecompressHeaderComp(hardSyncRecord, record,
-                &KernelRecord::Payload::decompressHeaderRecord);
-        }},
-        {RecordType::BROADCAST, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::broadcastRecord);
-        }},
-        {RecordType::LOAD_3D, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::load3DRecord);
-        }},
-        {RecordType::DMA_MOV, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::dmaMovRecord);
-        }},
-        {RecordType::DMA_MOV_CONV_RELU, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::dmaMovConvReluRecord);
-        }},
-        {RecordType::DMA_MOV_DEPTH_WISE, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::dmaMovConvReluRecord);
-        }},
-        {RecordType::MOV_BT, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::movBtRecord);
-        }},
-        {RecordType::MOV_FP, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            bool memTypeMatched = hardSyncRecord.memory == MemType::L0C || hardSyncRecord.memory == MemType::GM;
-            bool pipeTypeMatched = hardSyncRecord.src == PipeType::PIPE_FIX;
-            bool coreIdMatched = record.payload.movFpRecord.location.blockId == hardSyncRecord.location.blockId;
-            return memTypeMatched && pipeTypeMatched && coreIdMatched;
-        }},
-        {RecordType::DC_PRELOAD, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            bool memTypeMatched = hardSyncRecord.memory == MemType::GM;
-            bool pipeTypeMatched = hardSyncRecord.src == PipeType::PIPE_S;
-            bool coreIdMatched = record.payload.movFpRecord.location.blockId == hardSyncRecord.location.blockId;
-            return memTypeMatched && pipeTypeMatched && coreIdMatched;
-        }},
-        {RecordType::LOAD_B2, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::loadB2Record);
-        }},
-        {RecordType::LOAD_A_WINOGRAD, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::loadAWinogradRecord);
-        }},
-        {RecordType::LOAD_B_WINOGRAD, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            return HardSyncMatchedComp(hardSyncRecord, record, &KernelRecord::Payload::loadBWinogradRecord);
-        }},
-        {RecordType::MATRIX_MUL_OP, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            bool memTypeMatched = hardSyncRecord.memory == MemType::L0A || hardSyncRecord.memory == MemType::L0B ||
-                hardSyncRecord.memory == MemType::L0C;
-            bool pipeTypeMatched = hardSyncRecord.src == PipeType::PIPE_M;
-            bool coreIdMatched = record.payload.matrixMulOpRecord.location.blockId == hardSyncRecord.location.blockId;
-            return memTypeMatched && pipeTypeMatched && coreIdMatched;
-        }},
-        {RecordType::SET_2D, [](const HardSyncRecord& hardSyncRecord, const KernelRecord& record) {
-            bool memTypeMatched = record.payload.set2DRecord.dstMemType == hardSyncRecord.memory;
-            auto recordPipeType = record.payload.set2DRecord.dstMemType == MemType::L1 ?
-                PipeType::PIPE_MTE2 : PipeType::PIPE_MTE1;
-            bool pipeTypeMatched = recordPipeType == hardSyncRecord.src;
-            bool coreIdMatched = record.payload.set2DRecord.location.blockId == hardSyncRecord.location.blockId;
-            return memTypeMatched && pipeTypeMatched && coreIdMatched;
-        }}
-    };
-
-bool IsHSetMatchedRecord(const HardSyncRecord &hardSyncRecord, const KernelRecord &record)
-{
-    auto iter = g_hardSyncMatchMap.find(record.recordType);
-    return iter == g_hardSyncMatchMap.end() ? false : iter->second(hardSyncRecord, record);
-}
-
-void RecordPreProcess::GetSyncRecord(const KernelRecord &record, std::vector<SanitizerRecord> &hSetRecords)
-{
-    // 硬同步指令只对CUBE指令生效
-    if (record.blockType != BlockType::AICUBE) {
-        return;
-    }
-    if (hSyncRecords_.size() == 0) {
-        return;
-    }
-    for (auto it = hSyncRecords_.begin(); it != hSyncRecords_.end();) {
-        // 校验该指令是否与缓存的HSet指令匹配
-        if (IsHSetMatchedRecord(it->payload.kernelRecord.payload.hardSyncRecord, record)) {
-            hSetRecords.emplace_back(*it);
-            it = hSyncRecords_.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
-
 void RecordPreProcess::Parse(const SanitizerRecord &record, std::vector<SanEvent> &events)
 {
-    // 检查是否是需要缓存的硬件同步事件
-    if (IsHardSyncRecordCacheRequired(record)) {
-        hSyncRecords_.emplace_back(record);
-        return;
-    }
-    std::vector<SanitizerRecord> hSetRecords;
-    // 获取当前指令匹配的硬同步指令
-    GetSyncRecord(record.payload.kernelRecord, hSetRecords);
     RecordParse::Parse(record, events);
-    for (auto it : hSetRecords) {
-        // hset_flag退化成set_flag
-        RecordParse::Parse(it, events);
-    }
 }
 
 bool CrossWaitRecordIsEqual(const MstxCrossWaitRecordInfo &lhs, const MstxCrossRecord &rhs, uint32_t coreID)

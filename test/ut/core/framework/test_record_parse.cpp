@@ -2610,8 +2610,9 @@ TEST_F(TestRecordParse, parse_wait_flag_dev_record_expect_success_and_correct)
     ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.flagId, 1);
 }
 
-TEST_F(TestRecordParse, parse_hsync_record)
+TEST_F(TestRecordParse, parse_hsync_record_with_mode_v_1_expect_no_set_wait_sync_event)
 {
+    RecordParse::ResetAll();
     std::vector<SanEvent> events;
     KernelRecord record{};
     record.recordType = RecordType::HSET_FLAG;
@@ -2621,34 +2622,31 @@ TEST_F(TestRecordParse, parse_hsync_record)
     record.payload.hardSyncRecord.dst = PipeType::PIPE_M;
     record.payload.hardSyncRecord.eventID = 1;
     record.payload.hardSyncRecord.memory = MemType::L0A;
+    record.payload.hardSyncRecord.v = 1;
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
     sanitizerRecord.payload.kernelRecord = record;
 
     RecordParse::Parse(sanitizerRecord, events);
     record.recordType = RecordType::HWAIT_FLAG;
+    record.payload.hardSyncRecord.v = 0;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     ASSERT_EQ(events.size(), 2);
 
     ASSERT_EQ(events[0].loc.coreId, 7);
-    ASSERT_EQ(events[0].type, EventType::SYNC_EVENT);
+    ASSERT_EQ(events[0].type, EventType::H_SYNC_EVENT);
     ASSERT_EQ(events[0].pipe, PipeType::PIPE_MTE1);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.opType, SyncType::SET_FLAG);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.srcPipe, PipeType::PIPE_MTE1);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.dstPipe, PipeType::PIPE_M);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.eventId, 1);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.memType, MemType::L0A);
-    ASSERT_EQ(events[0].eventInfo.syncInfo.isRetrogress, true);
-    ASSERT_EQ(events[1].loc.coreId, 7);
-    ASSERT_EQ(events[1].type, EventType::SYNC_EVENT);
-    ASSERT_EQ(events[1].pipe, PipeType::PIPE_M);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.opType, SyncType::WAIT_FLAG);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.srcPipe, PipeType::PIPE_MTE1);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.dstPipe, PipeType::PIPE_M);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.eventId, 1);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.memType, MemType::L0A);
-    ASSERT_EQ(events[1].eventInfo.syncInfo.isRetrogress, true);
+    ASSERT_EQ(events[0].eventInfo.hsyncInfo.opType, SyncType::HSET_FLAG);
+    ASSERT_EQ(events[0].eventInfo.hsyncInfo.srcPipe, PipeType::PIPE_MTE1);
+    ASSERT_EQ(events[0].eventInfo.hsyncInfo.dstPipe, PipeType::PIPE_M);
+    ASSERT_EQ(events[0].eventInfo.hsyncInfo.eventId, 1);
+    ASSERT_EQ(events[0].eventInfo.hsyncInfo.memType, MemType::L0A);
+    ASSERT_EQ(events[1].eventInfo.hsyncInfo.opType, SyncType::HWAIT_FLAG);
+    ASSERT_EQ(events[1].eventInfo.hsyncInfo.srcPipe, PipeType::PIPE_MTE1);
+    ASSERT_EQ(events[1].eventInfo.hsyncInfo.dstPipe, PipeType::PIPE_M);
+    ASSERT_EQ(events[1].eventInfo.hsyncInfo.eventId, 1);
+    ASSERT_EQ(events[1].eventInfo.hsyncInfo.memType, MemType::L0A);
 }
 
 TEST_F(TestRecordParse, parse_atomic_record)
@@ -2837,6 +2835,7 @@ TEST_F(TestRecordParse, parse_wait_flag_and_hwait_flag_end_to_end_in_pipe_record
     KernelRecord record{};
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
+    RecordParse::ResetAll();
 
     record.recordType = RecordType::WAIT_FLAG;
     record.payload.syncRecord.location.blockId = 0;
@@ -2880,39 +2879,51 @@ TEST_F(TestRecordParse, parse_wait_flag_and_hwait_flag_end_to_end_in_pipe_record
     record.payload.hardSyncRecord.dst = PipeType::PIPE_MTE1;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 8);
+    ASSERT_EQ(events.size(), 7);
 }
 
-TEST_F(TestRecordParse, parse_hwait_flag_end_to_end_in_pipe_record_expect_success)
+TEST_F(TestRecordParse, parse_hset_hwait_flag_with_mte1_record_expect_success)
 {
+    RecordParse::ResetAll();
     std::vector<SanEvent> events;
     KernelRecord record{};
     SanitizerRecord sanitizerRecord;
     sanitizerRecord.version = RecordVersion::KERNEL_RECORD;
     RecordParse::ResetSyncInPipeInfo();
 
-    record.recordType = RecordType::HWAIT_FLAG;
+    record.recordType = RecordType::HSET_FLAG;
     record.blockType = BlockType::AICUBE;
     record.payload.hardSyncRecord.location.blockId = 0;
     record.payload.hardSyncRecord.src = PipeType::PIPE_MTE1;
     record.payload.hardSyncRecord.dst = PipeType::PIPE_FIX;
-    record.payload.hardSyncRecord.memory = MemType::L0A;
-    record.payload.hardSyncRecord.eventID = 0;
+    record.payload.hardSyncRecord.memory = MemType::L1;
+    record.payload.hardSyncRecord.eventID = 1;
+    record.payload.hardSyncRecord.v = 0;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
     ASSERT_EQ(events.size(), 1);
 
-    record.payload.hardSyncRecord.src = PipeType::PIPE_FIX;
-    record.payload.hardSyncRecord.dst = PipeType::PIPE_M;
+    record.recordType = RecordType::LOAD_L1_MX_2D;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 2);
+    ASSERT_EQ(events.size(), 3);
+    ASSERT_EQ(events[2].type, EventType::SYNC_EVENT);
+    ASSERT_EQ(events[2].eventInfo.syncInfo.opType, SyncType::SET_FLAG);
+    ASSERT_EQ(events[2].eventInfo.syncInfo.srcPipe, PipeType::PIPE_MTE1);
+    ASSERT_EQ(events[2].eventInfo.syncInfo.dstPipe, PipeType::PIPE_FIX);
+    ASSERT_EQ(events[2].eventInfo.syncInfo.eventId, 120 + 1);
 
-    record.payload.hardSyncRecord.src = PipeType::PIPE_M;
-    record.payload.hardSyncRecord.dst = PipeType::PIPE_MTE1;
+    record.recordType = RecordType::HWAIT_FLAG;
+    record.payload.hardSyncRecord.src = PipeType::PIPE_MTE1;
+    record.payload.hardSyncRecord.dst = PipeType::PIPE_FIX;
     sanitizerRecord.payload.kernelRecord = record;
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 4);
+    ASSERT_EQ(events.size(), 5);
+    ASSERT_EQ(events[4].type, EventType::SYNC_EVENT);
+    ASSERT_EQ(events[4].eventInfo.syncInfo.opType, SyncType::WAIT_FLAG);
+    ASSERT_EQ(events[4].eventInfo.syncInfo.srcPipe, PipeType::PIPE_MTE1);
+    ASSERT_EQ(events[4].eventInfo.syncInfo.dstPipe, PipeType::PIPE_FIX);
+    ASSERT_EQ(events[4].eventInfo.syncInfo.eventId, 120 + 1);
 }
 
 TEST_F(TestRecordParse, parse_cycle_cross_pipe_event_with_two_sync_expect_get_inner_pipe_event_success)

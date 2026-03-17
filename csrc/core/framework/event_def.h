@@ -40,6 +40,7 @@ enum class EventType : uint8_t {
     CROSS_CORE_SOFT_SYNC_EVENT,
     MSTX_CROSS_SYNC_EVENT,
     REGISTER_EVENT,
+    H_SYNC_EVENT,
 };
 
 // 算法预处理阶段hset_flag/hwait_flag处理成普通的set_flag/wait_flag
@@ -57,6 +58,8 @@ enum class SyncType : uint8_t {
     GET_BUF,
     RLS_BUF,
     WAIT_INTRA_BLOCK,
+    HSET_FLAG,
+    HWAIT_FLAG,
 };
 
 enum class RaceCheckType: uint8_t {
@@ -107,6 +110,16 @@ struct SyncOpInfo {
     MemType memType;
     bool isRetrogress;  // 是否由HSet/HWait退化，避免混用导致解析顺序混乱
     bool isGenerated;  // 是否是生成的非原生指令
+};
+
+struct HSyncOpInfo {
+    uint64_t eventId;
+    PipeType srcPipe;
+    PipeType dstPipe;
+    SyncType opType;
+    MemType memType;
+    uint8_t v;
+    bool isReplaced;
 };
 
 struct FftsSyncInfo {
@@ -174,6 +187,7 @@ struct SanEvent {
         MstxCrossInfo mstxCrossInfo;
         AtomicModeInfo atomicModeInfo;
         RegisterOpInfo regInfo;
+        HSyncOpInfo hsyncInfo;
     } eventInfo{};
     VectorTime timeInfo;
     LocInfo loc{};

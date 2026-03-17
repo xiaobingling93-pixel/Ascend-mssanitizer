@@ -42,19 +42,47 @@ inline void SetLocationInfo(SanEvent &event, Record const &record, const BlockTy
     event.loc.pc = record.location.pc;
 }
 
+struct HsetRecordKey {
+    PipeType srcPipe;
+    PipeType dstPipe;
+    uint64_t eventId;
+    MemType memType;
+
+    bool operator < (const HsetRecordKey& other) const
+    {
+        if (srcPipe != other.srcPipe)
+            return srcPipe < other.srcPipe;
+        if (dstPipe != other.dstPipe)
+            return dstPipe < other.dstPipe;
+        if (eventId != other.eventId)
+            return eventId < other.eventId;
+        return memType < other.memType;
+    }
+};
+
+struct HsetRecordState {
+    bool cacheMode0; // 历史指令序列中是否缓存了mode 0 的hset
+    bool cacheMode1; // 历史指令序列中是否缓存了mode 1 的hset
+    bool isTransSet; // 历史指令序列中的Hset指令是否已经转化为set
+};
+
 class RecordParse {
 public:
     static void Parse(const SanitizerRecord &record, std::vector<SanEvent> &events);
     static void ResetSyncInPipeInfo();
+    // for UT
+    static void ResetAll();
     thread_local static std::array<bool, static_cast<uint8_t>(PipeType::SIZE)> setWaitStat_;
     // 用图存储流水间同步信息，key:dst val:[src1, src2, ...]
     using DstSrcGraph = std::unordered_map<PipeType, std::unordered_set<PipeType>>;
     thread_local static DstSrcGraph dstSrcGraph_;
     static std::map<uint64_t, std::tuple<bool, int, KernelRecord>> bufRecord_;
+    thread_local static std::map<HsetRecordKey, HsetRecordState> hsetSyncMap_;
 private:
     static void UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEvent> &events);
     /// 递归函数，查找和targetPipe直接或间接相连的src pipe
     static void DfsSrcGraph(PipeType targetPipe, std::unordered_set<PipeType> &visited);
+    static void ProcessHsetWaitSync(std::vector<SanEvent> &events);
 };
 }
 #endif

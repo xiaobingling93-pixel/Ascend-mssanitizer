@@ -60,8 +60,6 @@ public:
 
     void UpdateMergeInfo(const KernelRecord &kernelRecord);
 
-    void GetSyncRecord(const KernelRecord &record, std::vector<SanitizerRecord> &hSetRecords);
-
     template<class T, class... Args>
     friend std::unique_ptr<T> MakeUnique(Args &&... args);
 
@@ -72,7 +70,6 @@ public:
     MstxCrossWaitMergeInfo waitMergeInfo_;
 
     bool mergeTag_{}; // 是否可以合并记录的标志位
-    std::vector<SanitizerRecord> hSyncRecords_; // 存放硬同步HSet指令
     static std::mutex mtx_;
 private:
     RecordPreProcess() {};

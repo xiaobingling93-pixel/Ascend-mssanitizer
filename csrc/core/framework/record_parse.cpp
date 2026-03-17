@@ -55,6 +55,12 @@ static bool IsValidHardSyncRecord(const KernelRecord &record)
         hardSyncRecord.memory == MemType::INVALID) {
         return false;
     }
+    if (hardSyncRecord.v > 1) {
+        return false;
+    }
+    if (hardSyncRecord.eventID > 3) {
+        return false;
+    }
     return true;
 }
 
@@ -73,7 +79,6 @@ SanEvent CreateCrossPipeSyncEvent(const SyncType syncType, const PipeType pipeSr
     event.eventInfo.syncInfo.dstPipe = pipeDst;
     event.eventInfo.syncInfo.eventId = eventID11;
     event.eventInfo.syncInfo.memType = MemType::INVALID;
-    event.eventInfo.syncInfo.isRetrogress = false;
     event.eventInfo.syncInfo.isGenerated = true;
     return event;
 }
@@ -3226,15 +3231,14 @@ static void ParseRecordHsetFlag(const KernelRecord &record, std::vector<SanEvent
     }
     SanEvent event;
     SetLocationInfo(event, record.payload.hardSyncRecord, record.blockType, record.serialNo);
-    event.type = EventType::SYNC_EVENT;
+    event.type = EventType::H_SYNC_EVENT;
     event.pipe = record.payload.hardSyncRecord.src;
-    event.eventInfo.syncInfo.opType = SyncType::SET_FLAG;
-    event.eventInfo.syncInfo.srcPipe = record.payload.hardSyncRecord.src;
-    event.eventInfo.syncInfo.dstPipe = record.payload.hardSyncRecord.dst;
-    event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.hardSyncRecord.eventID);
-    event.eventInfo.syncInfo.memType = record.payload.hardSyncRecord.memory;
-    event.eventInfo.syncInfo.isRetrogress = true;
-    event.eventInfo.syncInfo.isGenerated = true;
+    event.eventInfo.hsyncInfo.opType = SyncType::HSET_FLAG;
+    event.eventInfo.hsyncInfo.srcPipe = record.payload.hardSyncRecord.src;
+    event.eventInfo.hsyncInfo.dstPipe = record.payload.hardSyncRecord.dst;
+    event.eventInfo.hsyncInfo.eventId = record.payload.hardSyncRecord.eventID;
+    event.eventInfo.hsyncInfo.memType = record.payload.hardSyncRecord.memory;
+    event.eventInfo.hsyncInfo.v = record.payload.hardSyncRecord.v;
     events.emplace_back(event);
 }
 
@@ -3246,15 +3250,14 @@ static void ParseRecordHwaitFlag(const KernelRecord &record, std::vector<SanEven
     }
     SanEvent event;
     SetLocationInfo(event, record.payload.hardSyncRecord, record.blockType, record.serialNo);
-    event.type = EventType::SYNC_EVENT;
+    event.type = EventType::H_SYNC_EVENT;
     event.pipe = record.payload.hardSyncRecord.dst;
-    event.eventInfo.syncInfo.opType = SyncType::WAIT_FLAG;
-    event.eventInfo.syncInfo.srcPipe = record.payload.hardSyncRecord.src;
-    event.eventInfo.syncInfo.dstPipe = record.payload.hardSyncRecord.dst;
-    event.eventInfo.syncInfo.eventId = static_cast<uint32_t>(record.payload.hardSyncRecord.eventID);
-    event.eventInfo.syncInfo.memType = record.payload.hardSyncRecord.memory;
-    event.eventInfo.syncInfo.isRetrogress = true;
-    event.eventInfo.syncInfo.isGenerated = true;
+    event.eventInfo.hsyncInfo.opType = SyncType::HWAIT_FLAG;
+    event.eventInfo.hsyncInfo.srcPipe = record.payload.hardSyncRecord.src;
+    event.eventInfo.hsyncInfo.dstPipe = record.payload.hardSyncRecord.dst;
+    event.eventInfo.hsyncInfo.eventId = record.payload.hardSyncRecord.eventID;
+    event.eventInfo.hsyncInfo.memType = record.payload.hardSyncRecord.memory;
+    event.eventInfo.hsyncInfo.v = record.payload.hardSyncRecord.v;
     events.emplace_back(event);
 }
 
@@ -4132,8 +4135,11 @@ void RecordParse::UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEv
     uint8_t srcPipe = static_cast<uint8_t>(event.eventInfo.syncInfo.srcPipe);
     uint8_t dstPipe = static_cast<uint8_t>(event.eventInfo.syncInfo.dstPipe);
     uint8_t latestEventId = static_cast<uint8_t>(event.eventInfo.syncInfo.eventId);
-    if (srcPipe >= static_cast<uint8_t>(PipeType::SIZE) || dstPipe >= static_cast<uint8_t>(PipeType::SIZE) ||
-        latestEventId >= static_cast<uint8_t>(EventID::VALID_EVENT_ID_SIZE)) {
+    bool isOutOfRange = srcPipe >= static_cast<uint8_t>(PipeType::SIZE) ||
+        dstPipe >= static_cast<uint8_t>(PipeType::SIZE) ||
+        latestEventId >= static_cast<uint8_t>(EventID::VALID_EVENT_ID_SIZE);
+    if ((event.eventInfo.syncInfo.isGenerated && !event.eventInfo.syncInfo.isRetrogress) ||
+        (!event.eventInfo.syncInfo.isGenerated && isOutOfRange)) {
         return;
     }
     // 根据srcPipe/dstPipe更新数组状态，发现有pipe成环就插入pipe_barrier
@@ -4160,11 +4166,95 @@ void RecordParse::UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEv
 
 thread_local std::array<bool, static_cast<uint8_t>(PipeType::SIZE)> RecordParse::setWaitStat_ = {};
 thread_local RecordParse::DstSrcGraph RecordParse::dstSrcGraph_ = {};
+thread_local std::map<HsetRecordKey, HsetRecordState> RecordParse::hsetSyncMap_ = {};
 
 void RecordParse::ResetSyncInPipeInfo()
 {
     setWaitStat_ = {};
     dstSrcGraph_ = {};
+}
+
+void RecordParse::ResetAll()
+{
+    setWaitStat_ = {};
+    dstSrcGraph_ = {};
+    hsetSyncMap_ = {};
+    bufRecord_ = {};
+}
+
+SanEvent HsetWaitCreateSyncEvent(const SyncType syncType, const PipeType pipeSrc, const PipeType pipeDst,
+    const SanEvent &event, uint64_t eventId)
+{
+    // 一般EVENT_ID取值0~7，这里是为了与正常set_flag/wait_flag区分开
+    constexpr uint32_t hsetStartEventID = 120U;
+    SanEvent dstEvent;
+    dstEvent.serialNo = event.serialNo;
+    dstEvent.loc = event.loc;
+    dstEvent.type = EventType::SYNC_EVENT;
+    dstEvent.pipe = syncType == SyncType::SET_FLAG ? pipeSrc : pipeDst;
+    dstEvent.eventInfo.syncInfo.opType = syncType;
+    dstEvent.eventInfo.syncInfo.srcPipe = pipeSrc;
+    dstEvent.eventInfo.syncInfo.dstPipe = pipeDst;
+    dstEvent.eventInfo.syncInfo.eventId = hsetStartEventID + eventId;
+    dstEvent.eventInfo.syncInfo.memType = MemType::INVALID;
+    dstEvent.eventInfo.syncInfo.isRetrogress = true;
+    dstEvent.eventInfo.syncInfo.isGenerated = true;
+    return dstEvent;
+}
+
+void RecordParse::ProcessHsetWaitSync(std::vector<SanEvent> &events)
+{
+    for (auto &event : events) {
+        if (event.type != EventType::H_SYNC_EVENT) { continue; }
+        auto &hsyncInfo = event.eventInfo.hsyncInfo;
+        HsetRecordKey key = {hsyncInfo.srcPipe, hsyncInfo.dstPipe, hsyncInfo.eventId, hsyncInfo.memType};
+        if (hsyncInfo.opType == SyncType::HSET_FLAG && !hsyncInfo.isReplaced) {
+            auto &states = hsetSyncMap_[key];
+            if (states.isTransSet) { continue; }
+            if (hsyncInfo.v == 0) {
+                if (states.cacheMode1) {
+                    SAN_ERROR_LOG("The hset parameter is invalid, "
+                        "Setting mode 0 and mode 1 at the same time is not allowed, serialNo:%lu", event.serialNo);
+                }
+                states.cacheMode0 = true;
+            } else if (hsyncInfo.v == 1) {
+                if (states.cacheMode0) {
+                    SAN_ERROR_LOG("The hset parameter is invalid. "
+                        "Setting mode 0 and mode 1 at the same time is not allowed, serialNo:%lu", event.serialNo);
+                }
+                states.cacheMode1 = true;
+            }
+            hsyncInfo.isReplaced = true;
+        } else if (hsyncInfo.opType == SyncType::HWAIT_FLAG && !hsyncInfo.isReplaced) {
+            auto it = hsetSyncMap_.find(key);
+            // 如果有前置hset并且hset已经被替换为set指令，才会启动替换hwait的逻辑
+            if (it != hsetSyncMap_.cend() && it->second.isTransSet) {
+                auto genEvent = HsetWaitCreateSyncEvent(SyncType::WAIT_FLAG, hsyncInfo.srcPipe, hsyncInfo.dstPipe,
+                    events[events.size() - 1], hsyncInfo.eventId);
+                events.push_back(genEvent);
+            }
+            hsetSyncMap_.erase(key);
+            hsyncInfo.isReplaced = true;
+        }
+    }
+
+    for (auto &pair : hsetSyncMap_) {
+        auto &key = pair.first;
+        auto &val = pair.second;
+        if (val.isTransSet || !val.cacheMode0) { continue; }
+        for (auto const &event : events) {
+            // 查找内存事件中是否有和缓存的hset对应的事件
+            if (event.type == EventType::MEM_EVENT && event.pipe == key.srcPipe &&
+                event.eventInfo.memInfo.memType == key.memType) {
+                // 如果存在和hset对应的写入事件，则事件末尾插入一条SET_FLAG事件并清理对应的hsetSyncMap_状态
+                auto genEvent = HsetWaitCreateSyncEvent(SyncType::SET_FLAG, key.srcPipe, key.dstPipe,
+                    events[events.size() - 1], key.eventId);
+                events.push_back(genEvent);
+                val.isTransSet = true;
+                return;
+            }
+        }
+    }
 }
 
 void RecordParse::Parse(const SanitizerRecord &record, std::vector<SanEvent> &events)
@@ -4176,7 +4266,8 @@ void RecordParse::Parse(const SanitizerRecord &record, std::vector<SanEvent> &ev
     }
 
     it->second(kernelRecord, events);
-
+    if (events.size() == 0) { return; }
+    ProcessHsetWaitSync(events);
     UpdateSyncInPipe(kernelRecord, events);
 }
 }
