@@ -40,6 +40,7 @@
     <file_info value="mssanitizer/include" copy_type="source" src_path="${OUTPUT}/include" dst_path="mindstudio-sanitizer/tools/mssanitizer/include" install_path="tools/mssanitizer/include">
         <file value="acl"/>
         <file value="sanitizer.h"/>
+        <file value="sanitizer_report.h"/>
     </file_info>
 
     <file_info value="mssanitizer/lib64" copy_type="source" src_path="${OUTPUT}/lib64" dst_path="mindstudio-sanitizer/tools/mssanitizer/lib64" install_path="tools/mssanitizer/lib64" install_mod="440">
