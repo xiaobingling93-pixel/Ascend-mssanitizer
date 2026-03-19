@@ -1228,6 +1228,7 @@ struct SyncRecord {
     PipeType src;
     PipeType dst;
     uint64_t eventID;
+    bool isGenerated;  // 是否是生成的非原生指令
 };
 
 struct BufRecord {
@@ -1235,6 +1236,7 @@ struct BufRecord {
     PipeType pipe;
     uint64_t bufId;
     BufMode mode;
+    bool isPreprocessed;       // 当前buf指令是否已经被预处理过
 };
 
 struct HardSyncRecord {

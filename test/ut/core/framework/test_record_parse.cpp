@@ -2507,7 +2507,7 @@ TEST_F(TestRecordParse, parse_pipe_barrier_record_and_expect_success)
     sanitizerRecord.payload.kernelRecord = record;
 
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 30);
+    ASSERT_EQ(events.size(), 31);
     ASSERT_EQ(events[27].loc.coreId, 7);
     ASSERT_EQ(events[27].type, EventType::SYNC_EVENT);
     ASSERT_EQ(events[27].pipe, PipeType::PIPE_FIX);

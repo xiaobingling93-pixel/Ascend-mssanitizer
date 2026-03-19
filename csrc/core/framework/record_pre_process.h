@@ -50,6 +50,10 @@ public:
     //  内存检测算法预处理
     void Parse(const SanitizerRecord &record, std::vector<SanEvent> &events);
     void Process(const SanitizerRecord &record, std::vector<SanEvent> &events);
+
+    static std::mutex mtx_;
+
+private:
     void ProcessMstxCrossWaitRecord(const SanitizerRecord &record);
 
     /// 重置合并标志信息；
@@ -63,16 +67,16 @@ public:
     template<class T, class... Args>
     friend std::unique_ptr<T> MakeUnique(Args &&... args);
 
-    /// 缓存记录，主要用于处理有些记录需要依赖后续的记录才能决定当前记录是否保留；
-    std::vector<SanitizerRecord> recordBuffer_;
-
-    /// 缓存记录对应的标志信息
-    MstxCrossWaitMergeInfo waitMergeInfo_;
-
-    bool mergeTag_{}; // 是否可以合并记录的标志位
-    static std::mutex mtx_;
-private:
     RecordPreProcess() {};
+    void CacheGetRlsBufRecord(const KernelRecord &record);
+
+private:
+    std::vector<SanitizerRecord> recordBuffer_;               // 缓存记录，主要用于处理有些记录需要依赖后续的记录才能决定当前记录是否保留；
+    MstxCrossWaitMergeInfo waitMergeInfo_;                    // 缓存记录对应的标志信息
+    bool mstxMergeTag_{};                                     // mstx记录合并标志位，为true时合并记录
+    std::vector<SanitizerRecord> hSyncRecords_;               // 存放硬同步HSet指令
+    std::unordered_map<uint8_t, KernelRecord> getRlsBufMap_;  // 缓存get_buf rls_buf记录，key:bufId
+    bool getRlsBufCacheFlag_{};                               // get_buf rls_buf缓存标志位，为true时继续缓存当前记录
 };
 
 }  // namespace Sanitizer

@@ -76,7 +76,6 @@ public:
     // 用图存储流水间同步信息，key:dst val:[src1, src2, ...]
     using DstSrcGraph = std::unordered_map<PipeType, std::unordered_set<PipeType>>;
     thread_local static DstSrcGraph dstSrcGraph_;
-    static std::map<uint64_t, std::tuple<bool, int, KernelRecord>> bufRecord_;
     thread_local static std::map<HsetRecordKey, HsetRecordState> hsetSyncMap_;
 private:
     static void UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEvent> &events);
