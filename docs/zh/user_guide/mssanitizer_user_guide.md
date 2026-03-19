@@ -115,7 +115,7 @@ mssanitizer --tool=memcheck ./add_npu
 |[非法释放](#非法释放)|对未分配或已释放的地址进行释放导致的异常。|Host|GM|
 |[内存泄漏](#内存泄漏)|申请内存使用后未释放，导致程序在运行过程中内存占用持续增加的异常。|Host|GM|
 |[分配内存未使用](#分配内存未使用)|对内存分配后未使用导致的异常。|Kernel、Host|GM
-|[Ascend 950PR/Ascend 950DTsimt单元异常信息](#simt单元异常信息)|SIMT架构下展示异常信息发生的线程位置。|Kernel|GM|
+|[昇腾950代际产品simt单元异常信息](#simt单元异常信息)|SIMT架构下展示异常信息发生的线程位置。|Kernel|GM|
 |[线程间踩踏](#线程间踩踏)|AI Core核心内线程间访问了重叠的内存导致的踩踏问题。|Kernel|GM|
 |[寄存器告警](#寄存器告警)|寄存器未回归默认值时，告警提示用户有寄存器值残留。|Kernel|GM|
 
@@ -147,7 +147,7 @@ mssanitizer --tool=memcheck ./add_npu
 >- 当用户使用PyTorch等框架接入算子时，框架内部可能会通过内存池管理GM内存，而内存池通常会一次性分配大量GM内存，并在运行过程中复用。此时，若用户对算子进行检测并记录GM上所有内存分配和释放的信息，会因为内存池的内存管理方式导致检测信息不准确。因此检测工具提供了手动上报GM内存分配信息的接口，方便用户在算子调用时手动上报该算子应当使用的GM内存范围，详细接口介绍请参见《[MindStudio Sanitizer对外接口使用说明](../api_reference/mssanitizer_api_reference.md)》中的sanitizerReportMalloc和sanitizerReportFree接口。
 >- msSanitizer工具也支持对Atlas A2 训练系列产品/Atlas A2 推理系列产品的AllReduce、AllGather、ReduceScatter、AlltoAll接口及Atlas A3 训练系列产品/Atlas A3 推理系列产品的AllGather、ReduceScatter、AlltoAllV接口进行非法读写的检测，具体介绍请参见《[Ascend C算子开发接口](https://www.hiascend.com/document/detail/zh/canncommercial/83RC1/API/ascendcopapi/atlasascendc_api_07_0869.html)》中的“高阶API > Hccl >  Hccl Kernel侧接口”章节
 >- msSanitizer工具也支持对通算融合类算子的非法读写检测。
->- 当前Ascend 950PR/Ascend 950DT支持内存检测中GM/UB/L1/L0A/L0B/L0C，其他暂不支持。
+>- 当前昇腾950代际产品支持内存检测中GM/UB/L1/L0A/L0B/L0C，其他暂不支持。
 
 #### 4.1.3 内存异常报告解读
 
@@ -262,9 +262,9 @@ mssanitizer --tool=memcheck ./add_npu
     ====== SUMMARY: 1100byte(s) unused memory in 2 allocation(s) // 内存分配未使用的总结信息，包括未使用内存块的个数及字节等信息
     ```
 
-- <a id="simt单元异常信息"></a>Ascend 950PR/Ascend 950DTsimt单元异常信息
+- <a id="simt单元异常信息"></a>昇腾950代际产品simt单元异常信息
 
-    SIMT架构下异常信息的展示会额外提供异常信息发生的线程位置，线程id从0开始计数，例如下方异常信息发生在线程idX=1 idY=0，idZ=0处。Ascend 950PR/Ascend 950DTSIMT单元异常时，错误信息展示如下：
+    SIMT架构下异常信息的展示会额外提供异常信息发生的线程位置，线程id从0开始计数，例如下方异常信息发生在线程idX=1 idY=0，idZ=0处。昇腾950代际产品SIMT单元异常时，错误信息展示如下：
 
     ```text
     ====== ERROR: illegal read of size 4     
@@ -328,27 +328,36 @@ mssanitizer --tool=racecheck application    // application为用户程序
 >- 竞争检测不会执行内存错误检查，建议用户先运行内存检测，确保算子程序能够正常执行，没有运行异常。
 >- 当用户程序运行完成后，界面将会打印异常报告。
 >- 启动工具后，将会在当前目录下自动生成工具运行日志文件mssanitizer__{TIMESTAMP}__{_PID_}.log。
->- 竞争检测不支持Ascend 950PR/Ascend 950DT。
 
 #### 4.2.3 竞争异常报告解读
 
 竞争检测会输出一系列信息，详细说明有关算子各PIPE之间存在的内存数据竞争访问风险。
 
-```text
-====== ERROR: Potential RAW hazard detected at GM in kernel_float on device 0:  // 竞争事件类型、异常内存块信息、竞争发生的核函数名
-======    PIPE_MTE2 Write at RAW()+0x0 in block 0 (aiv) on device 0 at pc current 0xa98 (serialNo:14)  // 竞争事件的详细信息,包含该事件所在的PIPE、操作类型、内存访问起始地址、核类型、AICore信息以及代码执行的pc指针和调用api行为的序列号
-======    #0 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/impl/dav_c220/kernel_operator_data_copy_impl.h:58:9  // 以下为异常发生代码的调用栈，包含文件名、行号和列号
-======    #1 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:58:9
-======    #2 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:443:5
-======    #3 Racecheck/add_custom.cpp:17:5
-======    PIPE_MTE3 Read at RAW()+0x0 in block 0 (aiv) on device 0 at pc current 0xad4 (serialNo:17)
-======    #0 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/impl/dav_c220/kernel_operator_data_copy_impl.h:103:9
-======    #1 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:155:9
-======    #2 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:461:5
-======    #3 Racecheck/add_custom.cpp:22:5
-```
+- 以下示例中表示了AICore 0的Vector核内部中存在对UB的先写后读竞争风险，PIPE_MTE2流水中存在对“0x0“地址的写入操作事件，该操作对应算子实现文件add_custom.cpp中的第17行，PIPE_MTE3流水中存在对“0x0“地址的读取操作事件，该操作对应算子实现文件add_custom.cpp中的第22行。
 
-以上示例中表示了AICore 0的Vector核内部中存在对UB的先写后读竞争风险，PIPE_MTE2流水中存在对“0x0“地址的写入操作事件，该操作对应算子实现文件add_custom.cpp中的第17行，PIPE_MTE3流水中存在对“0x0“地址的读取操作事件，该操作对应算子实现文件add_custom.cpp中的第22行。
+    ```text
+    ====== ERROR: Potential RAW hazard detected at GM in kernel_float on device 0:  // 竞争事件类型、异常内存块信息、竞争发生的核函数名
+    ======    PIPE_MTE2 Write at RAW()+0x0 in block 0 (aiv) on device 0 at pc current 0xa98 (serialNo:14)  // 竞争事件的详细信息,包含该事件所在的PIPE、操作类型、内存访问起始地址、核类型、AICore信息以及代码执行的pc指针和调用api行为的序列号
+    ======    #0 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/impl/dav_c220/kernel_operator_data_copy_impl.h:58:9  // 以下为异常发生代码的调用栈，包含文件名、行号和列号
+    ======    #1 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:58:9
+    ======    #2 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:443:5
+    ======    #3 Racecheck/add_custom.cpp:17:5
+    ======    PIPE_MTE3 Read at RAW()+0x0 in block 0 (aiv) on device 0 at pc current 0xad4 (serialNo:17)
+    ======    #0 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/impl/dav_c220/kernel_operator_data_copy_impl.h:103:9
+    ======    #1 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:155:9
+    ======    #2 ${ASCEND_HOME_PATH}/compiler/tikcpp/tikcfw/inner_interface/inner_kernel_operator_data_copy_intf.cppm:461:5
+    ======    #3 Racecheck/add_custom.cpp:22:5
+    ```
+
+- 以下示例表示了Thread(0,0,0)和Thread(0,0,1)两个线程在kernel.cpp的第88行发生了写写竞争，均往0核的0x0 UB地址上写入数据。该竞争检测仅支持GM或者UB空间中的内存竞争。
+
+    ```text
+    ====== ERROR: Potential WAW hazard detected at UB in vec_add_5 on device 0:
+    ======    Write Thread(0,0,0) at WAW()+0x0 in block 0(aiv) on device 0 at pc current 0xcc8
+    ======    #0 racecheck/simt/inner_core/ub_error/kernel.cpp:88:13
+    ======    Write Thread(0,0,1) at WAW()+0x0 in block 0(aiv) on device 0 at pc current 0xcc8
+    ======    #0 racecheck/simt/inner_core/ub_error/kernel.cpp:88:13
+    ```
 
 ### 4.3 未初始化检测
 
@@ -374,7 +383,7 @@ mssanitizer --tool=initcheck application   // application为用户程序
 >
 >- 启动工具后，将会在当前目录下自动生成工具运行日志文件mssanitizer__{TIMESTAMP}__{_PID_}.log。
 >- 由于硬件限制，某些指令仅支持以Block形式进行数据搬运。当参与计算的实际数据量不是Block大小的整数倍时，可能会不可避免地带入部分无效数据（即“脏数据”），这可能导致工具报告初始化异常，用户需自行判断这些“脏数据”是否会影响计算结果。
->- 未初始化检测不支持Ascend 950PR/Ascend 950DT。
+>- 未初始化检测不支持昇腾950代际产品。
 
 #### 4.3.3 未初始化异常报告解读
 
@@ -405,6 +414,7 @@ mssanitizer --tool=initcheck application   // application为用户程序
 >
 >- 同步检测单独启用时不会执行内存检测和竞争检测，因此建议用户先使用内存检测和竞争检测，若竞争检测无异常报告，但算子存在竞争现象时，再考虑使用同步检测对前序算子进行检查。
 >- 若存在多余WaitFlag指令，将会导致当前算子的后续指令被阻塞，从而出现算子运行停滞的现象。此时，开发者无需工具提示，便可自行发现问题。
+>- 同步检测不支持昇腾950代际产品。
 
 #### 4.4.1 同步异常类型
 
@@ -427,7 +437,6 @@ mssanitizer --tool=synccheck application   // application为用户程序
 >
 >- 启动工具后，将会在当前目录下自动生成工具运行日志文件mssanitizer__{TIMESTAMP}__{_PID_}.log。
 >- 当用户程序运行完成后，界面将会打印异常报告。
->- 同步检测不支持Ascend 950PR/Ascend 950DT。
 
 #### 4.4.3 同步异常报告解读
 
