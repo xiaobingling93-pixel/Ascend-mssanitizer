@@ -37,6 +37,7 @@ function(compile_cce_object CCE_AICORE_ARCH SANITIZER_STUB_OBJECT SANITIZER_STUB
     "-xcce -std=c++17 -O2 --cce-aicore-only --cce-aicore-arch=${CCE_AICORE_ARCH} \
     -mllvm -cce-aicore-record-overflow=false \
     -mllvm -cce-aicore-record-stack-size=false \
+    --cce-use-legacy-mixkernel-mangling \
     -mllvm -cce-aicore-addr-transform -mllvm -cce-aicore-long-call -mllvm -cce-aicore-relax -fPIC -pthread"
   )
   add_library(${SANITIZER_STUB_OBJECT} OBJECT ${SANITIZER_STUB_FILES})
