@@ -566,3 +566,196 @@ TEST(Load3DInstructions, load_cbuf_to_cb_3dv2_b8)
     record.location = x->location;
     ASSERT_TRUE(*x == record);
 }
+
+namespace CubeMteRegistersTest {
+
+constexpr uint64_t MEM_INFO_SIZE = 1024 * 1024 * 10;
+
+TEST(DbiCubeMteRegisters, set_mte2_src_para_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x12345678ABCDEF00ULL;
+    __sanitizer_report_set_mte2_src_para(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprMTE2SrcPara == value);
+}
+
+TEST(DbiCubeMteRegisters, set_loop3_para_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x87654321FEDCBA98ULL;
+    __sanitizer_report_set_loop3_para(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprLoop3Para == value);
+}
+
+TEST(DbiCubeMteRegisters, set_channel_para_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x1111222233334444ULL;
+    __sanitizer_report_set_channel_para(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprChannelPara == value);
+}
+
+TEST(DbiCubeMteRegisters, set_fmatrix_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0xAAAABBBBCCCCDDDDULL;
+    __sanitizer_report_set_fmatrix(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrix == value);
+}
+
+TEST(DbiCubeMteRegisters, set_fmatrix_b_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x5555666677778888ULL;
+    __sanitizer_report_set_fmatrix_b(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixB == value);
+}
+
+TEST(DbiCubeMteRegisters, set_fmatrix_dual_0_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x9999000011112222ULL;
+    __sanitizer_report_set_fmatrix_dual_0(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixDual0 == value);
+}
+
+TEST(DbiCubeMteRegisters, set_fmatrix_dual_1_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x3333444455556666ULL;
+    __sanitizer_report_set_fmatrix_dual_1(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixDual1 == value);
+}
+
+TEST(DbiCubeMteRegisters, set_l3d_rpt_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x7777888899990000ULL;
+    __sanitizer_report_set_l3d_rpt(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprL3dRpt == value);
+}
+
+TEST(DbiCubeMteRegisters, set_l3d_rpt_b_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0xABCDEF0123456789ULL;
+    __sanitizer_report_set_l3d_rpt_b(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprL3dRptB == value);
+}
+
+TEST(DbiCubeMteRegisters, set_padding_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0xFEDCBA9876543210ULL;
+    __sanitizer_report_set_padding(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprPadding == value);
+}
+
+TEST(DbiCubeMteRegisters, set_padding_b_expect_get_correct_register_value)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    uint64_t value = 0x0F0F0F0F0F0F0F0FULL;
+    __sanitizer_report_set_padding_b(memInfo.data(), 0, 0, value);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprPaddingB == value);
+}
+
+TEST(DbiCubeMteRegisters, multiple_register_sets_expect_correct_values)
+{
+    std::vector<uint8_t> memInfo(MEM_INFO_SIZE, 0);
+    RecordGlobalHead head{};
+    std::copy_n(reinterpret_cast<uint8_t const*>(&head), sizeof(RecordGlobalHead), memInfo.begin());
+
+    __sanitizer_report_set_mte2_src_para(memInfo.data(), 0, 0, 0x1111ULL);
+    __sanitizer_report_set_loop3_para(memInfo.data(), 0, 0, 0x2222ULL);
+    __sanitizer_report_set_channel_para(memInfo.data(), 0, 0, 0x3333ULL);
+    __sanitizer_report_set_fmatrix(memInfo.data(), 0, 0, 0x4444ULL);
+    __sanitizer_report_set_fmatrix_b(memInfo.data(), 0, 0, 0x5555ULL);
+    __sanitizer_report_set_fmatrix_dual_0(memInfo.data(), 0, 0, 0x6666ULL);
+    __sanitizer_report_set_fmatrix_dual_1(memInfo.data(), 0, 0, 0x7777ULL);
+    __sanitizer_report_set_l3d_rpt(memInfo.data(), 0, 0, 0x8888ULL);
+    __sanitizer_report_set_l3d_rpt_b(memInfo.data(), 0, 0, 0x9999ULL);
+    __sanitizer_report_set_padding(memInfo.data(), 0, 0, 0xAAAAULL);
+    __sanitizer_report_set_padding_b(memInfo.data(), 0, 0, 0xBBBBULL);
+
+    RecordGlobalHead const *globalHead = reinterpret_cast<RecordGlobalHead const *>(memInfo.data());
+    int64_t regIdx = GetRegisterIdx();
+    ASSERT_TRUE(globalHead->registers[regIdx].sprMTE2SrcPara == 0x1111ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprLoop3Para == 0x2222ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprChannelPara == 0x3333ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrix == 0x4444ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixB == 0x5555ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixDual0 == 0x6666ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprFmatrixDual1 == 0x7777ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprL3dRpt == 0x8888ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprL3dRptB == 0x9999ULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprPadding == 0xAAAAULL);
+    ASSERT_TRUE(globalHead->registers[regIdx].sprPaddingB == 0xBBBBULL);
+}
+
+}
