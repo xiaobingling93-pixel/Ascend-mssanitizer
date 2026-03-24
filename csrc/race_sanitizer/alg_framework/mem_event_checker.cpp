@@ -262,7 +262,7 @@ void MemEventChecker::RunAlgorithm()
     }
 }
 
-uint32_t MemEventChecker::GetRaceCount()
+uint32_t MemEventChecker::GetRaceCount() const
 {
     return raceCnt_;
 }
@@ -300,7 +300,7 @@ bool MemEventChecker::IsMemSpaceOverlap(const MemOpInfo &op1, const MemOpInfo &o
                 break;
             }
         }
-    } while (1);
+    } while (true);
 
     return false;
 }

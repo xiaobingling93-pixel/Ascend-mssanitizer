@@ -30,13 +30,13 @@ namespace Sanitizer {
 
 void SanitizerAPIRegister::Register(std::string decoratedName, uint32_t place)
 {
-    decoratedNames[decoratedName] = place;
+    decoratedNames_[decoratedName] = place;
 }
 
 uint32_t SanitizerAPIRegister::Get(std::string decoratedName)
 {
-    typename decltype(decoratedNames)::const_iterator itr = decoratedNames.find(decoratedName);
-    if (itr != decoratedNames.end()) {
+    typename decltype(decoratedNames_)::const_iterator itr = decoratedNames_.find(decoratedName);
+    if (itr != decoratedNames_.end()) {
         return itr->second;
     }
     return 0;

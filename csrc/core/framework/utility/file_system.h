@@ -136,14 +136,14 @@ inline FILE* OpenFileWithUmask(const std::string &path, const std::string &mode,
 inline bool IsFileExecutable(struct stat fileStat)
 {
     if (getuid() == fileStat.st_uid) {
-        if (fileStat.st_mode & S_IXUSR) {
+        if ((fileStat.st_mode & S_IXUSR) != 0) {
             return true;
         }
     } else if (getgid() == fileStat.st_gid) {
-        if (fileStat.st_mode & S_IXGRP) {
+        if ((fileStat.st_mode & S_IXGRP) != 0) {
             return true;
         }
-    } else if (fileStat.st_mode & S_IXOTH) {
+    } else if ((fileStat.st_mode & S_IXOTH) != 0) {
         return true;
     } else if (IsRootUser()) {
         return true;

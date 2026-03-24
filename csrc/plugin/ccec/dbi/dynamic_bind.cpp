@@ -14,8 +14,8 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
-#include "MSBit.h"
 #include <vector>
+#include "MSBit.h"
 
 extern "C" {
 // ccec type, stub function name, stub function args index

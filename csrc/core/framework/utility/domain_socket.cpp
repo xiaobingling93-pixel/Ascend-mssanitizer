@@ -20,9 +20,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <sys/un.h>
 #include <sys/stat.h>
-#include <mutex>
 #include <thread>
 #include <system_error>
 #include "umask_guard.h"

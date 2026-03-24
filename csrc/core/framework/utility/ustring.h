@@ -20,7 +20,6 @@
 
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <stdexcept>
 
 namespace Utility {

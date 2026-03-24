@@ -105,7 +105,7 @@ void ShadowMemory::ResetPrivateMemory() noexcept
     private_->Reset(PRIVATE_DEFAULT_VALUE);
 }
 
-PM* ShadowMemory::GetMemMap(AddressSpace space)
+PM* ShadowMemory::GetMemMap(AddressSpace space) const
 {
     switch (space) {
         case AddressSpace::GM:
@@ -298,7 +298,7 @@ void ShadowMemory::StoreNBytesInRange(Range1D &range, AddressSpace space,
     }
 }
 
-void ShadowMemory::MakeMemUndefined(uint64_t addr, uint64_t size)
+void ShadowMemory::MakeMemUndefined(uint64_t addr, uint64_t size) const
 {
     ValidateRange(AddressSpace::GM, addr, size);
 
@@ -310,7 +310,7 @@ void ShadowMemory::MakeMemUndefined(uint64_t addr, uint64_t size)
     memmap->GetRange(addr, size).Set(MakeByte(MemStatus::UNDEFINED, DEFAULT_CORE_ID));
 }
 
-void ShadowMemory::ClearBlockId(uint64_t addr, uint64_t size)
+void ShadowMemory::ClearBlockId(uint64_t addr, uint64_t size) const
 {
     ValidateRange(AddressSpace::GM, addr, size);
 

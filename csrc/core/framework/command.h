@@ -22,11 +22,8 @@
 #include <vector>
 #include <fstream>
 #include <string>
-#include <unordered_map>
-#include <functional>
 #include <thread>
 #include "config.h"
-#include "utility/log.h"
 #include "process.h"
 #include "checker.h"
 #include "thread_manager.h"

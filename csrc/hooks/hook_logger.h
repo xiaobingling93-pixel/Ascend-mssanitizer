@@ -39,7 +39,7 @@ public:
     template<typename T> inline HookLogger &operator<<(T const &t);
     inline HookLogger &operator<<(HookLogger &(*pf)(HookLogger &));
     static inline HookLogger &Ends(HookLogger &hookLogger);
-    inline void Log(std::string const &logString);
+    inline void Log(std::string const &logString) const;
 
 private:
     HookLogger(void) = default;
@@ -74,7 +74,7 @@ inline HookLogger &HookLogger::Ends(HookLogger &hookLogger)
     return hookLogger;
 }
 
-inline void HookLogger::Log(std::string const &logString)
+inline void HookLogger::Log(std::string const &logString) const
 {
     if (!HookReport::Instance().ReportLogString(logString)) {
         // report logstring failed, fallback to stdout

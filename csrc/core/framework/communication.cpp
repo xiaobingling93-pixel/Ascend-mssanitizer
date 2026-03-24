@@ -158,13 +158,13 @@ CommunicationClient::CommunicationClient(std::string socketPath)
     socket_ = MakeUnique<DomainSocketClient>(socketPath);
 }
 
-Result CommunicationClient::ConnectToServer(void)
+Result CommunicationClient::ConnectToServer(void) const
 {
     Result result = socket_->Connect();
     return result;
 }
 
-Result CommunicationClient::Read(std::string &msg)
+Result CommunicationClient::Read(std::string &msg) const
 {
     constexpr std::size_t maxSize = 1024ULL;
     size_t readSize = 0;
@@ -172,7 +172,7 @@ Result CommunicationClient::Read(std::string &msg)
     return result;
 }
 
-Result CommunicationClient::Write(const std::string &msg)
+Result CommunicationClient::Write(const std::string &msg) const
 {
     size_t sentBytes = 0;
     Result result = socket_->Write(msg, sentBytes);

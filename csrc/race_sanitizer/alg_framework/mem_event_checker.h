@@ -81,7 +81,7 @@ public:
     void Init(KernelType kernelType, DeviceType deviceType, RaceCheckType checkType);
     std::shared_ptr<std::vector<RaceDispInfo>> GetResult() const;
     // 测试接口
-    uint32_t GetRaceCount();
+    uint32_t GetRaceCount() const;
     std::vector<MemEvent> events_;
 private:
     uint32_t raceCnt_ = 0U;

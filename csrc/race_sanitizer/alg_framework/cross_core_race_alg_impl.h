@@ -36,7 +36,7 @@ public:
     std::shared_ptr<std::vector<RaceDispInfo>> GetResult() const override;
     bool IsFinished() const override;
     // 测试接口
-    uint32_t GetRaceCount();
+    uint32_t GetRaceCount() const;
 private:
     // 事件处理函数，根据不同的事件，处理结果定义为正常处理或阻塞。
     ReturnType ProcessEvent(const SanEvent& event);

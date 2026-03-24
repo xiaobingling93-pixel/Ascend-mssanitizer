@@ -174,7 +174,7 @@ ReturnType CrossCoreRaceAlgImpl::ProcessTimeEvent(const SanEvent &event)
     return ReturnType::PROCESS_OK;
 }
 
-uint32_t CrossCoreRaceAlgImpl::GetRaceCount()
+uint32_t CrossCoreRaceAlgImpl::GetRaceCount() const
 {
     return memChecker_.GetRaceCount();
 }

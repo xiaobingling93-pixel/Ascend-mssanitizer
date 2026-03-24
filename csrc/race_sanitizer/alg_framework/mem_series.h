@@ -59,7 +59,7 @@ public:
     {
         UpdateCurItv();
     }
-    Interval GetCurItv();
+    Interval GetCurItv() const;
     bool Move2NextItv();
     void UpdateCurItv();
 private:

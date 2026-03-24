@@ -135,7 +135,7 @@ Packet MemCheckProtocol::GetBinaryDataPacket(void)
     return GetBinaryData(buffer) ? Packet(BinaryDataT{buffer}) : Packet();
 }
 
-bool MemCheckProtocol::GetPacketHead(PacketHead &head)
+bool MemCheckProtocol::GetPacketHead(PacketHead &head) const
 {
     return extractor_->Read(head);
 }

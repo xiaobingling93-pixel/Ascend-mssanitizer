@@ -43,7 +43,7 @@ private:
     void DoMatchCheck(SanEvent const &event);
     void DoRedundancyCheck(SanEvent const &event);
     void ReportUnpairedInfo();
-    void ReportRedundancyInfo();
+    void ReportRedundancyInfo() const;
 
     int16_t checkBlockId_ = CHECK_ALL_BLOCK;
     MSG_FUNC msgFunc_;

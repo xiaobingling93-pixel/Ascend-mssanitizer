@@ -21,7 +21,6 @@
 #include <map>
 #include <string>
 #include <memory>
-#include <mutex>
 #include <cstdint>
 #include <algorithm>
 
@@ -207,7 +206,7 @@ public:
     Packet GetPacket(void) override;
 
 private:
-    bool GetPacketHead(PacketHead &head);
+    bool GetPacketHead(PacketHead &head) const;
     bool GetBinaryData(std::string &data);
     Packet GetPayLoad(PacketHead head);
 

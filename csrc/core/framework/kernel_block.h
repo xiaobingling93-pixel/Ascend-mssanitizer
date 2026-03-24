@@ -32,7 +32,7 @@ public:
     bool NextSimd(KernelRecord &kernelRecord);
     void ParseShadowMemoryRecord(std::vector<KernelRecord> &kernelRecords);
 
-    uint64_t GetTotalBlockDim();
+    uint64_t GetTotalBlockDim() const;
 
 private:
     bool ParseSimdRecord(uint8_t const *record, KernelRecord &kernelRecord);

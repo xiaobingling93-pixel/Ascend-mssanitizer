@@ -27,9 +27,9 @@ namespace Sanitizer {
 class CliParser {
 public:
     CliParser() = default;
-    void Interpretor(int32_t argc, char **argv);
+    void Interpretor(int32_t argc, char **argv) const;
 private:
-    UserCommand Parse(int32_t argc, char **argv);
+    UserCommand Parse(int32_t argc, char **argv) const;
 };
 }
 

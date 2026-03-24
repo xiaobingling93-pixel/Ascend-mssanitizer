@@ -36,17 +36,17 @@ public:
     // 将当前队列的头部事件出队，表示事件处理完成
     void Pop();
     // 判断当前队列为空
-    bool IsCurQueEmpty();
+    bool IsCurQueEmpty() const;
     // 判断是否满足条件切换到下一个block
     bool IsNeedSwitchNextBlock();
     // 所有队列为空
-    bool IsEmpty();
+    bool IsEmpty() const;
     // 是否遍历完所有核的管道（核内仅遍历当前核），且事件没有变化
-    bool IsTraveAllAndEventsNoChanged();
+    bool IsTraveAllAndEventsNoChanged() const;
     // 检查事件是否变更的标志位
     void CheckEventCntsChangedTag();
     // 打印卡住的事件serialNo
-    void PrintStuckSerialNo();
+    void PrintStuckSerialNo() const;
     // 切换到下一个block的PIPES队列
     void SwitchToNextBlock();
     // 切换到block内下一个PIPE进行事件出队
@@ -59,12 +59,12 @@ public:
     uint32_t GetBlockIndex() const;
 
     // 测试接口
-    uint32_t GetCurQueSize();
-    uint32_t GetAllQueSize();
+    uint32_t GetCurQueSize() const;
+    uint32_t GetAllQueSize() const;
     void SetQueIndex(PipeType pipe);
 private:
     // 当前block内事件队列是否为空
-    bool IsCurBlockEmpty();
+    bool IsCurBlockEmpty() const;
 private:
     std::vector<std::queue<SanEvent>> ques_;
     bool isEventCntsChanged_ = false;

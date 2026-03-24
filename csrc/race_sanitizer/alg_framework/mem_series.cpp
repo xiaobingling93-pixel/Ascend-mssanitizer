@@ -19,7 +19,7 @@
 
 namespace Sanitizer {
 
-Interval BlkSeries::GetCurItv()
+Interval BlkSeries::GetCurItv() const
 {
     return curInterval_;
 }

@@ -173,7 +173,7 @@ void Process::PostProcess(pid_t child, ExecCmd const &cmd)
     return;
 }
 
-void Process::DoLaunch(const ExecCmd &cmd)
+void Process::DoLaunch(const ExecCmd &cmd) const
 {
     // pass all env-vars from global variable "environ"
     execve(cmd.ExecPath().c_str(), cmd.ExecArgv(), environ);

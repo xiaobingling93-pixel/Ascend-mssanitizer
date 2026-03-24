@@ -21,7 +21,6 @@
 #include <array>
 #include <cstddef>
 #include <vector>
-#include <functional>
 #include <string>
 #include <algorithm>
 #include "arch_def.h"

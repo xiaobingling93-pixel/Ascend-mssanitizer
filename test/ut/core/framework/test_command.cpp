@@ -184,7 +184,7 @@ TEST_F(TestCommand, IPC_functions_basic)
     };
     ForkJobList jobList{workerJob, workerJob, workerJob};
     int pid = DispatchForkJobs(childPidVec, jobList);
-    if (pid) {
+    if (pid != 0) {
         int status;
         for (auto pid : childPidVec) {
             waitpid(pid, &status, 0);
@@ -268,7 +268,7 @@ TEST_F(TestCommand, IPC_function_repeat_operation_expect_fail)
     };
     ForkJobList jobList{workerJob};
     int pid = DispatchForkJobs(childPidVec, jobList);
-    if (pid) {
+    if (pid != 0) {
         int status;
         for (auto pid : childPidVec) {
             waitpid(pid, &status, 0);
@@ -417,7 +417,7 @@ TEST(Command, IPC_operate_the_wrong_name_expect_fail)
     };
     ForkJobList jobList{workerJob};
     int pid = DispatchForkJobs(childPidVec, jobList);
-    if (pid) {
+    if (pid != 0) {
         int status;
         for (auto pid : childPidVec) {
             waitpid(pid, &status, 0);

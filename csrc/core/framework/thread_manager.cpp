@@ -96,7 +96,7 @@ void ThreadManager::ThreadFinish()
     protocols_.clear();
 }
 
-void ThreadManager::PostLog()
+void ThreadManager::PostLog() const
 {
     PrintFileNames(FileMapping::Instance().GetFileMap());
     SAN_INFO_LOG("Log ended at %s", log.GetRunningTime().c_str());

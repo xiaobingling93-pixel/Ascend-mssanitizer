@@ -653,7 +653,7 @@ void DoUserCommand(const UserCommand &userCommand)
 }
 
 namespace Sanitizer {
-void CliParser::Interpretor(int32_t argc, char **argv)
+void CliParser::Interpretor(int32_t argc, char **argv) const
 {
     auto userCommand = Parse(argc, argv);
     DoUserCommand(userCommand);
@@ -752,7 +752,7 @@ bool IsInWhiteList(std::string& param, int32_t opt)
     return true;
 }
 
-UserCommand CliParser::Parse(int32_t argc, char **argv)
+UserCommand CliParser::Parse(int32_t argc, char **argv) const
 {
     UserCommand userCommand;
     SetPluginPath(userCommand);

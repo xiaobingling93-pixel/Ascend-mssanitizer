@@ -23,8 +23,6 @@
 #include <thread>
 #include <string>
 #include <queue>
-#include <condition_variable>
-#include <future>
 #include "checker.h"
 #include "utility/domain_socket.h"
 #include "utility/result.h"
@@ -106,7 +104,7 @@ public:
     /** 连接服务端
      * @description 服务端未启动时连接会失败，需要调用者自行处理重试
      */
-    Result ConnectToServer();
+    Result ConnectToServer() const;
 
     /** 从服务端读取数据
      * @description 当服务端未写入数据时阻塞，目前超时时间固定为 1s
@@ -114,7 +112,7 @@ public:
      * @return -1 表示读取失败或超时
      *         >0 表示读取成功，并返回读取到的数据长度
      */
-    Result Read(std::string &msg);
+    Result Read(std::string &msg) const;
 
     // /** 向服务端写入数据
     //  * @description 当缓冲区满时阻塞
@@ -122,7 +120,7 @@ public:
     //  * @return -1 表示写入失败
     //  *         >0 表示写入成功，并返回已写入的数据长度
     //  */
-    Result Write(std::string const &msg);
+    Result Write(std::string const &msg) const;
 protected:
     std::unique_ptr<Sanitizer::DomainSocketClient> socket_;
 };

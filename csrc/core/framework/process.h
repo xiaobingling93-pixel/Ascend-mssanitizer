@@ -20,7 +20,6 @@
 
 #include <functional>
 #include <memory>
-#include <unistd.h>
 #include "config.h"
 #include "communication.h"
 
@@ -56,7 +55,7 @@ public:
 private:
     void PreProcess(Config const &config);
     void PostProcess(pid_t child, ExecCmd const &cmd);
-    void DoLaunch(const ExecCmd& cmd);
+    void DoLaunch(const ExecCmd& cmd) const;
 
 private:
     Config config_;

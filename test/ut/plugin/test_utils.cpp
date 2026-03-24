@@ -14,10 +14,10 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#include <cstdint>
 #include <gtest/gtest.h>
 #include "plugin/utils.h"
 #include "ccec/data_process.h"
-#include <cstdint>
 
 using namespace std;
 

@@ -14,12 +14,12 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#include "ustring.h"
 
 #include <cstdlib>
 #include <cxxabi.h>
 #include <memory>
-
-#include "ustring.h"
+#include <unordered_map>
 
 namespace Utility {
 std::string ReplaceInvalidChar(const std::string &input)

@@ -80,8 +80,8 @@ public:
     ErrorMsgList StoreNBytes(MemOpRecordForShadow memOpRecordForShadow, bool memCheck);
 
     // for SMs range setting
-    void MakeMemUndefined(uint64_t addr, uint64_t size);
-    void ClearBlockId(uint64_t addr, uint64_t size);
+    void MakeMemUndefined(uint64_t addr, uint64_t size) const;
+    void ClearBlockId(uint64_t addr, uint64_t size) const;
 
     // 未使用内存统计
     ErrorMsg CheckUnusedMem(uint64_t addr, uint64_t size);
@@ -107,7 +107,7 @@ private:
      */
     void ValidateRange(AddressSpace space, uint64_t &addr, uint64_t &size) const;
     inline uint64_t GetGmAddrOffset(uint64_t addr);
-    PM* GetMemMap(AddressSpace space);
+    PM* GetMemMap(AddressSpace space) const;
     bool SkipSpace(AddressSpace space);
     ErrorMsg MakeBadBytesMsg(MemErrorType error, AddressSpace space, uint64_t addr, uint64_t nbytes) const;
 

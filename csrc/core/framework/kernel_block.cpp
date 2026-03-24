@@ -685,7 +685,7 @@ bool KernelBlock::NextSimd(KernelRecord &kernelRecord)
     return ParseSimdRecord(currentRecord, kernelRecord);
 }
 
-uint64_t KernelBlock::GetTotalBlockDim()
+uint64_t KernelBlock::GetTotalBlockDim() const
 {
     return totalBlockDim_;
 }

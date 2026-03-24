@@ -33,13 +33,13 @@ public:
         Free();
     }
 
-    rtError_t MallocMemory(void** memPtr, uint64_t size)
+    rtError_t MallocMemory(void*& memPtr, uint64_t size)
     {
         if (memPtr_ != nullptr) {
             if (memSize_ < size) {
                 Free();
             } else {
-                *memPtr = memPtr_;
+                memPtr = memPtr_;
                 return RT_ERROR_NONE;
             }
         }
@@ -50,7 +50,7 @@ public:
         }
         // 记录内存信息的GM，在桩函数内部的写入，该写入操作无法传回Host侧进行记录，因为将其设为Store状态，防止未初始化读误报
         HookReport::Instance().ReportStore(reinterpret_cast<uint64_t>(memPtr_), size, MemInfoSrc::RT);
-        *memPtr = memPtr_;
+        memPtr = memPtr_;
         memSize_ = size;
         return RT_ERROR_NONE;
     }

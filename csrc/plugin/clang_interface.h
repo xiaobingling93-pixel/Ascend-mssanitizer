@@ -51,7 +51,7 @@ public:
 
 private:
     SanitizerAPIRegister() = default;
-    std::map<std::string, uint32_t> decoratedNames;
+    std::map<std::string, uint32_t> decoratedNames_;
 };
 
 class SanitizerAPIBuiler {

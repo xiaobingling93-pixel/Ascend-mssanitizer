@@ -252,10 +252,10 @@ void SyncSanitizer::ReportUnpairedInfo()
     }
 }
 
-void SyncSanitizer::ReportRedundancyInfo()
+void SyncSanitizer::ReportRedundancyInfo() const
 {
     std::set<uint64_t> pcOffsets;
-    for (SyncDispInfo &info : redundancyInfo_) {
+    for (SyncDispInfo const &info : redundancyInfo_) {
         pcOffsets.insert(info.baseEvent.pc);
     }
 

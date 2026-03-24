@@ -54,7 +54,7 @@ std::shared_ptr<std::vector<RaceDispInfo>> SinglePipeRaceAlgImpl::GetResult() co
     return std::move(memChecker_.GetResult());
 }
 
-uint32_t SinglePipeRaceAlgImpl::GetRaceCount()
+uint32_t SinglePipeRaceAlgImpl::GetRaceCount() const
 {
     return memChecker_.GetRaceCount();
 }

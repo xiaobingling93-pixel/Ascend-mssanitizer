@@ -451,7 +451,7 @@ uint8_t* KERNEL_LAUNCH_INIT(uint64_t blockDim)
     uint64_t totalByteSize = sizeof(RecordGlobalHead) + singleBlockByteSize * g_totalBlockDim;
     auto &devMemManager = DevMemManager::GetInstance();
     void *memPtr = nullptr;
-    rtError_t error = devMemManager.MallocMemory(&memPtr, totalByteSize);
+    rtError_t error = devMemManager.MallocMemory(memPtr, totalByteSize);
     if (error != RT_ERROR_NONE) {
         std::cout << "[mssanitizer] " << "rtMalloc error:" << error << std::endl;
         return nullptr;

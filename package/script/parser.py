@@ -309,26 +309,31 @@ def do_copy(target_conf={}, delivery_dir='', release_dir=''):
     dst_path = os.path.join(release_dir, target_conf.get('dst_path', ''))
     pkg_mod = target_conf.get('pkg_mod', '')
     rename = target_conf.get('rename')
-    cmd = ''
     if not os.path.exists(dst_path):
-        cmd += ' '.join(['mkdir', '-p', dst_path, '&&'])
+        result = subprocess.run(["mkdir", "-p", dst_path], capture_output=True, text=True, shell=False)
+        status = result.returncode
+        if status != SUCC:
+            log_msg(LOG_E, "mkdir(%s) failed!", dst_path)
+            log_msg(LOG_I, "%s %s", result.stderr, result.stdout)
+            return FAIL
     if rename:
         dst_path = os.path.join(dst_path, rename)
-    cmd += ' '.join(['cp -rf', src_target, dst_path])
-    status, output = subprocess.getstatusoutput(cmd)
+    cmd = ["cp", "-rf", src_target, dst_path]
+    result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
+    status = result.returncode
     if status != SUCC:
         log_msg(LOG_E, "do_copy(%s) failed!", cmd)
-        log_msg(LOG_I, "%s", output)
+        log_msg(LOG_I, "%s %s", result.stderr, result.stdout)
         return FAIL
 
-    cmd = " chmod %s -R %s" % (pkg_mod,
-                os.path.join(dst_path, target_name))
     if pkg_mod:
-        status, output = subprocess.getstatusoutput(cmd)
-    if status != SUCC:
-        log_msg(LOG_E, "%s failed!.", cmd)
-        log_msg(LOG_I, "%s", output)
-        return FAIL
+        cmd = ["chmod", pkg_mod, "-R", os.path.join(dst_path, target_name)]
+        result = subprocess.run(cmd, capture_output=True, text=True, shell=False)
+        status = result.returncode
+        if status != SUCC:
+            log_msg(LOG_E, "%s failed!.", cmd)
+            log_msg(LOG_I, "%s %s", result.stderr, result.stdout)
+            return FAIL
     pkg_softlink = target_conf.get('pkg_softlink')
     if pkg_softlink:
         source = os.path.join(dst_path, target_conf.get('value'))
@@ -349,10 +354,10 @@ def creat_softlink(source, target):
     link_target_name = os.path.basename(target)
     relative_path = os.path.relpath(source, link_target_path)
     if os.path.isfile(target):
-        cmd = 'rm -f {}'.format(target)
-        status, output = subprocess.getstatusoutput(cmd)
+        result = subprocess.run(["rm", "-f", target], capture_output=True, text=True, shell=False)
+        status = result.returncode
         if status != SUCC:
-            log_msg(LOG_E, "rm -f %s failed, %s" , target, output)
+            log_msg(LOG_E, "rm -f %s failed, %s %s" , target, result.stderr, result.stdout)
             return FAIL
     if os.path.isdir(target):
         log_msg(LOG_E, "%s is directory, can't add softlink", target)

@@ -32,7 +32,7 @@ struct PM::SM {
     }
 };
 
-Range1D::Iterator::Iterator(Range1D &range, uint64_t addr) : range_(range), addr_(addr) { }
+Range1D::Iterator::Iterator(const Range1D &range, uint64_t addr) : range_(range), addr_(addr) { }
 
 Range1D::Iterator &Range1D::Iterator::operator++(void)
 {
@@ -54,12 +54,12 @@ uint8_t Range1D::Iterator::GetBits(void) const
 Range1D::Range1D(PM &pm, uint64_t addr, uint64_t size)
     : pm_(pm), addr_(addr), size_(size) { }
 
-Range1D::Iterator Range1D::Begin(void)
+Range1D::Iterator Range1D::Begin(void) const
 {
     return Iterator(*this, addr_);
 }
 
-Range1D::Iterator Range1D::End(void)
+Range1D::Iterator Range1D::End(void) const
 {
     return Iterator(*this, addr_ + size_);
 }

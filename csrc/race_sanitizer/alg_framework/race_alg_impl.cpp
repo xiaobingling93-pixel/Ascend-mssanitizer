@@ -60,7 +60,7 @@ std::shared_ptr<std::vector<RaceDispInfo>> RaceAlgImpl::GetResult() const
     return memChecker_.GetResult();
 }
 
-uint32_t RaceAlgImpl::GetRaceCount()
+uint32_t RaceAlgImpl::GetRaceCount() const
 {
     return memChecker_.GetRaceCount();
 }

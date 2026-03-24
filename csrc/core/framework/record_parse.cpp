@@ -1828,11 +1828,11 @@ static void ParseRecordLoad3DMatrix(const Load3DRecord &load3DRecord, std::vecto
         uint32_t mRptLength = mRptBase * load3DRecord.matrixRptStride;
         uint32_t kRptLength = kRptBase * byteUnit / bitSize * load3DRecord.matrixRptStride;
         if (load3DRecord.matrixRptMode && kRptLength < static_cast<uint32_t>(load3DRecord.matrixKStep)) {
-            SAN_ERROR_LOG("Parse load3Dv2 failed, invalid fm matrix kstep");
+            SAN_ERROR_LOG("Parse load3D failed, invalid fm matrix kstep");
             return;
         }
         if ((!load3DRecord.matrixRptMode) && mRptLength < static_cast<uint32_t>(load3DRecord.matrixMStep)) {
-            SAN_ERROR_LOG("Parse load3Dv2 failed, invalid fm matrix mstep");
+            SAN_ERROR_LOG("Parse load3D failed, invalid fm matrix mstep");
             return;
         }
     }

@@ -69,7 +69,7 @@ void AlignChecker::CheckAlign(SanEvent &event, uint16_t alignSize)
     if (!SupportAlign(space)) { return; }
     uint64_t addr = memInfo.addr;
     uint64_t size = memInfo.blockSize;
-    if (alignSize != 0 && addr % alignSize) {
+    if (alignSize != 0 && (addr % alignSize) != 0) {
         ErrorMsg msg;
         msg.SetType(MemErrorType::MISALIGNED_ACCESS, space, addr);
         msg.auxData.nBadBytes = size;

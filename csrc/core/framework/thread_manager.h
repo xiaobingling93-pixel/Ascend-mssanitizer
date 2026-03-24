@@ -36,7 +36,7 @@ class ThreadManager {
 public:
     ThreadManager(Config const &config, const LogLv &lv, const std::string &logFile)
         : config_{config}, loglv_(lv), logFd_(GetLogFd(logFile)) {}
-    void PostLog();
+    void PostLog() const;
     Checker& GetChecker(std::thread::id threadId);
     Checker& GetChecker();
     Protocol &GetProtocol();

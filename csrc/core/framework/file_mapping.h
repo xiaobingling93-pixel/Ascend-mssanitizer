@@ -42,7 +42,7 @@ public:
      * @param 文件序号
      * @return 对应的文件路径，如果对应的路径不存在则返回 <unknown>
      */
-    FileInfo Query(uint64_t fileNo);
+    FileInfo Query(uint64_t fileNo) const;
 
     /**
      * @brief 清空当前文件映射信息并从一个 StringTable buffer 加载文件映射信息

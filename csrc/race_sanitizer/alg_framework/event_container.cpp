@@ -58,12 +58,12 @@ void EventContainer::Pop()
     ques_[(blockIndex_ * (static_cast<uint32_t>(PipeType::SIZE))) + pipeIndex_].pop();
 }
 
-bool EventContainer::IsCurQueEmpty()
+bool EventContainer::IsCurQueEmpty() const
 {
     return ques_[(blockIndex_ * (static_cast<uint32_t>(PipeType::SIZE))) + pipeIndex_].empty();
 }
 
-bool EventContainer::IsCurBlockEmpty()
+bool EventContainer::IsCurBlockEmpty() const
 {
     for (auto i = blockIndex_ * static_cast<uint32_t>(PipeType::SIZE);
         i < ((blockIndex_ + 1) * static_cast<uint32_t>(PipeType::SIZE)); ++i) {
@@ -84,7 +84,7 @@ bool EventContainer::IsNeedSwitchNextBlock()
 }
 
 
-bool EventContainer::IsEmpty()
+bool EventContainer::IsEmpty() const
 {
     for (const auto &it : ques_) {
         if (!it.empty()) {
@@ -95,7 +95,7 @@ bool EventContainer::IsEmpty()
     return true;
 }
 
-bool EventContainer::IsTraveAllAndEventsNoChanged()
+bool EventContainer::IsTraveAllAndEventsNoChanged() const
 {
     return cntNoChangedBlocks_ == maxBlockNum_;
 }
@@ -110,7 +110,7 @@ void EventContainer::CheckEventCntsChangedTag()
     }
 }
 
-void EventContainer::PrintStuckSerialNo()
+void EventContainer::PrintStuckSerialNo() const
 {
     for (size_t i = 0; i < ques_.size(); i++) {
         if (ques_[i].empty()) {
@@ -152,12 +152,12 @@ uint32_t EventContainer::GetBlockIndex() const
     return blockIndex_;
 }
 
-uint32_t EventContainer::GetCurQueSize()
+uint32_t EventContainer::GetCurQueSize() const
 {
     return ques_[(blockIndex_ * (static_cast<uint32_t>(PipeType::SIZE))) + pipeIndex_].size();
 }
 
-uint32_t EventContainer::GetAllQueSize()
+uint32_t EventContainer::GetAllQueSize() const
 {
     uint32_t sum = 0U;
     for (const auto &it: ques_) {

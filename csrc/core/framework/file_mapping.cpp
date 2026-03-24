@@ -131,7 +131,7 @@ if (fileMap.find(uuid) == fileMap.end()) {
 
 namespace Sanitizer {
 
-FileInfo FileMapping::Query(uint64_t fileNo)
+FileInfo FileMapping::Query(uint64_t fileNo) const
 {
     typename FileMapType::const_iterator it = fileMap_.find(fileNo);
     return it == fileMap_.cend() ? FileInfo{-1, "unknown"} : it->second;

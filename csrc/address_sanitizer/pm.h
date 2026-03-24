@@ -45,15 +45,15 @@ public:
         bool operator<(Iterator const &other) const  { return addr_ <  other.addr_; }
         uint8_t GetBits(void) const;
     private:
-        explicit Iterator(Range1D &range, uint64_t addr);
+        explicit Iterator(const Range1D &range, uint64_t addr);
     private:
-        Range1D &range_;
+        const Range1D &range_;
         uint64_t addr_;
     };
 
     explicit Range1D(PM &pm, uint64_t addr, uint64_t size);
-    Iterator Begin(void);
-    Iterator End(void);
+    Iterator Begin(void) const;
+    Iterator End(void) const;
     Iterator At(uint64_t addr);
     void Set(uint8_t bits);
     uint64_t Size(void) const;

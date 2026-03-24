@@ -245,7 +245,7 @@ public:
         return true;
     }
 
-    Elf Load() { return Elf{sections_, buffer_}; }
+    Elf Load() const { return Elf{sections_, buffer_}; }
 
 private:
     Elf64_Ehdr header_{};
