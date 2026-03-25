@@ -109,7 +109,7 @@ TEST_F(TestRecordParse, parse_load_record_and_expect_success)
     ASSERT_EQ(events.size(), 1);
     ASSERT_EQ(events[0].loc.coreId, 7);
     ASSERT_EQ(events[0].type, EventType::MEM_EVENT);
-    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S_CAL);
     MemOpInfo memOpInfo = {MemType::GM, AccessType::READ, DEFAULT_VECTOR_MASK, MaskMode::MASK_NORM,
         8, 0x12, 1, 100, 1, 1, 1, 100};
     ASSERT_EQ(events[0].eventInfo.memInfo, memOpInfo);
@@ -134,7 +134,7 @@ TEST_F(TestRecordParse, parse_load_private_record_and_expect_success)
     ASSERT_EQ(events.size(), 1);
     ASSERT_EQ(events[0].loc.coreId, 7);
     ASSERT_EQ(events[0].type, EventType::MEM_EVENT);
-    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S_CAL);
     MemOpInfo memOpInfo = {MemType::PRIVATE, AccessType::READ, DEFAULT_VECTOR_MASK, MaskMode::MASK_NORM,
         8, 0x12, 1, 100, 1, 1, 1, 100};
     ASSERT_EQ(events[0].eventInfo.memInfo, memOpInfo);
@@ -159,7 +159,7 @@ TEST_F(TestRecordParse, parse_store_record_and_expect_success)
     ASSERT_EQ(events.size(), 1);
     ASSERT_EQ(events[0].loc.coreId, 7);
     ASSERT_EQ(events[0].type, EventType::MEM_EVENT);
-    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S_CAL);
     MemOpInfo memOpInfo = {MemType::GM, AccessType::WRITE, DEFAULT_VECTOR_MASK, MaskMode::MASK_NORM,
         8, 0x12, 1, 100, 1, 1, 1, 100};
     ASSERT_EQ(events[0].eventInfo.memInfo, memOpInfo);
@@ -1399,7 +1399,7 @@ TEST_F(TestRecordParse, parse_dc_preload_record_and_export_success)
     ASSERT_EQ(events.size(), 1);
     ASSERT_EQ(events[0].loc.coreId, 9);
     ASSERT_EQ(events[0].type, EventType::MEM_EVENT);
-    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S_CAL);
     MemOpInfo memOpInfo = {MemType::GM, AccessType::READ, DEFAULT_VECTOR_MASK, MaskMode::MASK_NORM, 8,
         0x12 + 32, 1, 0, 1, 1, 1, 1};
     ASSERT_EQ(events[0].eventInfo.memInfo, memOpInfo);
@@ -2507,7 +2507,7 @@ TEST_F(TestRecordParse, parse_pipe_barrier_record_and_expect_success)
     sanitizerRecord.payload.kernelRecord = record;
 
     RecordParse::Parse(sanitizerRecord, events);
-    ASSERT_EQ(events.size(), 31);
+    ASSERT_EQ(events.size(), 34);
     ASSERT_EQ(events[27].loc.coreId, 7);
     ASSERT_EQ(events[27].type, EventType::SYNC_EVENT);
     ASSERT_EQ(events[27].pipe, PipeType::PIPE_FIX);
@@ -2583,9 +2583,9 @@ TEST_F(TestRecordParse, parse_sync_all_record_expect_success_and_correct)
     ASSERT_EQ(events.size(), 2);
     ASSERT_EQ(events[0].loc.coreId, 7);
     ASSERT_EQ(events[0].type, EventType::CROSS_CORE_SYNC_EVENT);
-    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].pipe, PipeType::PIPE_S_CAL);
     ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.opType, SyncType::FFTS_SYNC);
-    ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.dstPipe, PipeType::PIPE_S);
+    ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.dstPipe, PipeType::PIPE_S_CAL);
     ASSERT_EQ(events[0].eventInfo.fftsSyncInfo.mode, 0);
 }
 
