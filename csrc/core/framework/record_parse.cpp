@@ -3001,14 +3001,15 @@ static void ParseRecordGetBuf(const KernelRecord &record, std::vector<SanEvent> 
 {
     SanEvent event;
     SetLocationInfo(event, record.payload.bufRecord, record.blockType, record.serialNo);
-    event.type = EventType::SYNC_EVENT;
-    event.pipe = PipeType::PIPE_S;
+    event.type = EventType::BUF_SYNC_EVENT;
+    event.pipe = record.payload.bufRecord.pipe;
     event.eventInfo.bufSyncInfo.opType = SyncType::GET_BUF;
     event.eventInfo.bufSyncInfo.pipe = record.payload.bufRecord.pipe;
     event.eventInfo.bufSyncInfo.bufId = record.payload.bufRecord.bufId;
-    event.eventInfo.bufSyncInfo.mode = static_cast<uint8_t>(record.payload.bufRecord.mode);
-    event.eventInfo.syncInfo.memType = MemType::INVALID;
-    event.eventInfo.syncInfo.isRetrogress = false;
+    event.eventInfo.bufSyncInfo.mode = record.payload.bufRecord.mode;
+    if (event.eventInfo.bufSyncInfo.mode == BufMode::BLOCK_MODE) {
+        event.eventInfo.bufSyncInfo.rlsCount = RecordParse::getRlsBufMap_[event.eventInfo.bufSyncInfo.bufId];
+    }
     events.emplace_back(event);
 }
 
@@ -3016,14 +3017,13 @@ static void ParseRecordRlsBuf(const KernelRecord &record, std::vector<SanEvent> 
 {
     SanEvent event;
     SetLocationInfo(event, record.payload.bufRecord, record.blockType, record.serialNo);
-    event.type = EventType::SYNC_EVENT;
-    event.pipe = PipeType::PIPE_S;
+    event.type = EventType::BUF_SYNC_EVENT;
+    event.pipe = record.payload.bufRecord.pipe;
     event.eventInfo.bufSyncInfo.opType = SyncType::RLS_BUF;
     event.eventInfo.bufSyncInfo.pipe = record.payload.bufRecord.pipe;
     event.eventInfo.bufSyncInfo.bufId = record.payload.bufRecord.bufId;
-    event.eventInfo.bufSyncInfo.mode = static_cast<uint8_t>(record.payload.bufRecord.mode);
-    event.eventInfo.syncInfo.memType = MemType::INVALID;
-    event.eventInfo.syncInfo.isRetrogress = false;
+    event.eventInfo.bufSyncInfo.mode = record.payload.bufRecord.mode;
+    RecordParse::getRlsBufMap_[event.eventInfo.bufSyncInfo.bufId]++;
     events.emplace_back(event);
 }
 
@@ -4092,6 +4092,7 @@ void RecordParse::UpdateSyncInPipe(KernelRecord const& record, std::vector<SanEv
 thread_local std::array<bool, static_cast<uint8_t>(PipeType::SIZE)> RecordParse::setWaitStat_ = {};
 thread_local RecordParse::DstSrcGraph RecordParse::dstSrcGraph_ = {};
 thread_local std::map<HsetRecordKey, HsetRecordState> RecordParse::hsetSyncMap_ = {};
+thread_local std::unordered_map<uint64_t, uint64_t> RecordParse::getRlsBufMap_ = {};
 
 void RecordParse::ResetSyncInPipeInfo()
 {
@@ -4104,6 +4105,7 @@ void RecordParse::ResetAll()
     setWaitStat_ = {};
     dstSrcGraph_ = {};
     hsetSyncMap_ = {};
+    getRlsBufMap_ = {};
 }
 
 SanEvent HsetWaitCreateSyncEvent(const SyncType syncType, const PipeType pipeSrc, const PipeType pipeDst,
@@ -4223,6 +4225,15 @@ void ReplacePipeScalar(SanEvent &event)
             }
             return;
         }
+        case EventType::BUF_SYNC_EVENT: {
+            if (event.eventInfo.bufSyncInfo.opType == SyncType::RLS_BUF) {
+                if (event.eventInfo.syncInfo.srcPipe == PipeType::PIPE_S) {
+                    event.pipe = PipeType::PIPE_S_CAL;
+                    event.eventInfo.bufSyncInfo.pipe = PipeType::PIPE_S_CAL;
+                }
+            }
+            return;
+        }
         default:
             return;
     }
@@ -4238,6 +4249,9 @@ void RecordParse::ReplaceSetSyncPipeScalar(std::vector<SanEvent> &events)
 void RecordParse::Parse(const SanitizerRecord &record, std::vector<SanEvent> &events)
 {
     KernelRecord const& kernelRecord = record.payload.kernelRecord;
+    if (kernelRecord.recordType == RecordType::BLOCK_FINISH || kernelRecord.recordType == RecordType::FINISH) {
+        ResetAll();
+    }
     auto it = g_parseFuncs.find(kernelRecord.recordType);
     if (it == g_parseFuncs.end()) {
         return;

@@ -90,6 +90,8 @@ ReturnType CrossCoreRaceAlgImpl::ProcessEvent(const SanEvent &event)
             return ProcessBlockSoftSyncEvent(event);
         case EventType::MSTX_CROSS_SYNC_EVENT:
             return ProcessMstxCrossSyncEvent(event);
+        case EventType::BUF_SYNC_EVENT:
+            return ProcessGetRlsBufSyncEvent(event, RaceCheckType::CROSS_BLOCK_CHECK);
         default:
             break;
     }
