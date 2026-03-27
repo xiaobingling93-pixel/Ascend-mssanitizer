@@ -112,7 +112,6 @@ TEST(LoadImageInstructions, load_image_s8)
 
     auto config = ExtractConfigFromLoadImageRecord(record);
 
-    // #1520
     __sanitizer_report_load_image_to_cbuf(memInfo.data(), record.location.fileNo, record.location.lineNo,
                                           record.location.pc,
                                           reinterpret_cast<__cbuf__ int8_t*>(record.dst), config.first, config.second);

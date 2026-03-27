@@ -54,7 +54,7 @@ public:
     explicit Range1D(PM &pm, uint64_t addr, uint64_t size);
     Iterator Begin(void) const;
     Iterator End(void) const;
-    Iterator At(uint64_t addr);
+    Iterator At(uint64_t addr) const;
     void Set(uint8_t bits);
     uint64_t Size(void) const;
     // 返回该地址后标记一致的内存长度

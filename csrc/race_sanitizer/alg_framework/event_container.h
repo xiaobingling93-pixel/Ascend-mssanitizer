@@ -32,13 +32,13 @@ public:
     // 将事件保存到对应的队列中
     void Push(const SanEvent &e, PipeType pipe, uint32_t blockIdx);
     // 获取当前队列头部事件
-    SanEvent Front();
+    SanEvent Front() const;
     // 将当前队列的头部事件出队，表示事件处理完成
     void Pop();
     // 判断当前队列为空
     bool IsCurQueEmpty() const;
     // 判断是否满足条件切换到下一个block
-    bool IsNeedSwitchNextBlock();
+    bool IsNeedSwitchNextBlock() const;
     // 所有队列为空
     bool IsEmpty() const;
     // 是否遍历完所有核的管道（核内仅遍历当前核），且事件没有变化

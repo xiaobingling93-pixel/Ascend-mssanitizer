@@ -751,7 +751,7 @@ static bool CheckMovAlignV2Event(const MovAlignRecordV2 &record, bool &isCompact
     bool isUbStrideNot32BAligned{};
     bool isLoopStrideNot32BAligned{};
     if (record.srcMemType == MemType::GM) {
-        bool isLRPMode = record.rightPaddingNum || record.leftPaddingNum;
+        bool isLRPMode = (record.rightPaddingNum > 0) || (record.leftPaddingNum > 0);
         if (isLoopMode && isLRPMode) {
             SAN_ERROR_LOG("LP/RP mode can not be enabled with Loop mode.");
             return false;
@@ -1040,7 +1040,7 @@ void FixPipeReadFromL0C(const MovFpRecord &record, std::vector<SanEvent> &events
     memInfo.repeatStride = record.srcStride;
     memInfo.blockNum = record.mSize;
     AlignChecker::Instance().CheckAlign(event, 64U);
-    // david/910b: Normal/Int8/Int4/F32
+    // 950/910b: Normal/Int8/Int4/F32
     if (!record.enNZ2ND && !record.enNZ2DN) {
         memInfo.repeatTimes = (record.nSize + fractalNum - 1) / fractalNum; // N维列数，向上取整
         events.emplace_back(event);
@@ -1086,7 +1086,7 @@ void FixPipeReadFromL0CA5(const MovFpRecord &record, std::vector<SanEvent> &even
     memInfo.repeatStride = record.srcStride; // loop1_src_stride
     memInfo.blockNum = record.mSize;
     AlignChecker::Instance().CheckAlign(event, 64U); // f32 s32
-    // david/910b: Normal/Int8/Int4/F32
+    // 950/910b: Normal/Int8/Int4/F32
     if (!record.enNZ2ND && !record.enNZ2DN) {
         memInfo.repeatTimes = (record.nSize + fractalNum - 1) / fractalNum; // N维列数，向上取整
         events.emplace_back(event);
@@ -1129,7 +1129,7 @@ void ParseFixPipeWriteByMultiMode(const MovFpRecord &record, std::vector<SanEven
     } else if (record.int4ChannelMerge) {
         if (record.isC310) {
             memInfo.blockNum = record.mSize * 32U; // 4bits时2个合并为1个 64个元素，但blcoksize是2个4bit合一，因此这里要改为32
-            memInfo.repeatTimes = (record.nSize + 63U) / 64U; // david会自动PADDING，所以除以64向上取整
+            memInfo.repeatTimes = (record.nSize + 63U) / 64U; // 950会自动PADDING，所以除以64向上取整
             memInfo.repeatStride = record.dstStride / 2; // 4bits时2个合并为1个
         } else {
             memInfo.blockNum = record.mSize;
@@ -1827,11 +1827,11 @@ static void ParseRecordLoad3DMatrix(const Load3DRecord &load3DRecord, std::vecto
         uint8_t kRptBase = 32;
         uint32_t mRptLength = mRptBase * load3DRecord.matrixRptStride;
         uint32_t kRptLength = kRptBase * byteUnit / bitSize * load3DRecord.matrixRptStride;
-        if (load3DRecord.matrixRptMode && kRptLength < static_cast<uint32_t>(load3DRecord.matrixKStep)) {
+        if ((load3DRecord.matrixRptMode > 0) && kRptLength < static_cast<uint32_t>(load3DRecord.matrixKStep)) {
             SAN_ERROR_LOG("Parse load3D failed, invalid fm matrix kstep");
             return;
         }
-        if ((!load3DRecord.matrixRptMode) && mRptLength < static_cast<uint32_t>(load3DRecord.matrixMStep)) {
+        if ((load3DRecord.matrixRptMode == 0) && mRptLength < static_cast<uint32_t>(load3DRecord.matrixMStep)) {
             SAN_ERROR_LOG("Parse load3D failed, invalid fm matrix mstep");
             return;
         }

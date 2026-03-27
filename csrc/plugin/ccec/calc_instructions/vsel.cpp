@@ -112,7 +112,6 @@ SANITIZER_REPORT(vsel, __ubuf__ half *dst, __ubuf__ half *src0, __ubuf__ void *s
     RecordVselConfigFunc(EXTRA_PARAMS, dst, src0, src1, config, 16);
 }
 
-// #3195
 SANITIZER_REPORT(vsel, __ubuf__ half *dst, __ubuf__ half *src0, __ubuf__ void *src1, uint8_t repeat,
     uint8_t dstBlockStride, uint8_t src0BlockStride, uint8_t src1BlockStride, uint8_t dstRepeatStride,
     uint8_t src0RepeatStride, uint8_t src1RepeatStride)

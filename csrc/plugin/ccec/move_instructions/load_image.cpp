@@ -35,7 +35,6 @@ SANITIZER_REPORT(load_image_to_cbuf, __cbuf__ half *dst, uint16_t horSize, uint1
                                                          botPadSize, lPadSize, rPadSize);
 }
 
-// #1520
 SANITIZER_REPORT(load_image_to_cbuf, __cbuf__ int8_t *dst, uint64_t xs, uint64_t xt)
 {
     RecordLoadImageEvent<MemType::L1, DataType::DATA_B8>(EXTRA_PARAMS, reinterpret_cast<uint64_t>(dst),

@@ -64,7 +64,7 @@ Range1D::Iterator Range1D::End(void) const
     return Iterator(*this, addr_ + size_);
 }
 
-Range1D::Iterator Range1D::At(uint64_t addr)
+Range1D::Iterator Range1D::At(uint64_t addr) const
 {
     if (addr < addr_ || addr > addr_ + size_) {
         return this->End();

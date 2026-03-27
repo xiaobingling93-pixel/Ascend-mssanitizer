@@ -45,7 +45,7 @@ void EventContainer::Push(const SanEvent &e, PipeType pipe, uint32_t blockIdx)
 }
 
 // 获取当前PIPE的头部事件
-SanEvent EventContainer::Front()
+SanEvent EventContainer::Front() const
 {
     // Front前先判空, 判空由调用方做
     return ques_[(blockIndex_ * (static_cast<uint32_t>(PipeType::SIZE))) + pipeIndex_].front();
@@ -75,7 +75,7 @@ bool EventContainer::IsCurBlockEmpty() const
     return true;
 }
 
-bool EventContainer::IsNeedSwitchNextBlock()
+bool EventContainer::IsNeedSwitchNextBlock() const
 {
     if (popCount_ == 0) {
         return true;

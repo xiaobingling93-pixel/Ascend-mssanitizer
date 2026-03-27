@@ -100,7 +100,7 @@ inline bool IsModeSaferThan(const std::string &path, mode_t hazardMode)
     }
     mode_t hazard = ~(hazardMode & ACCESSPERMS) & ACCESSPERMS;
     mode_t pathMode = mode & ACCESSPERMS;
-    return !(hazard & pathMode);
+    return (hazard & pathMode) == 0;
 }
 
 inline std::string GetAbsolutePath(const std::string &path)
