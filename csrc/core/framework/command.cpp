@@ -22,6 +22,8 @@
 #include <sstream>
 #include <experimental/filesystem>
 
+#include "core/framework/kernel_binary_manager.h"
+#include "core/framework/kernel_manager.h"
 #include "utility/umask_guard.h"
 #include "utility/ustring.h"
 #include "utility/serializer.h"
@@ -120,9 +122,11 @@ void HandleKernelInfo(Checker &checker, KernelSummary const &kernelSummary, Conf
                  kernelNameLog.c_str(), kernelSummary.pcStartAddr, kernelSummary.blockDim,
                  static_cast<uint32_t>(kernelSummary.kernelType), kernelSummary.isKernelWithDBI);
 
+    RuntimeContext::Instance().kernelIdx_++;
     RuntimeContext::Instance().currentBlockIdx_ = 0;
     RuntimeContext::Instance().kernelSummary_ = kernelSummary;
     RuntimeContext::Instance().kernelNameDisplay = GetDisplayKernelName(kernelSummary, config.demangleMode);
+    KernelManager::Instance().Add(RuntimeContext::Instance().GetDeviceId(), kernelSummary);
     checker.SetKernelInfo(kernelSummary);
 }
 
@@ -281,7 +285,7 @@ inline void HandleKernelBinary(Packet::BinaryPayload const &payload)
 {
     std::vector<char> buffer(payload.buf, payload.buf + payload.len);
 
-    CallStack::Instance().Load(buffer);
+    KernelBinaryManager::Instance().Set(RuntimeContext::Instance().kernelSummary_.kernelName, buffer);
 
     auto loader = Sanitizer::ElfLoader();
     if (!loader.FromBuffer(buffer)) {
@@ -356,6 +360,7 @@ void Command::Exec(const ParamList &execParams)
     auto socketPath = process.CreateSockPath();
     // 线程管理类，负责多线程开始前和结束后的工作
     ThreadManager threadManager(config_, loglv_, logFile_);
+    KernelManager::Instance().SetDemangleMode(config_.demangleMode);
 
     auto msgSplitFunc = [&threadManager, this](
                             const std::string &manyMsg, Process::MsgRspFunc &msgRspFunc) {
