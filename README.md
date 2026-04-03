@@ -20,6 +20,12 @@
 
 MindStudio Sanitizer（算子异常检测，msSanitizer）是专为昇腾 AI 处理器打造的单算子异常检测工具，提供内存越界、数据竞争、未初始化访问及同步异常四大检测能力。
 
+<div align="center">
+  <h4>▶️ 核心能力快速演示</h4>
+  <img src="./docs/zh/figures/demo-sanitizer.gif" alt="快速演示" width="600">
+  <p><sup>图示：算子内存、未初始化、竞争检测过程演示</sup></p>
+</div>
+
 ## ⚙️ 功能介绍
 
 msSanitizer 通过多个子功能模块提供不同类型的异常检测能力，当前已支持的功能如下：
